@@ -1,0 +1,36 @@
+{
+  "name": "crm-whatsapp",
+  "version": "1.0.0",
+  "description": "CRM integrado com WhatsApp Cloud API",
+  "scripts": {
+    "dev": "docker-compose up -d",
+    "build": "docker-compose build",
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "logs:api": "docker-compose logs -f api",
+    "logs:web": "docker-compose logs -f web",
+    "logs:db": "docker-compose logs -f db",
+    "logs:redis": "docker-compose logs -f redis",
+    "db:migrate": "docker-compose exec api npm run prisma:migrate",
+    "db:seed": "docker-compose exec api npm run prisma:seed",
+    "db:reset": "docker-compose exec api npm run prisma:migrate:reset",
+    "test": "docker-compose exec api npm run test",
+    "test:e2e": "docker-compose exec api npm run test:e2e",
+    "lint": "docker-compose exec api npm run lint && docker-compose exec web npm run lint",
+    "format": "docker-compose exec api npm run format && docker-compose exec web npm run format",
+    "clean": "docker-compose down -v && docker system prune -f",
+    "setup": "docker-compose up -d && sleep 10 && npm run db:migrate && npm run db:seed"
+  },
+  "keywords": [
+    "crm",
+    "whatsapp",
+    "nextjs",
+    "nestjs",
+    "typescript",
+    "docker"
+  ],
+  "author": "CRM WhatsApp Team",
+  "license": "MIT"
+}
+
