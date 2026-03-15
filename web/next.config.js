@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'crm-drm-nuyq.vercel.app'],
   },
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
