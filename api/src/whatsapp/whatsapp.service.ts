@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { AxiosResponse } from 'axios';
 import * as crypto from 'crypto';
 
 export interface WhatsAppMessage {
@@ -100,13 +101,13 @@ export class WhatsAppService {
       };
 
       const response = await firstValueFrom(
-        this.httpService.post(url, payload, {
+        this.httpService.post<unknown>(url, payload, {
           headers: {
             'Authorization': `Bearer ${this.accessToken}`,
             'Content-Type': 'application/json',
           },
         })
-      );
+      ) as AxiosResponse;
 
       this.logger.log(`Message sent successfully to ${message.to}`);
       return response.data;
@@ -128,13 +129,13 @@ export class WhatsAppService {
       };
 
       const response = await firstValueFrom(
-        this.httpService.post(url, payload, {
+        this.httpService.post<unknown>(url, payload, {
           headers: {
             'Authorization': `Bearer ${this.accessToken}`,
             'Content-Type': 'application/json',
           },
         })
-      );
+      ) as AxiosResponse;
 
       this.logger.log(`Template sent successfully to ${template.to}`);
       return response.data;
@@ -177,13 +178,13 @@ export class WhatsAppService {
       };
 
       const response = await firstValueFrom(
-        this.httpService.post(url, payload, {
+        this.httpService.post<unknown>(url, payload, {
           headers: {
             'Authorization': `Bearer ${this.accessToken}`,
             'Content-Type': 'application/json',
           },
         })
-      );
+      ) as AxiosResponse;
 
       this.logger.log(`Message ${messageId} marked as read`);
       return response.data;

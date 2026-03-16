@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -21,7 +21,7 @@ export class MessagesController {
       contact?: any;
       sticker?: any;
     },
-    @Request() req,
+    @Req() req: { user: { id: string } },
   ) {
     return this.messagesService.sendMessage(conversationId, body, req.user.id);
   }
@@ -36,7 +36,7 @@ export class MessagesController {
         components?: any[];
       };
     },
-    @Request() req,
+    @Req() req: { user: { id: string } },
   ) {
     return this.messagesService.sendTemplate(conversationId, body.template, req.user.id);
   }
