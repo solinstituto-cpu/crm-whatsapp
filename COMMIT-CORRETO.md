@@ -6,7 +6,7 @@ O Vercel bloqueia o deploy quando o autor do commit não é o dono do projeto.
 
 ```powershell
 cd D:\crmDENI
-git config user.email "deni.morais747@gmail.com"
+git config user.email "deni.morais777@gmail.com"
 git config user.name "denimorais777"
 ```
 

@@ -2,7 +2,7 @@
 # IMPORTANTE: Sempre usar o autor correto para deploy no Vercel
 
 Quando fizer commits, use SEMPRE:
-- git config user.email "deni.morais747@gmail.com"
+- git config user.email "deni.morais777@gmail.com"
 - git config user.name "denimorais777"
 
 Nunca commitar com "denimorais747-sketch" ou "Made-with: Cursor" - isso bloqueia o deploy no Vercel.
