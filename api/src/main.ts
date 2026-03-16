@@ -17,8 +17,10 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
   }));
 
+  const webappUrl = process.env.WEBAPP_URL || 'http://localhost:3000';
+  const corsOrigin = webappUrl.startsWith('http') ? webappUrl : `https://${webappUrl}`;
   app.enableCors({
-    origin: process.env.WEBAPP_URL || 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
   });
 
