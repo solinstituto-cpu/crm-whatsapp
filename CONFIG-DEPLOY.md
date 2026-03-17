@@ -12,7 +12,7 @@ Projeto usa estrutura **monorepo** com `apps/api` e `apps/web`.
 |--------------|-------|
 | **Root Directory** | `apps/api` |
 | **Build Command** | `npm install && npm run build` |
-| **Start Command** | `node dist/main.js` |
+| **Start Command** | `node dist/main.js` *(não use dist/src/main.js)* |
 
 ### Variáveis de Ambiente
 
