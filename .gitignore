@@ -1,6 +1,6 @@
-# Projeto antigo (substituído por apps/api e apps/web)
-api/
-web/
+# Projeto antigo na raiz (substituído por apps/api e apps/web)
+/api/
+/web/
 
 # Dependencies
 node_modules/
