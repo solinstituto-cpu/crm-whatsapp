@@ -13,6 +13,11 @@
   },
   "redirects": [
     {
+      "source": "/auth/signin",
+      "destination": "/auth/login",
+      "permanent": false
+    },
+    {
       "source": "/",
       "has": [
         {
@@ -21,7 +26,7 @@
           "value": "(?<host>.*)"
         }
       ],
-      "destination": "/auth/signin",
+      "destination": "/auth/login",
       "permanent": false
     }
   ]
