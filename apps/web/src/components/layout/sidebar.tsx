@@ -24,6 +24,10 @@ import {
   BookOpen
 } from 'lucide-react'
 
+// Cache do logo para evitar flash do ícone ao navegar entre telas (Sidebar remonta)
+let cachedCompanyLogo: string | null = null
+let cachedCompanyName: string = 'DRM CRM'
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Inbox', href: '/inbox', icon: MessageSquare },
@@ -43,8 +47,8 @@ export default function Sidebar() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(true)
-  const [companyName, setCompanyName] = useState('DRM CRM')
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null)
+  const [companyName, setCompanyName] = useState(cachedCompanyName)
+  const [companyLogo, setCompanyLogo] = useState<string | null>(cachedCompanyLogo)
 
   // Carregar configurações da empresa do banco de dados (API)
   useEffect(() => {
@@ -56,13 +60,17 @@ export default function Sidebar() {
           const config = await response.json()
           if (config.companyName) {
             setCompanyName(config.companyName)
+            cachedCompanyName = config.companyName
           }
           if (config.companyLogo) {
             setCompanyLogo(config.companyLogo)
+            cachedCompanyLogo = config.companyLogo
+          } else {
+            cachedCompanyLogo = null
           }
         }
       } catch (e) {
-        // API falhou - usa defaults (DRM CRM). Sem fallback em localStorage.
+        // API falhou - mantém cache se existir. Sem fallback em localStorage.
       }
     }
     
@@ -167,10 +175,10 @@ export default function Sidebar() {
                 <img 
                   src={companyLogo} 
                   alt={companyName}
-                  className="h-8 w-8 object-contain rounded"
+                  className="h-8 w-8 object-contain rounded flex-shrink-0"
                 />
               ) : (
-                <MessageSquare className="h-8 w-8 text-white" />
+                <div className="h-8 w-8 flex-shrink-0 rounded bg-white/20" aria-hidden />
               )}
               <span className="text-xl font-bold text-white truncate max-w-[160px]">{companyName}</span>
             </div>
