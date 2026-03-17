@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
-import { Mail, Lock, MessageCircle, Zap, Users, BarChart3 } from 'lucide-react'
+import { Mail, Lock, MessageCircle, Zap, Users, BarChart3, Phone } from 'lucide-react'
 import Image from 'next/image'
 
 export default function LoginPage() {
@@ -182,6 +182,21 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            <div className="mt-6 pt-6 border-t border-slate-100">
+              <p className="text-center text-slate-500 text-sm mb-3">
+                Se ainda não tem seus dados de acesso para teste, solicite clicando no botão abaixo.
+              </p>
+              <a
+                href={`https://wa.me/5511992964792?text=${encodeURIComponent('Olá! Gostaria de solicitar os dados de acesso para teste do DRM CRM.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 px-4 flex items-center justify-center gap-2 rounded-xl border-2 border-emerald-500 text-emerald-600 font-medium hover:bg-emerald-50 transition-all duration-200"
+              >
+                <Phone className="h-5 w-5" />
+                Solicitar dados de acesso
+              </a>
+            </div>
 
             <p className="mt-8 text-center text-xs text-slate-400">
               © {new Date().getFullYear()} DRM CRM — Sistema de Gestão de WhatsApp
