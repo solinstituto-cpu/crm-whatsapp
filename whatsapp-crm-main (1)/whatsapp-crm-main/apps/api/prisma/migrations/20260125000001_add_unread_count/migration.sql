@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "conversations" ADD COLUMN IF NOT EXISTS "unreadCount" INTEGER NOT NULL DEFAULT 0;
