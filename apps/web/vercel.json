@@ -16,18 +16,6 @@
       "source": "/auth/signin",
       "destination": "/auth/login",
       "permanent": false
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": "host",
-          "value": "(?<host>.*)"
-        }
-      ],
-      "destination": "/auth/login",
-      "permanent": false
     }
   ]
 }
