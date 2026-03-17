@@ -1,13 +1,13 @@
-# Configuração do Render para a API
+# Configuração do Render para a API (apps/api)
 # Documentação: https://render.com/docs/blueprint-spec
 
 services:
   - type: web
     name: crm-drm
     runtime: node
-    rootDir: api
+    rootDir: apps/api
     buildCommand: npm install && npm run build
-    startCommand: node dist/src/main.js
+    startCommand: node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production

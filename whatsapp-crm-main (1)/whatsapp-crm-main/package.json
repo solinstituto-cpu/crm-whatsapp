@@ -24,7 +24,7 @@
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
     "health": "curl -f http://localhost:4000/api/wa/health && curl -f http://localhost:3000",
-    "test:send": "cd apps/api && npm run test:send --",
+  "test:send": "cd apps/api && npm run test:send --",
     "clean": "rm -rf apps/*/dist apps/*/.next apps/*/node_modules node_modules",
     "test": "echo 'Tests will be added later'"
   },
