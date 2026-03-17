@@ -18,7 +18,7 @@ import {
   Target,
   ChevronRight,
   Sparkles,
-  LayoutKanban,
+  Kanban,
   BookOpen,
   FileText,
   Clock,
@@ -59,7 +59,7 @@ export default function LandingPage() {
       color: 'from-blue-500 to-cyan-600',
     },
     {
-      icon: LayoutKanban,
+      icon: Kanban,
       title: 'Pipeline de Vendas',
       description: 'Kanban com drag & drop. Estágios customizáveis, deals com valor e probabilidade. Métricas de conversão e previsão de fechamento.',
       highlight: 'Funil visual',
