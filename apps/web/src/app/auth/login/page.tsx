@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
-import Image from 'next/image'
+import { Mail, Lock, MessageCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -30,7 +30,6 @@ export default function LoginPage() {
         return
       }
 
-      // Verificar se a sessão foi criada
       const session = await getSession()
       if (session) {
         toast.success('Login realizado com sucesso!')
@@ -47,95 +46,103 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-yellow-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          {/* Logo do Sol Instituto */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              {/* Sol com efeito glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full w-20 h-20 mx-auto opacity-20 animate-pulse"></div>
-              <div className="relative bg-gradient-to-r from-yellow-400 via-orange-400 to-orange-500 rounded-full w-20 h-20 mx-auto flex items-center justify-center shadow-2xl">
-                <span className="text-white font-black text-2xl tracking-wider">SOL</span>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left: Blue branding - mobile: top, desktop: left */}
+      <div className="lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex flex-col justify-center items-center px-6 py-12 lg:py-0 lg:px-12">
+        <div className="max-w-md w-full text-center lg:text-left">
+          <div className="flex justify-center lg:justify-start mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+                <MessageCircle className="w-7 h-7 text-white" />
               </div>
+              <span className="text-2xl font-bold text-white tracking-tight">CRM</span>
             </div>
           </div>
-          
-          {/* Título Principal */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-yellow-600 mb-2">
-              SOL INSTITUTO
-            </h1>
-            <p className="text-lg font-medium text-green-700 mb-1">
-              Escola de Formação Profissional
-            </p>
-            <p className="text-sm text-gray-600 mb-4">
-              cursos presenciais e online
-            </p>
-            
-            {/* Sistema CRM */}
-            <div className="border-t border-orange-200 pt-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Sistema CRM WhatsApp
-              </h2>
-              <p className="text-sm text-gray-600">
-                Faça login para acessar o sistema
-              </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
+            Sistema de Gerenciamento de WhatsApp
+          </h1>
+          <p className="text-blue-100 text-sm sm:text-base mb-8">
+            Gerencie conversas, contatos e campanhas em um só lugar. Para qualquer segmento.
+          </p>
+          <div className="hidden lg:block">
+            <div className="inline-flex items-center gap-2 text-blue-200 text-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Conecte seu WhatsApp e comece a vender
             </div>
           </div>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-orange-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm bg-white/70"
-                placeholder="Email"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Senha
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-orange-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm bg-white/70"
-                placeholder="Senha"
-              />
-            </div>
-          </div>
+      </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
-            >
-              {isLoading ? 'Entrando...' : 'Entrar no Sistema'}
-            </button>
-          </div>
+      {/* Right: Login form */}
+      <div className="lg:w-1/2 flex items-center justify-center bg-slate-50 px-6 py-12 lg:py-0">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 sm:p-10">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Entrar</h2>
+            <p className="text-slate-500 text-sm mb-8">
+              Digite seu email e senha para acessar.
+            </p>
 
-          {/* Footer */}
-          <div className="text-center mt-8 pt-4 border-t border-orange-200">
-            <p className="text-xs text-gray-500">
-              Desenvolvido por <span className="font-medium text-orange-600">Deni Morais</span>
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              © 2025 Sol Instituto Terapêutico
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="seu@email.com"
+                    className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+                  Senha
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    placeholder="••••••••"
+                    className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </button>
+            </form>
+
+            <p className="mt-8 text-center text-xs text-slate-400">
+              © {new Date().getFullYear()} CRM WhatsApp — Sistema de gestão
             </p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
