@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Teste Login API</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }
+    input, button { display: block; width: 100%; padding: 10px; margin: 10px 0; }
+    #result { margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap; }
+    .ok { background: #d4edda !important; }
+    .erro { background: #f8d7da !important; }
+  </style>
+</head>
+<body>
+  <h1>Teste de Login na API</h1>
+  <p>Testa se a API no Render aceita as credenciais.</p>
+  <input type="email" id="email" value="admin@crm.com" placeholder="Email">
+  <input type="password" id="password" value="admin123" placeholder="Senha">
+  <button onclick="testar()">Testar Login</button>
+  <div id="result"></div>
+
+  <script>
+    async function testar() {
+      const result = document.getElementById('result');
+      result.className = '';
+      result.textContent = 'Aguardando... (pode levar 1 min se o Render estiver "acordando")';
+
+      try {
+        const res = await fetch('https://crm-drm.onrender.com/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        
+        if (res.ok) {
+          result.className = 'ok';
+          result.textContent = 'SUCESSO! A API aceitou as credenciais.\n\n' + JSON.stringify(data, null, 2);
+        } else {
+          result.className = 'erro';
+          result.textContent = 'ERRO ' + res.status + ': ' + (data.message || data.error || res.statusText) + '\n\n' + JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        result.className = 'erro';
+        result.textContent = 'ERRO de rede: ' + err.message + '\n\n(O Render pode estar "acordando" - tente de novo em 1 min)';
+      }
+    }
+  </script>
+</body>
+</html>

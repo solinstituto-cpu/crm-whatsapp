@@ -21,16 +21,19 @@ export const authOptions: AuthOptions = {
             process.env.API_URL ||
             process.env.NEXT_PUBLIC_API_URL ||
             (process.env.VERCEL ? 'https://crm-drm.onrender.com' : 'http://localhost:4000')
-          const response = await fetch(`${apiUrl}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          })
+          // Timeout 90s (Render free tier demora ~50s para "acordar")
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 90000)
+            const response = await fetch(`${apiUrl}/api/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password,
+              }),
+              signal: controller.signal,
+            })
+            clearTimeout(timeoutId)
 
           if (response.ok) {
             const data = await response.json()
