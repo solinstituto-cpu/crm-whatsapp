@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import InteractiveMockup from './interactive-mockup'
+import ROICalculator from './roi-calculator'
+import ExitIntentPopup from './exit-intent-popup'
+import WhatsAppFloatButton from './whatsapp-float-button'
 import {
   MessageCircle,
   Users,
@@ -35,9 +38,38 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
+  const [activeFaqSegment, setActiveFaqSegment] = useState<string | null>(null)
   const [billingAnnual, setBillingAnnual] = useState(false)
+  const [showExitIntent, setShowExitIntent] = useState(true)
 
   useEffect(() => setMounted(true), [])
+
+  const testimonials = [
+    { name: 'Maria Silva', role: 'Diretora Comercial', company: 'Imobiliária Prime', text: 'Aumentamos em 40% nossa taxa de conversão depois que automatizamos o primeiro contato. O sistema é incrível!', stars: 5 },
+    { name: 'Carlos Santos', role: 'CEO', company: 'Academia FitMax', text: 'Antes perdíamos alunos por demora no atendimento. Agora respondemos em segundos, 24 horas por dia.', stars: 5 },
+    { name: 'Ana Oliveira', role: 'Coordenadora', company: 'Escola de Idiomas', text: 'O funil visual mudou nossa forma de trabalhar. Todos sabem em que etapa cada aluno está.', stars: 5 },
+  ]
+
+  const successCases = [
+    { metric: '+40%', label: 'Conversão em vendas', segment: 'Imobiliária' },
+    { metric: '60%', label: 'Redução no tempo de resposta', segment: 'Academia' },
+    { metric: '3x', label: 'Mais matrículas via WhatsApp', segment: 'Escola' },
+  ]
+
+  const comparisonRows = [
+    { feature: 'Histórico de conversas', common: false, drm: true },
+    { feature: 'Múltiplos atendentes', common: false, drm: true },
+    { feature: 'Automação 24/7', common: false, drm: true },
+    { feature: 'Campanhas em massa', common: false, drm: true },
+    { feature: 'Pipeline de vendas', common: false, drm: true },
+    { feature: 'Sem risco de banimento', common: false, drm: true },
+  ]
+
+  const faqBySegment = [
+    { segment: 'Escolas', q: 'Como fazer matrículas pelo WhatsApp?', a: 'Use fluxos de automação para qualificar leads, envie formulários e direcione para o setor de matrículas. O histórico fica salvo para cada contato.' },
+    { segment: 'Clínicas', q: 'Posso enviar lembretes de consulta?', a: 'Sim. Crie campanhas segmentadas ou use automações com gatilho de data. Templates aprovados pela Meta garantem entrega.' },
+    { segment: 'Imobiliárias', q: 'Como organizar leads por imóvel?', a: 'Use tags e campos personalizados. Atribua atendentes por região ou tipo de imóvel. O pipeline mostra cada lead na etapa certa.' },
+  ]
 
   const whatsappNumber = '5511992964792'
   const contactButtons = [
@@ -61,7 +93,7 @@ export default function LandingPage() {
       features: [
         '1 número WhatsApp',
         '5 usuários',
-        '5.000 mensagens/mês',
+        '1.000 conversas iniciadas/mês (base Meta)',
         'Inbox unificado',
         'CRM de contatos',
         'Respostas rápidas',
@@ -81,7 +113,7 @@ export default function LandingPage() {
       features: [
         '1 número WhatsApp',
         '15 usuários',
-        '25.000 mensagens/mês',
+        '1.000 conversas iniciadas/mês (base Meta)',
         'Tudo do Starter +',
         'Automação e fluxos',
         'Campanhas em massa',
@@ -103,7 +135,7 @@ export default function LandingPage() {
       features: [
         '3 números WhatsApp',
         '30 usuários',
-        '75.000 mensagens/mês',
+        '1.000 conversas iniciadas/mês (base Meta)',
         'Tudo do Pro +',
         'Base de conhecimento',
         'Relatórios avançados',
@@ -124,7 +156,7 @@ export default function LandingPage() {
       features: [
         'Números ilimitados',
         'Usuários ilimitados',
-        'Mensagens ilimitadas',
+        '1.000 conversas iniciadas/mês (base Meta)',
         'Tudo do Business +',
         'API de integração',
         'Gerente de sucesso',
@@ -331,11 +363,11 @@ export default function LandingPage() {
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <a
-                href="#recursos"
+                href="#video-demo"
                 className="w-full sm:w-auto bg-white/10 backdrop-blur border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2"
               >
                 <Play className="h-5 w-5" />
-                Ver recursos
+                Ver demonstração
               </a>
             </div>
 
@@ -353,66 +385,50 @@ export default function LandingPage() {
                 <span>IA integrada (OpenAI)</span>
               </div>
             </div>
-          </div>
 
-          {/* Hero mockup */}
-          <div className="mt-20 relative">
-            <div className="bg-slate-900/80 backdrop-blur rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/80 border-b border-slate-700">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="w-3 h-3 rounded-full bg-amber-500" />
-                <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-slate-400 text-sm ml-4">DRM CRM — Inbox</span>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-8 text-white/80">
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-white">+500</p>
+                <p className="text-xs">empresas</p>
               </div>
-              <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-12 gap-4 h-[280px] sm:h-[360px]">
-                  <div className="col-span-3 bg-slate-800/60 rounded-xl p-3 space-y-2">
-                    <div className="h-8 bg-slate-700 rounded-lg animate-pulse" />
-                    <div className="h-14 bg-emerald-500/20 border-l-4 border-emerald-400 rounded-r" />
-                    <div className="h-12 bg-slate-700/50 rounded" />
-                    <div className="h-12 bg-slate-700/50 rounded" />
-                    <div className="h-12 bg-slate-700/50 rounded" />
-                  </div>
-                  <div className="col-span-6 bg-slate-800/60 rounded-xl p-4 flex flex-col">
-                    <div className="flex items-center gap-3 pb-3 border-b border-slate-600">
-                      <div className="w-10 h-10 bg-emerald-500 rounded-full" />
-                      <div>
-                        <div className="h-4 w-28 bg-slate-600 rounded" />
-                        <div className="h-3 w-20 bg-slate-700 rounded mt-1" />
-                      </div>
-                    </div>
-                    <div className="flex-1 py-4 space-y-3">
-                      <div className="flex justify-start">
-                        <div className="bg-slate-700 rounded-xl px-4 py-2 max-w-[85%]">
-                          <div className="h-3 w-36 bg-slate-600 rounded" />
-                        </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <div className="bg-emerald-600 rounded-xl px-4 py-2 max-w-[85%]">
-                          <div className="h-3 w-44 bg-emerald-500 rounded" />
-                        </div>
-                      </div>
-                      <div className="flex justify-start">
-                        <div className="bg-slate-700 rounded-xl px-4 py-2 max-w-[85%]">
-                          <div className="h-3 w-52 bg-slate-600 rounded" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="h-11 bg-slate-700 rounded-xl" />
-                  </div>
-                  <div className="col-span-3 bg-slate-800/60 rounded-xl p-3 space-y-3">
-                    <div className="w-14 h-14 mx-auto bg-emerald-500 rounded-full" />
-                    <div className="h-4 bg-slate-700 rounded mx-auto w-28" />
-                    <div className="h-3 bg-slate-600 rounded mx-auto w-36" />
-                    <div className="pt-3 border-t border-slate-600 space-y-2">
-                      <div className="h-6 bg-slate-700 rounded" />
-                      <div className="h-6 bg-slate-700 rounded" />
-                      <div className="h-6 bg-slate-700 rounded" />
-                    </div>
-                  </div>
-                </div>
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-white">1M+</p>
+                <p className="text-xs">mensagens/mês</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-white">30min</p>
+                <p className="text-xs">para começar</p>
               </div>
             </div>
+          </div>
+
+          {/* Hero mockup - interativo */}
+          <div className="mt-16 relative">
+            <InteractiveMockup compact />
+            <p className="text-center text-white/70 text-sm mt-4">Clique no menu para explorar</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Video demo placeholder */}
+      <section id="video-demo" className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-900">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Veja o sistema em ação</h2>
+            <p className="text-slate-400">Demonstração em vídeo (em breve)</p>
+          </div>
+          <div className="aspect-video bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-700">
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Gostaria de agendar uma demonstração ao vivo do DRM CRM.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 text-slate-400 hover:text-white transition-colors"
+            >
+              <div className="w-20 h-20 rounded-full bg-indigo-600/20 flex items-center justify-center border-2 border-indigo-500">
+                <Play className="h-10 w-10 text-indigo-400 ml-1" />
+              </div>
+              <span className="font-medium">Solicitar demonstração ao vivo</span>
+            </a>
           </div>
         </div>
       </section>
@@ -515,6 +531,253 @@ export default function LandingPage() {
                 <h3 className="text-xl font-bold text-slate-900 mt-2 mb-3">{f.title}</h3>
                 <p className="text-slate-600 leading-relaxed">{f.description}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Por que API oficial */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-amber-50 border-y border-amber-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
+            Por que a API oficial do WhatsApp?
+          </h2>
+          <p className="text-slate-600 mb-6">
+            Soluções não-oficiais violam os termos do WhatsApp e podem resultar em <strong className="text-amber-700">banimento permanente</strong> do seu número. 
+            Com o DRM CRM e a API oficial da Meta, você opera dentro das regras — sem risco, com suporte e escalabilidade.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <span className="px-4 py-2 bg-white rounded-full text-sm font-medium text-slate-700 border border-amber-200">Sem risco de banimento</span>
+            <span className="px-4 py-2 bg-white rounded-full text-sm font-medium text-slate-700 border border-amber-200">Políticas da Meta</span>
+            <span className="px-4 py-2 bg-white rounded-full text-sm font-medium text-slate-700 border border-amber-200">Suporte oficial</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparativo */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">DRM CRM vs. WhatsApp comum</h2>
+            <p className="text-slate-600">Veja o que você ganha com uma plataforma profissional</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-lg">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left p-4 font-semibold text-slate-700">Recurso</th>
+                  <th className="p-4 font-semibold text-slate-500">WhatsApp comum</th>
+                  <th className="p-4 font-semibold text-indigo-600">DRM CRM</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row, i) => (
+                  <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="p-4 text-slate-800">{row.feature}</td>
+                    <td className="p-4 text-center">{row.common ? <CheckCircle className="h-5 w-5 text-slate-300 mx-auto" /> : <span className="text-slate-300">—</span>}</td>
+                    <td className="p-4 text-center"><CheckCircle className="h-5 w-5 text-emerald-500 mx-auto" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Checklist antes/depois */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-slate-900 text-center mb-12">Antes e depois do DRM CRM</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+              <h3 className="font-bold text-red-800 mb-4 flex items-center gap-2">Antes</h3>
+              <ul className="space-y-2 text-red-700">
+                <li className="flex gap-2"><span>✕</span> Mensagens perdidas no celular</li>
+                <li className="flex gap-2"><span>✕</span> Ninguém sabe quem atendeu</li>
+                <li className="flex gap-2"><span>✕</span> Resposta só no horário comercial</li>
+                <li className="flex gap-2"><span>✕</span> Campanhas uma a uma</li>
+                <li className="flex gap-2"><span>✕</span> Risco de banimento (soluções piratas)</li>
+              </ul>
+            </div>
+            <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
+              <h3 className="font-bold text-emerald-800 mb-4 flex items-center gap-2">Depois</h3>
+              <ul className="space-y-2 text-emerald-700">
+                <li className="flex gap-2"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Tudo centralizado e com histórico</li>
+                <li className="flex gap-2"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Atribuição e equipe organizada</li>
+                <li className="flex gap-2"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Automação 24/7</li>
+                <li className="flex gap-2"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Campanhas em massa segmentadas</li>
+                <li className="flex gap-2"><CheckCircle className="h-5 w-5 flex-shrink-0" /> API oficial, zero risco</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Integrações */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Integrações</h2>
+          <p className="text-slate-600 mb-8">Conecte com as ferramentas que você já usa</p>
+          <div className="flex flex-wrap justify-center gap-6">
+            {['WhatsApp (Meta)', 'OpenAI', 'Google Sheets'].map((name, i) => (
+              <div key={i} className="px-6 py-3 bg-slate-100 rounded-xl font-medium text-slate-700">
+                {name}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Timeline implementação */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-indigo-50 border-y border-indigo-100">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Em 30 minutos você está atendendo</h2>
+          <p className="text-slate-600 mb-8">Setup rápido. Sem complicação.</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm">
+              <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+              <span>Conectar WhatsApp (5 min)</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm">
+              <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+              <span>Importar contatos (10 min)</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm">
+              <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+              <span>Configurar fluxo (15 min)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Selo garantia + badges */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-wrap items-center justify-center gap-8">
+            <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <p className="font-bold text-slate-900">14 dias grátis</p>
+                <p className="text-xs text-slate-500">Cancele quando quiser</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-2xl">🔒</span>
+              <div>
+                <p className="font-bold text-slate-900">Pagamento seguro</p>
+                <p className="text-xs text-slate-500">Dados criptografados</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-2xl">📋</span>
+              <div>
+                <p className="font-bold text-slate-900">LGPD</p>
+                <p className="text-xs text-slate-500">Seus dados protegidos</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Depoimentos */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">O que nossos clientes dizem</h2>
+            <p className="text-slate-600">Histórias reais de quem transformou o atendimento</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((t, i) => (
+              <div key={i} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(t.stars)].map((_, s) => (
+                    <Star key={s} className="h-5 w-5 text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-slate-700 mb-4 italic">&quot;{t.text}&quot;</p>
+                <div>
+                  <p className="font-semibold text-slate-900">{t.name}</p>
+                  <p className="text-sm text-slate-500">{t.role} · {t.company}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Casos de sucesso */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-indigo-600 to-cyan-600">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-white text-center mb-10">Resultados reais</h2>
+          <div className="grid sm:grid-cols-3 gap-6">
+            {successCases.map((s, i) => (
+              <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-6 text-center border border-white/20">
+                <p className="text-3xl font-bold text-white mb-1">{s.metric}</p>
+                <p className="text-white/90 text-sm">{s.label}</p>
+                <p className="text-cyan-200 text-xs mt-2">{s.segment}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Calculator */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-2xl mx-auto">
+          <ROICalculator />
+        </div>
+      </section>
+
+      {/* FAQ por segmento */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-slate-900 text-center mb-10">Perguntas por segmento</h2>
+          <div className="space-y-4">
+            {faqBySegment.map((f, i) => (
+              <div key={i} className="bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
+                <button
+                  className="w-full px-6 py-4 flex items-center justify-between text-left"
+                  onClick={() => setActiveFaqSegment(activeFaqSegment === f.segment ? null : f.segment)}
+                >
+                  <span className="font-semibold text-slate-900">{f.segment}: {f.q}</span>
+                  <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${activeFaqSegment === f.segment ? 'rotate-90' : ''}`} />
+                </button>
+                {activeFaqSegment === f.segment && (
+                  <div className="px-6 pb-4 text-slate-600 text-sm">{f.a}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Webinar / Demo CTA */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-900">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Quer ver o sistema em ação?</h2>
+          <p className="text-slate-400 mb-8">Agende uma demonstração ao vivo. Sem compromisso.</p>
+          <a
+            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Gostaria de agendar uma demonstração ao vivo do DRM CRM.')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl font-semibold"
+          >
+            <Play className="h-5 w-5" />
+            Agendar demonstração
+          </a>
+        </div>
+      </section>
+
+      {/* Recursos / Blog placeholder */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-slate-900 text-center mb-8">Recursos</h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {['Como conectar o WhatsApp', 'Primeiros passos no CRM', 'Criar sua primeira automação'].map((title, i) => (
+              <Link key={i} href="/help" className="block p-4 bg-white rounded-xl border border-slate-200 hover:border-indigo-200 hover:shadow-md transition-all">
+                <p className="font-medium text-slate-900">{title}</p>
+                <p className="text-sm text-slate-500 mt-1">Guia passo a passo →</p>
+              </Link>
             ))}
           </div>
         </div>
@@ -896,6 +1159,7 @@ export default function LandingPage() {
                 <li><a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a></li>
                 <li><a href="#segmentos" className="hover:text-white transition-colors">Segmentos</a></li>
                 <li><Link href="/auth/login" className="hover:text-white transition-colors">Entrar</Link></li>
+                <li><Link href="/help" className="hover:text-white transition-colors">Recursos</Link></li>
               </ul>
             </div>
 
@@ -931,9 +1195,22 @@ export default function LandingPage() {
             <p className="text-slate-500 text-sm">
               © {new Date().getFullYear()} DRM CRM - Sistema de Gestão de WhatsApp.
             </p>
+            <div className="flex gap-4 text-slate-500 text-xs">
+              <span>Pagamento seguro</span>
+              <span>·</span>
+              <span>LGPD</span>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* WhatsApp flutuante */}
+      <WhatsAppFloatButton whatsappNumber={whatsappNumber} message="Olá! Gostaria de saber mais sobre o DRM CRM." />
+
+      {/* Exit intent */}
+      {showExitIntent && (
+        <ExitIntentPopup whatsappNumber={whatsappNumber} onClose={() => setShowExitIntent(false)} />
+      )}
     </div>
   )
 }

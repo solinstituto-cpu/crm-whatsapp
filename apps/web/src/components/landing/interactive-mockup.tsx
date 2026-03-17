@@ -31,13 +31,17 @@ const menuItems = [
   { id: 'help', name: 'Ajuda', icon: HelpCircle },
 ]
 
-export default function InteractiveMockup() {
+interface InteractiveMockupProps {
+  compact?: boolean
+}
+
+export default function InteractiveMockup({ compact = false }: InteractiveMockupProps) {
   const [activePage, setActivePage] = useState('dashboard')
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className={`w-full mx-auto ${compact ? 'max-w-4xl' : 'max-w-5xl'}`}>
       {/* Browser frame */}
-      <div className="bg-slate-800 rounded-t-xl overflow-hidden shadow-2xl border border-slate-700">
+      <div className={`bg-slate-800 rounded-t-xl overflow-hidden shadow-2xl border border-slate-700 ${compact ? 'rounded-b-xl' : ''}`}>
         <div className="flex items-center gap-2 px-4 py-3 bg-slate-900/80 border-b border-slate-700">
           <div className="flex gap-2">
             <div className="w-3 h-3 rounded-full bg-red-500/80" />
@@ -51,9 +55,9 @@ export default function InteractiveMockup() {
           </div>
         </div>
 
-        <div className="flex min-h-[420px]">
+        <div className={`flex ${compact ? 'min-h-[320px]' : 'min-h-[420px]'}`}>
           {/* Sidebar mock */}
-          <div className="w-48 bg-slate-900 border-r border-slate-700 flex-shrink-0">
+          <div className={`bg-slate-900 border-r border-slate-700 flex-shrink-0 ${compact ? 'w-40' : 'w-48'}`}>
             <div className="p-3 border-b border-slate-700">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -62,7 +66,7 @@ export default function InteractiveMockup() {
                 <span className="text-white font-bold text-sm truncate">DRM CRM</span>
               </div>
             </div>
-            <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[360px]">
+            <nav className={`p-2 space-y-0.5 overflow-y-auto ${compact ? 'max-h-[260px]' : 'max-h-[360px]'}`}>
               {menuItems.map((item) => (
                 <button
                   key={item.id}
@@ -98,9 +102,11 @@ export default function InteractiveMockup() {
         </div>
       </div>
 
-      <p className="text-center text-slate-500 text-sm mt-4">
-        Clique nos itens do menu para explorar o sistema
-      </p>
+      {!compact && (
+        <p className="text-center text-slate-500 text-sm mt-4">
+          Clique nos itens do menu para explorar o sistema
+        </p>
+      )}
     </div>
   )
 }
