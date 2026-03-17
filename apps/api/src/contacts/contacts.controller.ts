@@ -32,6 +32,11 @@ export class ContactsController {
     return this.contactsService.create(createContactDto);
   }
 
+  @Get('tags')
+  findAllTags() {
+    return this.contactsService.findAllTags();
+  }
+
   @Get()
   findAll(
     @Query('page') page?: number,

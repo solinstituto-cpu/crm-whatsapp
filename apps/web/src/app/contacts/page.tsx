@@ -289,20 +289,14 @@ export default function ContactsPage() {
     }
   }
   
-  // Buscar todas as tags únicas
+  // Buscar todas as tags únicas (endpoint leve, sem carregar 5000 contatos)
   const fetchAllTags = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      // Buscar contatos sem paginação só para extrair tags (ou criar endpoint dedicado)
-      const response = await fetch(`${apiUrl}/api/contacts?limit=5000`)
+      const response = await fetch(`${apiUrl}/api/contacts/tags`)
       if (response.ok) {
-        const data = await response.json()
-        const tags = new Set<string>()
-        ;(data.contacts || []).forEach((c: any) => {
-          const contactTags = Array.isArray(c.tags) ? c.tags : []
-          contactTags.forEach((t: string) => tags.add(t))
-        })
-        setAllTags(Array.from(tags).sort())
+        const tags = await response.json()
+        setAllTags(Array.isArray(tags) ? tags : [])
       }
     } catch (error) {
       console.error('Erro ao buscar tags:', error)

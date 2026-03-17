@@ -180,6 +180,22 @@ export class ContactsService {
     }
   }
 
+  /** Retorna lista única de tags (endpoint leve, sem carregar contatos completos) */
+  async findAllTags(): Promise<string[]> {
+    const rows = await this.prisma.contact.findMany({
+      select: { tags: true },
+      where: { tags: { not: null } },
+    });
+    const tagSet = new Set<string>();
+    for (const row of rows) {
+      if (row.tags) {
+        const arr = this.safeParseTags(row.tags);
+        arr.forEach((t: string) => t && tagSet.add(t.trim()));
+      }
+    }
+    return Array.from(tagSet).filter(Boolean).sort();
+  }
+
   // Buscar contato pelo telefone
   async findByPhone(phoneE164: string) {
     return this.prisma.contact.findUnique({

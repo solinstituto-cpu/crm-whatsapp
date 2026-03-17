@@ -68,15 +68,10 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      console.log('Buscando stats do dashboard:', `${apiUrl}/api/reports/dashboard`)
-      
-      // Buscar stats do dashboard
       const response = await fetch(`${apiUrl}/api/reports/dashboard`)
-      console.log('Response status:', response.status)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Dashboard data:', data)
         
         setStats({
           totalContacts: data.summary?.totalContacts || 0,

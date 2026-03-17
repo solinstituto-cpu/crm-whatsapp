@@ -80,8 +80,8 @@ export default function Sidebar() {
     
     loadBusinessConfig()
     
-    // Recarregar a cada 30 segundos para pegar mudanças feitas por outros usuários
-    const interval = setInterval(loadBusinessConfig, 30000)
+    // Recarregar a cada 60 segundos (logo/nome mudam pouco, reduz requisições)
+    const interval = setInterval(loadBusinessConfig, 60000)
     
     // Escutar evento customizado para mudanças imediatas
     const handleConfigUpdate = () => loadBusinessConfig()

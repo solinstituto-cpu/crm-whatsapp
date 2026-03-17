@@ -134,6 +134,8 @@ export default function InboxPage() {
   const [conversationPage, setConversationPage] = useState(1)
   const [hasMoreConversations, setHasMoreConversations] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [loadingSearch, setLoadingSearch] = useState(false) // Busca/filtro sem trocar a página inteira
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
   const conversationsListRef = useRef<HTMLDivElement>(null)
   const CONVERSATIONS_PER_PAGE = 50
   
@@ -894,7 +896,7 @@ export default function InboxPage() {
   }, [selectedAccountId])
 
   useEffect(() => {
-    fetchConversations()
+    fetchConversations(1, false, true) // Carga inicial: isInitialLoad=true
     fetchInboxFiltersData()
     fetchWhatsAppAccounts()
     
@@ -906,14 +908,15 @@ export default function InboxPage() {
     return () => clearInterval(interval)
   }, [])
   
-  // Recarregar quando filtros de inbox mudarem
+  // Recarregar quando filtros de inbox mudarem (após carga inicial)
   useEffect(() => {
+    if (!initialLoadDone) return
     // Debounce para busca de texto
     const timer = setTimeout(() => {
-      fetchConversations(1, false)
-    }, searchTerm ? 300 : 0)
+      fetchConversations(1, false, false) // false = busca/filtro, mantém página visível
+    }, searchTerm ? 450 : 0)
     return () => clearTimeout(timer)
-  }, [inboxFilters.unreadOnly, inboxFilters.assignedToId, conversationFilter, searchTerm, selectedAccountId])
+  }, [inboxFilters.unreadOnly, inboxFilters.assignedToId, conversationFilter, searchTerm, selectedAccountId, initialLoadDone])
   
   // Buscar contas WhatsApp (multi-números) - filtradas pelo usuário logado
   const fetchWhatsAppAccounts = async () => {
@@ -942,12 +945,12 @@ export default function InboxPage() {
   // Recarregar conversas quando mudar a conta selecionada
   useEffect(() => {
     // Não recarrega na primeira renderização (loading já é true)
-    if (!loading) {
+    if (!loading && initialLoadDone) {
       setConversationPage(1)
-      fetchConversations(1, false)
+      fetchConversations(1, false, false) // Filtro de conta: mantém página visível
       setSelectedConversation(null) // Limpar conversa selecionada
     }
-  }, [selectedAccountId])
+  }, [selectedAccountId, loading, initialLoadDone])
   
   // Buscar dados para os filtros (campanhas, tags, usuários)
   const fetchInboxFiltersData = async () => {
@@ -1179,10 +1182,15 @@ export default function InboxPage() {
     }
   }
 
-  const fetchConversations = async (page = 1, append = false) => {
+  const fetchConversations = async (page = 1, append = false, isInitialLoad = false) => {
     try {
-      if (!append) setLoading(true)
-      else setLoadingMore(true)
+      if (isInitialLoad) {
+        setLoading(true)
+      } else if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoadingSearch(true) // Busca/filtro: mantém a página visível
+      }
       
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       
@@ -1285,6 +1293,8 @@ export default function InboxPage() {
     } finally {
       setLoading(false)
       setLoadingMore(false)
+      setLoadingSearch(false)
+      if (isInitialLoad) setInitialLoadDone(true)
     }
   }
   
@@ -2460,10 +2470,18 @@ export default function InboxPage() {
           
           {/* Lista de conversas */}
           <div 
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto relative"
             ref={conversationsListRef}
             onScroll={handleConversationsScroll}
           >
+            {loadingSearch && (
+              <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center z-10">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 rounded-lg shadow-md border dark:border-gray-600">
+                  <Loader2 className="h-5 w-5 animate-spin text-green-600" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">Buscando...</span>
+                </div>
+              </div>
+            )}
             {filteredConversations.length > 0 ? (
               <>
                 {filteredConversations.map((conversation) => (
