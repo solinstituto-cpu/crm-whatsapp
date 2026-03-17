@@ -13,16 +13,27 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '10mb' }));
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
-  // Enable CORS
+  // Enable CORS - permite domínios fixos + previews Vercel (*.vercel.app)
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://whatsapp-crm-eight.vercel.app',
+    'https://whatsapp-crmsol.vercel.app',
+    'https://crm-drm-nuyq.vercel.app',
+    'https://crm.drmschool.com.br',
+    'https://crm.smshcool.com.br',
+    process.env.WEBAPP_URL,
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://whatsapp-crm-eight.vercel.app',
-      'https://whatsapp-crmsol.vercel.app',
-      'https://crm-drm-nuyq.vercel.app',
-      process.env.WEBAPP_URL,
-    ].filter(Boolean),
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // requests sem origin (ex: Postman)
+      if (allowedOrigins.includes(origin)) return cb(null, origin); // retorna o origin exato (obrigatório com credentials)
+      if (origin.endsWith('.vercel.app')) return cb(null, origin); // previews Vercel
+      cb(null, false);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Global validation pipe

@@ -1861,16 +1861,7 @@ export default function SettingsPage() {
           })
         }
       } catch (e) {
-        console.log('Erro ao carregar config da API, tentando localStorage')
-        // Fallback para localStorage
-        const savedBusiness = localStorage.getItem('business_config')
-        if (savedBusiness) {
-          try {
-            setBusinessConfig(JSON.parse(savedBusiness))
-          } catch (e) {
-            console.log('Erro ao carregar config Business')
-          }
-        }
+        // API falhou - sem fallback em localStorage
       }
     }
     

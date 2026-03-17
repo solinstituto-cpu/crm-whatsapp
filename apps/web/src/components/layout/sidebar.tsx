@@ -62,18 +62,7 @@ export default function Sidebar() {
           }
         }
       } catch (e) {
-        console.log('Erro ao carregar config do servidor, tentando localStorage')
-        // Fallback para localStorage se API falhar
-        const savedBusiness = localStorage.getItem('business_config')
-        if (savedBusiness) {
-          try {
-            const config = JSON.parse(savedBusiness)
-            if (config.companyName) setCompanyName(config.companyName)
-            if (config.companyLogo) setCompanyLogo(config.companyLogo)
-          } catch (e) {
-            console.log('Erro ao carregar config local')
-          }
-        }
+        // API falhou - usa defaults (DRM CRM). Sem fallback em localStorage.
       }
     }
     
