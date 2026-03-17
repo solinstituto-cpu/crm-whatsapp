@@ -5,9 +5,11 @@ import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Mail, Lock, MessageCircle } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [logoError, setLogoError] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -50,12 +52,23 @@ export default function LoginPage() {
       {/* Left: Blue branding - mobile: top, desktop: left */}
       <div className="lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex flex-col justify-center items-center px-6 py-12 lg:py-0 lg:px-12">
         <div className="max-w-md w-full text-center lg:text-left">
+          {/* Logo - coloque seu PNG em public/images/logo.png */}
           <div className="flex justify-center lg:justify-start mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-                <MessageCircle className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-white tracking-tight">CRM</span>
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32">
+              {logoError ? (
+                <div className="w-full h-full rounded-xl bg-white/10 flex items-center justify-center">
+                  <MessageCircle className="w-12 h-12 text-white" />
+                </div>
+              ) : (
+                <Image
+                  src="/images/logo.png"
+                  alt="Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                  onError={() => setLogoError(true)}
+                />
+              )}
             </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
