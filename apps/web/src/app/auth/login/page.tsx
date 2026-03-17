@@ -50,14 +50,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left: Blue branding - mobile: top, desktop: left */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex flex-col justify-center items-center px-6 py-12 lg:py-0 lg:px-12">
-        <div className="max-w-md w-full text-center lg:text-left">
-          {/* Logo - coloque seu PNG em public/images/logo.png */}
-          <div className="flex justify-center lg:justify-start mb-8">
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32">
+      <div className="lg:w-1/2 min-h-[40vh] lg:min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex flex-col justify-start items-center px-6 pt-10 pb-12 lg:pt-14 lg:pb-16 lg:px-12">
+        <div className="max-w-md w-full flex flex-col items-center text-center">
+          {/* Logo - maior, centralizado, no topo */}
+          <div className="flex justify-center mb-10">
+            <div className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64">
               {logoError ? (
-                <div className="w-full h-full rounded-xl bg-white/10 flex items-center justify-center">
-                  <MessageCircle className="w-12 h-12 text-white" />
+                <div className="w-full h-full rounded-2xl bg-white/10 flex items-center justify-center">
+                  <MessageCircle className="w-20 h-20 text-white" />
                 </div>
               ) : (
                 <Image
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <p className="text-blue-100 text-sm sm:text-base mb-8">
             Gerencie conversas, contatos e campanhas em um só lugar. Para qualquer segmento.
           </p>
-          <div className="hidden lg:block">
+          <div className="pt-6">
             <div className="inline-flex items-center gap-2 text-blue-200 text-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Conecte seu WhatsApp e comece a vender
