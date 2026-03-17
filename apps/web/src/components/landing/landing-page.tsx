@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import InteractiveMockup from './interactive-mockup'
 import {
   MessageCircle,
   Users,
@@ -27,14 +28,111 @@ import {
   Workflow,
   Database,
   Play,
+  Phone,
 } from 'lucide-react'
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
+  const [billingAnnual, setBillingAnnual] = useState(false)
 
   useEffect(() => setMounted(true), [])
+
+  const whatsappNumber = '5511992964792'
+  const contactButtons = [
+    { label: 'Quero começar agora', msg: 'Olá! Gostaria de começar a usar o DRM CRM. Pode me ajudar?', style: 'primary' as const },
+    { label: 'Solicitar demonstração', msg: 'Olá! Gostaria de agendar uma demonstração do DRM CRM.', style: 'secondary' as const },
+    { label: 'Falar com vendas', msg: 'Olá! Tenho interesse em conhecer os planos do DRM CRM. Podemos conversar?', style: 'secondary' as const },
+    { label: 'Tirar dúvidas', msg: 'Olá! Tenho algumas dúvidas sobre o DRM CRM. Pode me ajudar?', style: 'outline' as const },
+    { label: 'Número adicional no plano', msg: 'Olá! Gostaria de saber o valor para adicionar números extras ao meu plano.', style: 'outline' as const },
+  ]
+
+  const plans = [
+    {
+      name: 'Starter',
+      monthly: 147,
+      annual: 1470,
+      monthlyLabel: 'R$ 147',
+      annualLabel: 'R$ 1.470',
+      annualPerMonth: 'R$ 122',
+      description: 'Para começar a vender',
+      popular: false,
+      features: [
+        '1 número WhatsApp',
+        '5 usuários',
+        '5.000 mensagens/mês',
+        'Inbox unificado',
+        'CRM de contatos',
+        'Respostas rápidas',
+        'Templates da Meta',
+        'Suporte por email',
+      ],
+    },
+    {
+      name: 'Pro',
+      monthly: 297,
+      annual: 2970,
+      monthlyLabel: 'R$ 297',
+      annualLabel: 'R$ 2.970',
+      annualPerMonth: 'R$ 247',
+      description: 'Para empresas em crescimento',
+      popular: true,
+      features: [
+        '1 número WhatsApp',
+        '15 usuários',
+        '25.000 mensagens/mês',
+        'Tudo do Starter +',
+        'Automação e fluxos',
+        'Campanhas em massa',
+        'Pipeline de vendas',
+        'Integração IA (OpenAI)',
+        'Relatórios básicos',
+        'Suporte prioritário',
+      ],
+    },
+    {
+      name: 'Business',
+      monthly: 497,
+      annual: 4970,
+      monthlyLabel: 'R$ 497',
+      annualLabel: 'R$ 4.970',
+      annualPerMonth: 'R$ 414',
+      description: 'Para operações maiores',
+      popular: false,
+      features: [
+        '3 números WhatsApp',
+        '30 usuários',
+        '75.000 mensagens/mês',
+        'Tudo do Pro +',
+        'Base de conhecimento',
+        'Relatórios avançados',
+        'Exportação CSV/Excel',
+        'Integração Google Sheets',
+        'Suporte prioritário',
+      ],
+    },
+    {
+      name: 'Enterprise',
+      monthly: null,
+      annual: null,
+      monthlyLabel: 'Sob consulta',
+      annualLabel: 'Sob consulta',
+      annualPerMonth: null,
+      description: 'Para grandes operações',
+      popular: false,
+      features: [
+        'Números ilimitados',
+        'Usuários ilimitados',
+        'Mensagens ilimitadas',
+        'Tudo do Business +',
+        'API de integração',
+        'Gerente de sucesso',
+        'SLA garantido',
+        'Treinamento incluso',
+      ],
+    },
+  ]
 
   const features = [
     {
@@ -152,6 +250,9 @@ export default function LandingPage() {
               <a href="#recursos" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Recursos</a>
               <a href="#como-funciona" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Como funciona</a>
               <a href="#segmentos" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Segmentos</a>
+              <a href="#conheca-sistema" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Conheça o sistema</a>
+              <a href="#precos" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Preços</a>
+              <a href="#contato" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Contato</a>
               <a href="#faq" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">FAQ</a>
             </nav>
 
@@ -185,6 +286,9 @@ export default function LandingPage() {
               <a href="#recursos" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Recursos</a>
               <a href="#como-funciona" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Como funciona</a>
               <a href="#segmentos" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Segmentos</a>
+              <a href="#conheca-sistema" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Conheça o sistema</a>
+              <a href="#precos" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Preços</a>
+              <a href="#contato" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Contato</a>
               <a href="#faq" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
               <hr className="border-slate-100" />
               <Link href="/auth/login" className="block text-slate-600">Entrar</Link>
@@ -327,6 +431,65 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Atendimento inteligente - Um número ou vários */}
+      <section className="relative py-20 sm:py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:32px_32px]" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <p className="text-cyan-200/90 font-semibold text-sm uppercase tracking-widest mb-4">
+              Atendimento que se adapta a você
+            </p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight mb-6">
+              Um número ou vários — você escolhe
+            </h2>
+            <p className="text-lg text-blue-100/90 max-w-2xl mx-auto">
+              Revolucione sua forma de atender. Crie departamentos, segmente por setor e direcione cada cliente para o atendente certo.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+            {/* Um número */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 mb-6">
+                <span className="text-2xl">📱</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">
+                Prefere um só número?
+              </h3>
+              <p className="text-blue-100/90 leading-relaxed mb-4">
+                Unifique vendas, suporte e cobrança em um único WhatsApp. Crie departamentos e setores internos — cada cliente é direcionado automaticamente para quem sabe resolver. Simples, profissional e sem confusão.
+              </p>
+              <p className="text-cyan-200 text-sm font-medium">
+                Ideal para quem quer simplicidade
+              </p>
+            </div>
+
+            {/* Vários números */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 mb-6">
+                <span className="text-2xl">📲</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">
+                Tem vários números?
+              </h3>
+              <p className="text-blue-100/90 leading-relaxed mb-4">
+                Centralize tudo em um painel. Vendas, filiais, canais — todos os números em um só lugar. Organize por departamento, segmente atendimentos e nunca perca uma conversa. Controle total, visão única.
+              </p>
+              <p className="text-cyan-200 text-sm font-medium">
+                Ideal para operações em escala
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-white/80 text-sm mt-10 max-w-xl mx-auto">
+            Com o DRM CRM, você estrutura seu atendimento do seu jeito — e cada cliente chega na pessoa certa.
+          </p>
+        </div>
+      </section>
+
       {/* Features */}
       <section id="recursos" className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -357,8 +520,23 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Interactive Mockup */}
+      <section id="conheca-sistema" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Conheça o sistema por dentro
+            </h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Explore as telas do DRM CRM. Clique no menu para navegar.
+            </p>
+          </div>
+          <InteractiveMockup />
+        </div>
+      </section>
+
       {/* How it works */}
-      <section id="como-funciona" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <section id="como-funciona" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
@@ -416,6 +594,176 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="precos" className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Planos que cabem no seu bolso
+            </h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+              Escolha mensal ou anual. No plano anual, ganhe 2 meses grátis.
+            </p>
+
+            {/* Billing toggle */}
+            <div className="inline-flex items-center gap-3 bg-white rounded-full p-1.5 shadow-sm border border-slate-200">
+              <button
+                onClick={() => setBillingAnnual(false)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  !billingAnnual ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Mensal
+              </button>
+              <button
+                onClick={() => setBillingAnnual(true)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  billingAnnual ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Anual
+              </button>
+              <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                -17%
+              </span>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative bg-white rounded-2xl p-6 border-2 transition-all flex flex-col ${
+                  plan.popular
+                    ? 'border-indigo-500 shadow-xl shadow-indigo-500/10 scale-[1.02]'
+                    : 'border-slate-100 hover:border-slate-200'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    Mais popular
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
+                  <p className="text-slate-500 text-sm mt-1">{plan.description}</p>
+                </div>
+
+                <div className="mb-6">
+                  {plan.monthly !== null ? (
+                    <>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-slate-500 text-sm">R$</span>
+                        <span className="text-3xl font-bold text-slate-900">
+                          {billingAnnual ? plan.annualPerMonth?.replace('R$ ', '') : plan.monthly}
+                        </span>
+                        <span className="text-slate-500 text-sm">/mês</span>
+                      </div>
+                      {billingAnnual && (
+                        <p className="text-slate-500 text-xs mt-1">
+                          {plan.annualLabel}/ano (2 meses grátis)
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-2xl font-bold text-slate-900">{plan.monthlyLabel}</span>
+                  )}
+                </div>
+
+                <ul className="space-y-3 flex-1">
+                  {plan.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                      <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {plan.monthly !== null ? (
+                  <Link
+                    href="/auth/login"
+                    className={`mt-6 w-full py-3 rounded-xl font-semibold text-center transition-all flex items-center justify-center gap-2 ${
+                      plan.popular
+                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white hover:shadow-lg hover:shadow-indigo-500/25'
+                        : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    Começar agora
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <a
+                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Tenho interesse no plano Enterprise do DRM CRM. Podemos conversar?')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 w-full py-3 rounded-xl font-semibold text-center transition-all flex items-center justify-center gap-2 bg-slate-100 text-slate-900 hover:bg-slate-200"
+                  >
+                    <Phone className="h-4 w-4" />
+                    Falar com vendas
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-slate-500 text-sm mt-8">
+            Todos os planos incluem 14 dias de teste grátis. Cancele quando quiser.
+          </p>
+
+          <p className="text-center text-slate-600 text-sm mt-4">
+            Precisa de mais números?{' '}
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Gostaria de saber o valor para adicionar números extras ao meu plano.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 font-semibold hover:underline"
+            >
+              Consulte valores para número adicional
+            </a>
+          </p>
+        </div>
+      </section>
+
+      {/* Contact / Fale conosco */}
+      <section id="contato" className="py-24 px-4 sm:px-6 lg:px-8 bg-white border-t border-slate-100">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Fale com a gente
+            </h2>
+            <p className="text-xl text-slate-600">
+              Escolha como prefere começar. Estamos no WhatsApp para te atender.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {contactButtons.map((btn) => (
+              <a
+                key={btn.label}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(btn.msg)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center justify-center gap-2 px-5 py-4 rounded-xl font-semibold transition-all hover:scale-[1.02] ${
+                  btn.style === 'primary'
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                    : btn.style === 'secondary'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    : 'bg-white border-2 border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'
+                }`}
+              >
+                <Phone className="h-5 w-5" />
+                {btn.label}
+              </a>
+            ))}
+          </div>
+
+          <p className="text-center text-slate-500 text-sm mt-6">
+            Ou chame no WhatsApp: <strong className="text-slate-700">(11) 99296-4792</strong>
+          </p>
         </div>
       </section>
 
@@ -556,6 +904,17 @@ export default function LandingPage() {
               <ul className="space-y-2 text-slate-400 text-sm">
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
                 <li><Link href="/help" className="hover:text-white transition-colors">Ajuda</Link></li>
+                <li>
+                  <a
+                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Preciso de ajuda com o DRM CRM.')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors inline-flex items-center gap-1"
+                  >
+                    <Phone className="h-4 w-4" />
+                    Fale conosco
+                  </a>
+                </li>
               </ul>
             </div>
 
