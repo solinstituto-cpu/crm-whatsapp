@@ -20,15 +20,21 @@ async function bootstrap() {
     'https://whatsapp-crmsol.vercel.app',
     'https://crm-drm-nuyq.vercel.app',
     'https://crm.drmschool.com.br',
+    'https://crm.dmschool.com.br',
     'https://crm.smshcool.com.br',
     process.env.WEBAPP_URL,
   ].filter(Boolean) as string[];
 
+  const isAllowedOrigin = (origin: string) =>
+    allowedOrigins.includes(origin) ||
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.drmschool.com.br') ||
+    origin.endsWith('.dmschool.com.br');
+
   app.enableCors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // requests sem origin (ex: Postman)
-      if (allowedOrigins.includes(origin)) return cb(null, origin); // retorna o origin exato (obrigatório com credentials)
-      if (origin.endsWith('.vercel.app')) return cb(null, origin); // previews Vercel
+      if (isAllowedOrigin(origin)) return cb(null, origin);
       cb(null, false);
     },
     credentials: true,
