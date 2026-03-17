@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
+import { useRequirePermission } from '@/hooks/use-require-permission'
+import { apiFetch } from '@/lib/api'
 import { 
   Users, 
   Plus, 
@@ -52,7 +54,8 @@ const formatLastActivity = (lastActivity: string) => {
 export default function UsersPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  
+  useRequirePermission('users')
+
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -79,7 +82,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/auth/login')
     }
   }, [status, router])
 
@@ -101,7 +104,7 @@ export default function UsersPage() {
     try {
       setLoading(true)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiUrl}/api/users`, {
+      const response = await apiFetch(`${apiUrl}/api/users`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -169,7 +172,7 @@ export default function UsersPage() {
       
       // Se estiver editando, primeiro atualizar a cor (endpoint separado, sem precisar de admin)
       if (editingUser && formData.color !== editingUser.color) {
-        await fetch(`${apiUrl}/api/users/${editingUser.id}/color`, {
+        await apiFetch(`${apiUrl}/api/users/${editingUser.id}/color`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ color: formData.color })
@@ -192,7 +195,7 @@ export default function UsersPage() {
         body.password = formData.password
       }
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +226,7 @@ export default function UsersPage() {
   const handleDelete = async (id: string) => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiUrl}/api/users/${id}`, {
+      const response = await apiFetch(`${apiUrl}/api/users/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

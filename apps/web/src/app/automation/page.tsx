@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
+import { useRequirePermission } from '@/hooks/use-require-permission'
 import { 
   Zap,
   Plus,
@@ -291,6 +292,7 @@ IMPORTANTE: Converse naturalmente até o cliente pedir um atendente.`,
 
 export default function AutomationPage() {
   const { data: session, status } = useSession()
+  useRequirePermission('automation')
   const [flows, setFlows] = useState<Flow[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null)

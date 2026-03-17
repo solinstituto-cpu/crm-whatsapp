@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
+import { useRequirePermission } from '@/hooks/use-require-permission'
 import {
   Megaphone,
   Plus,
@@ -93,6 +94,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 
 export default function CampaignsPage() {
   const { data: session, status } = useSession()
+  useRequirePermission('campaigns')
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [templates, setTemplates] = useState<Template[]>([])

@@ -1,19 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Headers, HttpCode, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Headers, HttpCode, BadRequestException, ForbiddenException, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   /**
-   * Helper para validar admin pelo email
+   * Helper para validar admin pelo email (fallback quando JWT não disponível)
    */
   private async validateAdmin(adminEmail: string) {
     if (!adminEmail) {
       throw new ForbiddenException('Email do administrador é obrigatório');
     }
     const users = await this.usersService.getAllUsers();
-    const admin = users.find(u => u.email === adminEmail && u.role === 'ADMIN');
+    const admin = users.find(u => u.email === adminEmail && (u.role === 'ADMIN' || u.role === 'SUPERVISOR'));
     if (!admin) {
       throw new ForbiddenException('Apenas administradores podem realizar esta ação');
     }
@@ -21,11 +24,13 @@ export class UsersController {
   }
 
   /**
-   * Criar novo usuário (apenas admin)
+   * Criar novo usuário (apenas ADMIN ou SUPERVISOR)
    * POST /api/users
    * IMPORTANTE: Esta rota deve vir ANTES das rotas com parâmetros
    */
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPERVISOR')
   async createUser(
     @Body() body: { name: string; email: string; password: string; role?: string },
     @Headers('x-admin-email') adminEmail: string
@@ -155,10 +160,12 @@ export class UsersController {
   }
 
   /**
-   * Atualizar usuário (apenas admin)
+   * Atualizar usuário (apenas ADMIN ou SUPERVISOR)
    * PUT /api/users/:id
    */
   @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPERVISOR')
   async updateUser(
     @Param('id') id: string,
     @Body() body: { name?: string; email?: string; password?: string; role?: string },
@@ -187,10 +194,12 @@ export class UsersController {
   }
 
   /**
-   * Deletar usuário (apenas admin)
+   * Deletar usuário (apenas ADMIN)
    * DELETE /api/users/:id
    */
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   async deleteUser(
     @Param('id') id: string,
     @Headers('x-admin-email') adminEmail: string

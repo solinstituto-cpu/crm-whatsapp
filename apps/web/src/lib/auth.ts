@@ -72,6 +72,7 @@ export const authOptions: AuthOptions = {
       if (token && session.user) {
         session.user.id = token.sub
         session.user.role = token.role
+        session.user.token = token.accessToken
         session.accessToken = token.accessToken
       }
       return session

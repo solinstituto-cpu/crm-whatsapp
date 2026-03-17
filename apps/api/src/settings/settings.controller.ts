@@ -11,11 +11,16 @@ import {
   Logger,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SettingsService } from './settings.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('settings')
+@UseGuards(JwtAuthGuard)
 export class SettingsController {
   private readonly logger = new Logger(SettingsController.name);
 
@@ -48,6 +53,8 @@ export class SettingsController {
   // Upload de logo (aceita arquivo e converte para base64)
   @Post('upload-logo')
   @UseInterceptors(FileInterceptor('file'))
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async uploadLogo(@UploadedFile() file: any) {
     this.logger.log('POST /settings/upload-logo');
     if (!file) {
@@ -82,6 +89,8 @@ export class SettingsController {
   }
 
   @Post('field-options')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async createOption(
     @Body()
     body: {
@@ -96,6 +105,8 @@ export class SettingsController {
   }
 
   @Patch('field-options/:id')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async updateOption(
     @Param('id') id: string,
     @Body()
@@ -111,12 +122,16 @@ export class SettingsController {
   }
 
   @Delete('field-options/:id')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async deleteOption(@Param('id') id: string) {
     this.logger.log(`DELETE /settings/field-options/${id}`);
     return this.settingsService.deleteOption(id);
   }
 
   @Post('field-options/:fieldType/reorder')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async reorderOptions(
     @Param('fieldType') fieldType: string,
     @Body() body: { optionIds: string[] },
@@ -148,6 +163,8 @@ export class SettingsController {
   }
 
   @Put('openai')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async setOpenAIConfig(
     @Body() body: {
       apiKey?: string;
@@ -161,6 +178,8 @@ export class SettingsController {
   }
 
   @Post('openai/test')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async testOpenAIConnection() {
     this.logger.log('POST /settings/openai/test');
     try {
@@ -203,6 +222,8 @@ export class SettingsController {
   }
 
   @Put('google-sheets')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
   async setGoogleSheetsConfig(
     @Body() body: {
       serviceEmail?: string;

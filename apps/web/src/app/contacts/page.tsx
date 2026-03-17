@@ -181,8 +181,10 @@ export default function ContactsPage() {
   const [contactPage, setContactPage] = useState(1)
   const [hasMoreContacts, setHasMoreContacts] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [loadingSearch, setLoadingSearch] = useState(false) // Busca/filtro sem trocar a página inteira
   const [totalFiltered, setTotalFiltered] = useState(0)
   const CONTACTS_PER_PAGE = 50
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -191,19 +193,20 @@ export default function ContactsPage() {
   }, [status])
 
   useEffect(() => {
-    fetchContacts()
+    fetchContacts(1, false, true) // true = carga inicial
     fetchFieldOptions()
     fetchAllTags()
     fetchUsers()
   }, [])
   
-  // Recarregar quando filtros ou busca mudar (com debounce)
+  // Recarregar quando filtros ou busca mudar (com debounce para não travar a cada tecla)
   useEffect(() => {
+    if (!initialLoadDone) return
     const timer = setTimeout(() => {
-      fetchContacts(1, false)
-    }, 300)
+      fetchContacts(1, false, false) // false = busca/filtro, mantém página visível
+    }, 450)
     return () => clearTimeout(timer)
-  }, [searchTerm, filters])
+  }, [searchTerm, filters, initialLoadDone])
   
   // Buscar usuários/atendentes
   const fetchUsers = async () => {
@@ -219,10 +222,15 @@ export default function ContactsPage() {
     }
   }
 
-  const fetchContacts = async (page = 1, append = false) => {
+  const fetchContacts = async (page = 1, append = false, isInitialLoad = false) => {
     try {
-      if (!append) setLoading(true)
-      else setLoadingMore(true)
+      if (isInitialLoad) {
+        setLoading(true)
+      } else if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoadingSearch(true) // Busca/filtro: mantém a página visível
+      }
       
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       
@@ -276,6 +284,8 @@ export default function ContactsPage() {
     } finally {
       setLoading(false)
       setLoadingMore(false)
+      setLoadingSearch(false)
+      if (isInitialLoad) setInitialLoadDone(true)
     }
   }
   
@@ -724,7 +734,15 @@ export default function ContactsPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border overflow-x-auto relative">
+          {loadingSearch && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md border">
+                <Loader2 className="h-5 w-5 animate-spin text-green-600" />
+                <span className="text-sm text-gray-600">Buscando...</span>
+              </div>
+            </div>
+          )}
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

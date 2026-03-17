@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
+import { useRequirePermission } from '@/hooks/use-require-permission'
+import { apiFetch } from '@/lib/api'
 import { useTheme, colorMap } from '@/lib/theme-context'
 import { 
   Settings,
@@ -38,7 +40,8 @@ import {
   TestTube,
   Eye,
   EyeOff,
-  ExternalLink
+  ExternalLink,
+  UserCog
 } from 'lucide-react'
 
 // Componente de Configurações de Aparência
@@ -404,7 +407,7 @@ function IntegrationsSettings() {
     setLoading(true)
     try {
       // Load OpenAI config
-      const openaiRes = await fetch(`${apiUrl}/api/settings/openai`)
+      const openaiRes = await apiFetch(`${apiUrl}/api/settings/openai`)
       if (openaiRes.ok) {
         const data = await openaiRes.json()
         setOpenAIConfig({
@@ -417,7 +420,7 @@ function IntegrationsSettings() {
       }
       
       // Load Google Sheets config
-      const googleRes = await fetch(`${apiUrl}/api/settings/google-sheets`)
+      const googleRes = await apiFetch(`${apiUrl}/api/settings/google-sheets`)
       if (googleRes.ok) {
         const data = await googleRes.json()
         setGoogleConfig({
@@ -448,7 +451,7 @@ function IntegrationsSettings() {
         body.apiKey = openAIConfig.apiKey
       }
       
-      const res = await fetch(`${apiUrl}/api/settings/openai`, {
+      const res = await apiFetch(`${apiUrl}/api/settings/openai`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -470,7 +473,7 @@ function IntegrationsSettings() {
     setTesting(true)
     setTestResult(null)
     try {
-      const res = await fetch(`${apiUrl}/api/settings/openai/test`, {
+      const res = await apiFetch(`${apiUrl}/api/settings/openai/test`, {
         method: 'POST',
       })
       const data = await res.json()
@@ -489,7 +492,7 @@ function IntegrationsSettings() {
       if (googleConfig.serviceEmail) body.serviceEmail = googleConfig.serviceEmail
       if (googleConfig.privateKey) body.privateKey = googleConfig.privateKey
       
-      const res = await fetch(`${apiUrl}/api/settings/google-sheets`, {
+      const res = await apiFetch(`${apiUrl}/api/settings/google-sheets`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -761,7 +764,7 @@ function WhatsAppAccountsSettings() {
 
   const fetchAccounts = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/whatsapp-accounts`)
+      const res = await apiFetch(`${apiUrl}/api/whatsapp-accounts`)
       if (res.ok) {
         const data = await res.json()
         setAccounts(data)
@@ -774,7 +777,7 @@ function WhatsAppAccountsSettings() {
   
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/users`)
+      const res = await apiFetch(`${apiUrl}/api/users`)
       if (res.ok) {
         const data = await res.json()
         setAllUsers(data)
@@ -796,7 +799,7 @@ function WhatsAppAccountsSettings() {
         ? `${apiUrl}/api/whatsapp-accounts/${editingAccount.id}`
         : `${apiUrl}/api/whatsapp-accounts`
       
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: editingAccount ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -843,7 +846,7 @@ function WhatsAppAccountsSettings() {
     if (!confirm('Tem certeza que deseja excluir esta conta?')) return
     
     try {
-      const res = await fetch(`${apiUrl}/api/whatsapp-accounts/${id}`, {
+      const res = await apiFetch(`${apiUrl}/api/whatsapp-accounts/${id}`, {
         method: 'DELETE',
       })
       if (res.ok) {
@@ -859,7 +862,7 @@ function WhatsAppAccountsSettings() {
 
   const handleSetDefault = async (id: string) => {
     try {
-      const res = await fetch(`${apiUrl}/api/whatsapp-accounts/${id}/set-default`, {
+      const res = await apiFetch(`${apiUrl}/api/whatsapp-accounts/${id}/set-default`, {
         method: 'POST',
       })
       if (res.ok) {
@@ -873,7 +876,7 @@ function WhatsAppAccountsSettings() {
   const handleTest = async (id: string) => {
     setTesting(id)
     try {
-      const res = await fetch(`${apiUrl}/api/whatsapp-accounts/${id}/test`, {
+      const res = await apiFetch(`${apiUrl}/api/whatsapp-accounts/${id}/test`, {
         method: 'POST',
       })
       const data = await res.json()
@@ -893,7 +896,7 @@ function WhatsAppAccountsSettings() {
     setSelectedAccountForUsers(account)
     // Buscar detalhes da conta com usuários
     try {
-      const res = await fetch(`${apiUrl}/api/whatsapp-accounts/${account.id}`)
+      const res = await apiFetch(`${apiUrl}/api/whatsapp-accounts/${account.id}`)
       if (res.ok) {
         const data = await res.json()
         // Se tem allowedUsers, são os usuários com acesso restrito
@@ -912,7 +915,7 @@ function WhatsAppAccountsSettings() {
     if (!selectedAccountForUsers) return
     setSavingUsers(true)
     try {
-      const res = await fetch(`${apiUrl}/api/whatsapp-accounts/${selectedAccountForUsers.id}/users`, {
+      const res = await apiFetch(`${apiUrl}/api/whatsapp-accounts/${selectedAccountForUsers.id}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userIds: selectedUserIds }),
@@ -1360,7 +1363,7 @@ function QuickRepliesSettings() {
   const fetchCategories = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiUrl}/api/quick-replies/categories`)
+      const response = await apiFetch(`${apiUrl}/api/quick-replies/categories`)
       if (response.ok) {
         setCategories(await response.json())
       }
@@ -1380,7 +1383,7 @@ function QuickRepliesSettings() {
         ? `${apiUrl}/api/quick-replies/categories/${editingCategory.id}`
         : `${apiUrl}/api/quick-replies/categories`
       
-      await fetch(url, {
+      await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(categoryForm)
@@ -1403,7 +1406,7 @@ function QuickRepliesSettings() {
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      await fetch(`${apiUrl}/api/quick-replies/categories/${id}`, {
+      await apiFetch(`${apiUrl}/api/quick-replies/categories/${id}`, {
         method: 'DELETE'
       })
       await fetchCategories()
@@ -1421,7 +1424,7 @@ function QuickRepliesSettings() {
         ? `${apiUrl}/api/quick-replies/${editingReply.id}`
         : `${apiUrl}/api/quick-replies`
       
-      await fetch(url, {
+      await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(replyForm)
@@ -1444,7 +1447,7 @@ function QuickRepliesSettings() {
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      await fetch(`${apiUrl}/api/quick-replies/${id}`, {
+      await apiFetch(`${apiUrl}/api/quick-replies/${id}`, {
         method: 'DELETE'
       })
       await fetchCategories()
@@ -1779,6 +1782,7 @@ function QuickRepliesSettings() {
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
+  useRequirePermission('settings')
   const [activeTab, setActiveTab] = useState('whatsapp')
   const [saving, setSaving] = useState(false)
 
@@ -1848,7 +1852,7 @@ export default function SettingsPage() {
     const loadBusinessFromAPI = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-        const res = await fetch(`${apiUrl}/api/settings/system`)
+        const res = await apiFetch(`${apiUrl}/api/settings/system`)
         if (res.ok) {
           const data = await res.json()
           setBusinessConfig({
@@ -1876,7 +1880,7 @@ export default function SettingsPage() {
   const fetchCustomFieldOptions = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const res = await fetch(`${apiUrl}/api/settings/field-options`)
+      const res = await apiFetch(`${apiUrl}/api/settings/field-options`)
       if (res.ok) {
         const data = await res.json()
         // Garantir que seja um array
@@ -1919,7 +1923,7 @@ export default function SettingsPage() {
         ? `${apiUrl}/api/settings/field-options/${editingOption.id}`
         : `${apiUrl}/api/settings/field-options`
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: editingOption ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(optionForm)
@@ -1939,7 +1943,7 @@ export default function SettingsPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const res = await fetch(`${apiUrl}/api/settings/field-options/${id}`, {
+      const res = await apiFetch(`${apiUrl}/api/settings/field-options/${id}`, {
         method: 'DELETE'
       })
 
@@ -1961,7 +1965,7 @@ export default function SettingsPage() {
       
       // Salvar configurações da empresa no banco (API)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const res = await fetch(`${apiUrl}/api/settings/system`, {
+      const res = await apiFetch(`${apiUrl}/api/settings/system`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1992,6 +1996,7 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'whatsapp', name: 'WhatsApp API', icon: MessageSquare },
     { id: 'business', name: 'Empresa', icon: Users },
+    { id: 'permissions', name: 'Permissões', icon: UserCog },
     { id: 'integrations', name: 'Integrações (IA)', icon: Plug },
     { id: 'custom-fields', name: 'Listas Personalizadas', icon: List },
     { id: 'quick-replies', name: 'Respostas Rápidas', icon: Zap },
@@ -2064,6 +2069,60 @@ export default function SettingsPage() {
               {/* WhatsApp Accounts Tab */}
               {activeTab === 'whatsapp' && <WhatsAppAccountsSettings />}
 
+              {/* Permissões Tab - matriz de perfis */}
+              {activeTab === 'permissions' && (
+                <div className="p-6">
+                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-green-600" />
+                      Permissões por Perfil
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Cada usuário recebe um perfil ao ser criado. Altere o perfil em Usuários → Editar.
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-600">
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">Módulo</th>
+                          <th className="text-center py-3 px-4 font-medium text-indigo-600">Admin</th>
+                          <th className="text-center py-3 px-4 font-medium text-blue-600">Supervisor</th>
+                          <th className="text-center py-3 px-4 font-medium text-green-600">Atendente</th>
+                          <th className="text-center py-3 px-4 font-medium text-gray-600">Visualizador</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                        {[
+                          { mod: 'Dashboard', a: 'Total', s: 'Total', g: 'Básico', v: 'Leitura' },
+                          { mod: 'Inbox', a: 'Total', s: 'Total', g: 'Atribuídas', v: 'Leitura' },
+                          { mod: 'Contatos', a: 'CRUD', s: 'CRUD', g: 'CRUD', v: 'Leitura' },
+                          { mod: 'Pipeline', a: 'Total', s: 'Total', g: 'Editar', v: 'Leitura' },
+                          { mod: 'Templates', a: 'CRUD', s: 'Ver', g: 'Usar', v: 'Leitura' },
+                          { mod: 'Automação', a: 'CRUD', s: 'Editar', g: '—', v: '—' },
+                          { mod: 'Base de Conhecimento', a: 'CRUD', s: 'CRUD', g: 'Usar IA', v: 'Leitura' },
+                          { mod: 'Campanhas', a: 'CRUD', s: 'Criar/Enviar', g: '—', v: '—' },
+                          { mod: 'Relatórios', a: 'Total', s: 'Total', g: 'Básico', v: 'Básico' },
+                          { mod: 'Usuários', a: 'CRUD', s: 'Ver/Editar', g: '—', v: '—' },
+                          { mod: 'Configurações', a: 'Total', s: '—', g: '—', v: '—' },
+                        ].map((row, i) => (
+                          <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{row.mod}</td>
+                            <td className="py-3 px-4 text-center text-gray-600 dark:text-gray-400">{row.a}</td>
+                            <td className="py-3 px-4 text-center text-gray-600 dark:text-gray-400">{row.s}</td>
+                            <td className="py-3 px-4 text-center text-gray-600 dark:text-gray-400">{row.g}</td>
+                            <td className="py-3 px-4 text-center text-gray-600 dark:text-gray-400">{row.v}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                    Para alterar o perfil de um usuário, vá em Usuários e edite o cadastro.
+                  </p>
+                </div>
+              )}
+
               {/* Business Tab */}
               {activeTab === 'business' && (
                 <div className="p-6">
@@ -2110,7 +2169,7 @@ export default function SettingsPage() {
                                     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
                                     const formData = new FormData()
                                     formData.append('file', file)
-                                    const res = await fetch(`${apiUrl}/api/settings/upload-logo`, {
+                                    const res = await apiFetch(`${apiUrl}/api/settings/upload-logo`, {
                                       method: 'POST',
                                       body: formData
                                     })

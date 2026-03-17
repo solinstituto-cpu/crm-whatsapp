@@ -23,24 +23,25 @@ import {
   HelpCircle,
   BookOpen
 } from 'lucide-react'
+import { canAccess } from '@/lib/permissions'
 
 // Cache do logo para evitar flash do ícone ao navegar entre telas (Sidebar remonta)
 let cachedCompanyLogo: string | null = null
 let cachedCompanyName: string = 'DRM CRM'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Inbox', href: '/inbox', icon: MessageSquare },
-  { name: 'Contatos', href: '/contacts', icon: Users },
-  { name: 'Pipeline', href: '/pipeline', icon: TrendingUp },
-  { name: 'Templates', href: '/templates', icon: FileText },
-  { name: 'Automação', href: '/automation', icon: Zap },
-  { name: 'Base de Conhecimento', href: '/knowledge', icon: BookOpen },
-  { name: 'Campanhas', href: '/campaigns', icon: Megaphone },
-  { name: 'Relatórios', href: '/reports', icon: BarChart3 },
-  { name: 'Usuários', href: '/users', icon: UserCog },
-  { name: 'Configurações', href: '/settings', icon: Settings },
-  { name: 'Ajuda', href: '/help', icon: HelpCircle },
+  { name: 'Dashboard', href: '/dashboard', icon: Home, permission: 'dashboard' },
+  { name: 'Inbox', href: '/inbox', icon: MessageSquare, permission: 'inbox' },
+  { name: 'Contatos', href: '/contacts', icon: Users, permission: 'contacts' },
+  { name: 'Pipeline', href: '/pipeline', icon: TrendingUp, permission: 'pipeline' },
+  { name: 'Templates', href: '/templates', icon: FileText, permission: 'templates' },
+  { name: 'Automação', href: '/automation', icon: Zap, permission: 'automation' },
+  { name: 'Base de Conhecimento', href: '/knowledge', icon: BookOpen, permission: 'knowledge' },
+  { name: 'Campanhas', href: '/campaigns', icon: Megaphone, permission: 'campaigns' },
+  { name: 'Relatórios', href: '/reports', icon: BarChart3, permission: 'reports' },
+  { name: 'Usuários', href: '/users', icon: UserCog, permission: 'users' },
+  { name: 'Configurações', href: '/settings', icon: Settings, permission: 'settings' },
+  { name: 'Ajuda', href: '/help', icon: HelpCircle, permission: 'help' },
 ]
 
 export default function Sidebar() {
@@ -55,7 +56,10 @@ export default function Sidebar() {
     const loadBusinessConfig = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-        const response = await fetch(`${apiUrl}/api/settings/system`)
+        const token = (session as any)?.user?.token || (session as any)?.accessToken
+        const response = await fetch(`${apiUrl}/api/settings/system`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (response.ok) {
           const config = await response.json()
           if (config.companyName) {
@@ -87,7 +91,7 @@ export default function Sidebar() {
       clearInterval(interval)
       window.removeEventListener('business-config-updated', handleConfigUpdate)
     }
-  }, [])
+  }, [session])
 
   // Função para enviar heartbeat
   const sendHeartbeat = useCallback(async () => {
@@ -202,9 +206,11 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Navigation - filtrado por permissão do perfil */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
+            {navigation
+              .filter((item) => canAccess(session?.user?.role as string, item.permission))
+              .map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link
