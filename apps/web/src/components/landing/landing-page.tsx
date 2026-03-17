@@ -32,6 +32,7 @@ import {
   Database,
   Play,
   Phone,
+  Settings,
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -988,6 +989,45 @@ export default function LandingPage() {
               Consulte valores para número adicional
             </a>
           </p>
+
+          {/* Configuração completa - para quem não quer configurar */}
+          <div id="configuracao-completa" className="mt-16 max-w-3xl mx-auto">
+            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 p-8 sm:p-10 shadow-xl">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative flex flex-col sm:flex-row items-center gap-6">
+                <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Settings className="h-8 w-8 text-white" />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="text-amber-700 font-semibold text-sm uppercase tracking-wider mb-2">
+                    Não sabe por onde começar?
+                  </p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+                    Configuração completa feita por nós
+                  </h3>
+                  <p className="text-slate-600 mb-4">
+                    Sem tempo ou equipe para configurar? Sem problema. Nossa equipe cuida de tudo: 
+                    integração do WhatsApp, automações, chatbot e fluxos de atendimento. 
+                    Você assina o plano e nós deixamos tudo funcionando — do zero até o primeiro atendimento.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <a
+                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Tenho interesse na configuração completa do DRM CRM. Vocês fazem toda a implementação e deixam o chatbot funcionando? Quanto custa?')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-amber-500/25 transition-all hover:scale-[1.02]"
+                    >
+                      <Phone className="h-5 w-5" />
+                      Solicitar configuração completa
+                    </a>
+                    <span className="text-slate-500 text-sm">
+                      Valor a consultar com a equipe DRM
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
