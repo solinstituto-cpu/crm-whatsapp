@@ -285,6 +285,7 @@ export default function LandingPage() {
               <a href="#segmentos" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Segmentos</a>
               <a href="#conheca-sistema" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Conheça o sistema</a>
               <a href="#precos" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Preços</a>
+              <a href="#implementacao" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Implementação</a>
               <a href="#contato" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Contato</a>
               <a href="#faq" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">FAQ</a>
             </nav>
@@ -321,6 +322,7 @@ export default function LandingPage() {
               <a href="#segmentos" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Segmentos</a>
               <a href="#conheca-sistema" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Conheça o sistema</a>
               <a href="#precos" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Preços</a>
+              <a href="#implementacao" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Implementação</a>
               <a href="#contato" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>Contato</a>
               <a href="#faq" className="block text-slate-600" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
               <hr className="border-slate-100" />
@@ -990,42 +992,138 @@ export default function LandingPage() {
             </a>
           </p>
 
-          {/* Configuração completa - para quem não quer configurar */}
-          <div id="configuracao-completa" className="mt-16 max-w-3xl mx-auto">
-            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 p-8 sm:p-10 shadow-xl">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="relative flex flex-col sm:flex-row items-center gap-6">
-                <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Settings className="h-8 w-8 text-white" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-amber-700 font-semibold text-sm uppercase tracking-wider mb-2">
-                    Não sabe por onde começar?
-                  </p>
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
-                    Configuração completa feita por nós
-                  </h3>
-                  <p className="text-slate-600 mb-4">
-                    Sem tempo ou equipe para configurar? Sem problema. Nossa equipe cuida de tudo: 
-                    integração do WhatsApp, automações, chatbot e fluxos de atendimento. 
-                    Você assina o plano e nós deixamos tudo funcionando — do zero até o primeiro atendimento.
-                  </p>
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <a
-                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Tenho interesse na configuração completa do DRM CRM. Vocês fazem toda a implementação e deixam o chatbot funcionando? Quanto custa?')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-amber-500/25 transition-all hover:scale-[1.02]"
-                    >
-                      <Phone className="h-5 w-5" />
-                      Solicitar configuração completa
-                    </a>
-                    <span className="text-slate-500 text-sm">
-                      Valor a consultar com a equipe DRM
-                    </span>
+          {/* Pacotes de Implementação - Configuração feita por nós */}
+          <div id="implementacao" className="mt-20">
+            <div className="text-center mb-12">
+              <p className="text-amber-600 font-semibold text-sm uppercase tracking-wider mb-2">
+                Não sabe por onde começar?
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
+                Implementação feita por nós
+              </h2>
+              <p className="text-slate-600 max-w-2xl mx-auto">
+                Escolha o nível de configuração que faz sentido para sua empresa. Nossa equipe cuida de tudo — do zero até o primeiro atendimento.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                {
+                  name: 'Básico',
+                  tagline: 'Para começar rápido',
+                  color: 'from-slate-500 to-slate-600',
+                  border: 'border-slate-200',
+                  features: [
+                    'Integração WhatsApp (API oficial)',
+                    '1 automação (fora do horário)',
+                    'Respostas rápidas básicas',
+                    'Templates iniciais configurados',
+                  ],
+                  msg: 'Olá! Tenho interesse no pacote Básico de implementação do DRM CRM. Pode me enviar os valores?',
+                },
+                {
+                  name: 'Intermediário',
+                  tagline: 'Atendimento estruturado',
+                  color: 'from-indigo-500 to-indigo-600',
+                  border: 'border-indigo-200',
+                  popular: true,
+                  features: [
+                    'Tudo do Básico +',
+                    '2–3 automações (palavra-chave, novo contato)',
+                    'Fluxo de chatbot básico',
+                    'Importação de contatos',
+                    'Configuração de pipeline',
+                  ],
+                  msg: 'Olá! Tenho interesse no pacote Intermediário de implementação do DRM CRM. Pode me enviar os valores?',
+                },
+                {
+                  name: 'Completo',
+                  tagline: 'Tudo pronto para vender',
+                  color: 'from-emerald-500 to-emerald-600',
+                  border: 'border-emerald-200',
+                  features: [
+                    'Tudo do Intermediário +',
+                    'Múltiplas automações',
+                    'Integração IA (OpenAI)',
+                    'Base de conhecimento',
+                    'Campanhas iniciais',
+                    'Suporte pós-implantação (30 dias)',
+                  ],
+                  msg: 'Olá! Tenho interesse no pacote Completo de implementação do DRM CRM. Pode me enviar os valores?',
+                },
+                {
+                  name: 'Enterprise',
+                  tagline: 'Sob medida',
+                  color: 'from-amber-500 to-orange-600',
+                  border: 'border-amber-200',
+                  features: [
+                    'Tudo personalizado',
+                    'Integrações (Google Sheets, ERP)',
+                    'Treinamento completo da equipe',
+                    'Fluxos do seu segmento',
+                    'Gerente de sucesso dedicado',
+                  ],
+                  msg: 'Olá! Tenho interesse no pacote Enterprise de implementação do DRM CRM. Preciso de uma solução sob medida. Podemos conversar?',
+                },
+              ].map((pkg) => (
+                <div
+                  key={pkg.name}
+                  className={`relative bg-white rounded-2xl p-6 border-2 ${pkg.border} hover:shadow-xl transition-all flex flex-col ${
+                    pkg.popular ? 'ring-2 ring-indigo-500/50 shadow-lg' : ''
+                  }`}
+                >
+                  {pkg.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      Mais escolhido
+                    </div>
+                  )}
+                  <div className={`w-12 h-12 bg-gradient-to-br ${pkg.color} rounded-xl flex items-center justify-center mb-4`}>
+                    <Settings className="h-6 w-6 text-white" />
                   </div>
+                  <h3 className="text-lg font-bold text-slate-900">{pkg.name}</h3>
+                  <p className="text-slate-500 text-sm mb-4">{pkg.tagline}</p>
+                  <ul className="space-y-2 flex-1 mb-6">
+                    {pkg.features.map((f, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                        <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(pkg.msg)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-full py-3 rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all hover:scale-[1.02] ${
+                      pkg.popular
+                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white hover:shadow-lg'
+                        : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Phone className="h-4 w-4" />
+                    Solicitar valores
+                  </a>
                 </div>
-              </div>
+              ))}
+            </div>
+
+            <p className="text-center text-slate-500 text-sm mt-8">
+              Todos os pacotes são cobrança única. Você assina o plano mensal e nós fazemos a implementação.
+            </p>
+
+            <div className="mt-8 text-center">
+              <p className="text-slate-600 text-sm mb-3">
+                Não sabe qual pacote escolher?
+              </p>
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Tenho interesse na implementação do DRM CRM mas não sei qual pacote escolher. Podem me orientar?')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-700 hover:underline"
+              >
+                <Phone className="h-4 w-4" />
+                Fale com a gente — te orientamos
+              </a>
             </div>
           </div>
         </div>
@@ -1198,6 +1296,7 @@ export default function LandingPage() {
                 <li><a href="#recursos" className="hover:text-white transition-colors">Recursos</a></li>
                 <li><a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a></li>
                 <li><a href="#segmentos" className="hover:text-white transition-colors">Segmentos</a></li>
+                <li><a href="#implementacao" className="hover:text-white transition-colors">Implementação</a></li>
                 <li><Link href="/auth/login" className="hover:text-white transition-colors">Entrar</Link></li>
                 <li><Link href="/help" className="hover:text-white transition-colors">Recursos</Link></li>
               </ul>
