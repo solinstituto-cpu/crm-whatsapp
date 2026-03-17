@@ -184,7 +184,7 @@ export default function LoginPage() {
             </form>
 
             <p className="mt-8 text-center text-xs text-slate-400">
-              © {new Date().getFullYear()} CRM WhatsApp — Sistema de gestão
+              © {new Date().getFullYear()} DRM CRM — Sistema de Gestão de WhatsApp
             </p>
           </div>
         </div>

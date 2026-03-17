@@ -6,8 +6,13 @@ import { Providers } from '@/components/providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'WhatsApp CRM',
-  description: 'CRM leve integrado com WhatsApp Cloud API',
+  title: 'DRM CRM - Sistema de Gestão de WhatsApp',
+  description: 'Sistema completo de gestão e vendas pelo WhatsApp. Centralize conversas, automatize respostas e feche vendas.',
+  icons: {
+    icon: '/images/logo.png',
+    shortcut: '/images/logo.png',
+    apple: '/images/logo.png',
+  },
 }
 
 export default function RootLayout({

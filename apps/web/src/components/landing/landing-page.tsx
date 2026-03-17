@@ -144,7 +144,7 @@ export default function LandingPage() {
                 <MessageCircle className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                CRM WhatsApp
+                DRM CRM
               </span>
             </Link>
 
@@ -258,7 +258,7 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-red-500" />
                 <div className="w-3 h-3 rounded-full bg-amber-500" />
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-slate-400 text-sm ml-4">CRM WhatsApp — Inbox</span>
+                <span className="text-slate-400 text-sm ml-4">DRM CRM — Inbox</span>
               </div>
               <div className="p-4 sm:p-6">
                 <div className="grid grid-cols-12 gap-4 h-[280px] sm:h-[360px]">
@@ -534,10 +534,10 @@ export default function LandingPage() {
                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center">
                   <MessageCircle className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold">CRM WhatsApp</span>
+                <span className="text-xl font-bold">DRM CRM</span>
               </div>
               <p className="text-slate-400 text-sm">
-                Sistema completo de gestão e vendas pelo WhatsApp. API oficial da Meta.
+                Sistema completo de gestão e vendas pelo WhatsApp. DRM CRM - API oficial da Meta.
               </p>
             </div>
 
@@ -570,7 +570,7 @@ export default function LandingPage() {
 
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-slate-500 text-sm">
-              © {new Date().getFullYear()} CRM WhatsApp. Todos os direitos reservados.
+              © {new Date().getFullYear()} DRM CRM - Sistema de Gestão de WhatsApp.
             </p>
           </div>
         </div>

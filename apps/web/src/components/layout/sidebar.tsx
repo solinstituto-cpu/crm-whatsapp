@@ -43,7 +43,7 @@ export default function Sidebar() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(true)
-  const [companyName, setCompanyName] = useState('WhatsApp CRM')
+  const [companyName, setCompanyName] = useState('DRM CRM')
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
 
   // Carregar configurações da empresa do banco de dados (API)

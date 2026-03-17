@@ -770,7 +770,7 @@ export default function InboxPage() {
         c.id.toString() === conversationId ? { ...c, unreadCount: 0 } : c
       ))
       // Resetar título da página
-      document.title = 'WhatsApp CRM'
+      document.title = 'DRM CRM'
     } catch (error) {
       console.error('Erro ao marcar como lido:', error)
     }
@@ -1127,7 +1127,7 @@ export default function InboxPage() {
         
         if (firstNewMsg && firstNewMsg !== firstOldMsg && conversations.length > 0) {
           playNotificationSound()
-          document.title = `Nova mensagem - WhatsApp CRM`
+          document.title = `Nova mensagem - DRM CRM`
         }
         
         // Se tem filtros ativos, substituir completamente (não mesclar)
