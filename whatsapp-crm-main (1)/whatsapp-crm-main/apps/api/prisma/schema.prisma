@@ -1,0 +1,563 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// CONFIGURAÇÃO PARA PRODUÇÃO (HOSTGATOR)
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ALTERNATIVA PARA DESENVOLVIMENTO LOCAL
+// Descomente as linhas abaixo e comente o PostgreSQL acima para usar SQLite local
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("AGENT") // ADMIN, AGENT
+  color     String   @default("#3B82F6") // Cor do usuário para visualização no inbox
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignedContacts      Contact[]
+  assignedConversations Conversation[] @relation("AssignedConversations")
+  deals                 Deal[]
+  activityLogs          ActivityLog[]
+  session               UserSession?
+  whatsappAccounts      UserWhatsAppAccount[] // Contas WhatsApp que o usuário pode acessar
+
+  @@map("users")
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastActivity DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([lastActivity])
+  @@map("user_sessions")
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  name      String
+  phoneE164 String  @unique
+  email     String?
+  company   String?
+  role      String? // Cargo/função
+  notes     String? // Notas/observações
+
+  // Dados pessoais
+  birthday DateTime? // Data de nascimento
+  cpf      String? // CPF/Documento
+  address  String? // Endereço
+  city     String? // Cidade
+  state    String? // Estado (UF)
+
+  // Dados comerciais
+  source         String? // Origem do lead (Instagram, Google, Indicação, etc)
+  interest       String? // Interesse (curso, produto, serviço)
+  customerStatus String? // Status (Lead, Cliente, Ex-cliente)
+  enrollmentDate DateTime? // Data de matrícula/início
+  referredBy     String? // Indicado por quem
+
+  // Campos dinâmicos coletados em fluxos
+  customFields String? // JSON com campos personalizados { "interesse": "yoga", "horario": "manhã" }
+
+  tags           String // JSON string for tags array
+  lastMessageAt  DateTime?
+  firstContactAt DateTime? // Data do primeiro contato
+  lastContactAt  DateTime? // Data do último contato
+  optedOut       Boolean   @default(false)
+  consentedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+
+  conversations Conversation[]
+  deals         Deal[]
+
+  @@map("contacts")
+}
+
+model Conversation {
+  id                    String    @id @default(cuid())
+  phoneE164             String? // Número do telefone (mantido mesmo se contato for deletado)
+  status                String    @default("OPEN") // OPEN, PENDING, CLOSED
+  lastWAStatus          String?
+  unreadCount           Int       @default(0) // Contador de mensagens não lidas pelo atendente
+  lastMessageAt         DateTime? // Hora da última mensagem (para ordenação)
+  lastIncomingMessageAt DateTime? // Última msg recebida do cliente (janela 24h)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Atendente atribuído
+  assignedToId String?
+  assignedTo   User?     @relation("AssignedConversations", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedAt   DateTime? // Quando foi atribuído
+
+  // Conta WhatsApp (multi-números)
+  whatsappAccountId String?
+  whatsappAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: SetNull)
+
+  // Relations
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  messages Message[]
+
+  @@index([whatsappAccountId])
+  @@map("conversations")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  direction   String // IN, OUT
+  type        String
+  body        String?
+  json        String? // JSON string instead of Json type
+  waMessageId String?
+  status      String   @default("SENT") // PENDING, SENT, DELIVERED, READ, FAILED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model PipelineStage {
+  id    String @id @default(cuid())
+  name  String
+  order Int    @unique
+  color String @default("#6B7280")
+
+  // Relations
+  deals Deal[]
+
+  @@map("pipeline_stages")
+}
+
+model Deal {
+  id          String  @id @default(cuid())
+  title       String // Título do deal
+  description String? // Descrição
+  amount      Float   @default(0) // Valor
+  probability Int?    @default(50) // Probabilidade de fechamento %
+
+  // Datas importantes
+  expectedCloseDate DateTime? // Previsão de fechamento
+  wonAt             DateTime? // Data que ganhou
+  lostAt            DateTime? // Data que perdeu
+
+  // Informações adicionais
+  source     String? // Origem (Instagram, Google, Indicação)
+  lostReason String? // Motivo da perda
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  stageId String
+  stage   PipelineStage @relation(fields: [stageId], references: [id])
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id])
+
+  @@map("deals")
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  name           String
+  category       String
+  language       String   @default("pt_BR")
+  components     String // JSON string instead of Json type
+  waTemplateName String?
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("templates")
+}
+
+model Rule {
+  id        String   @id @default(cuid())
+  name      String
+  when      String // JSON string - Conditions
+  then      String // JSON string - Actions
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rules")
+}
+
+model QuickReply {
+  id        String  @id @default(cuid())
+  name      String
+  content   String
+  shortcut  String? // Atalho para buscar rápido (ex: /saudacao)
+  variables String // JSON string for variables array
+
+  // Categoria
+  categoryId String?
+  category   QuickReplyCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  order  Int     @default(0) // Ordem de exibição
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@map("quick_replies")
+}
+
+model QuickReplyCategory {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  color       String? // Cor para identificação visual
+  order       Int     @default(0)
+  active      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  quickReplies QuickReply[]
+
+  @@map("quick_reply_categories")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName    String // Nome do usuário para facilitar consulta
+  userEmail   String // Email do usuário
+  action      String // Tipo de ação (LOGIN, LOGOUT, VIEW, CREATE, UPDATE, DELETE)
+  module      String // Módulo acessado (Dashboard, Contacts, Pipeline, etc)
+  description String // Descrição detalhada da ação
+  metadata    String? // JSON com dados adicionais
+  ipAddress   String? // IP do usuário
+  userAgent   String? // Navegador/dispositivo
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model CustomFieldOption {
+  id        String   @id @default(cuid())
+  fieldType String // 'customerStatus', 'source', 'interest', etc.
+  value     String // Valor da opção (ex: "Lead", "Instagram")
+  label     String // Label para exibição
+  order     Int      @default(0) // Ordem de exibição
+  color     String? // Cor opcional (hex)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fieldType, value])
+  @@map("custom_field_options")
+}
+
+// ==========================================
+// SISTEMA DE FLUXOS DE AUTOMAÇÃO
+// ==========================================
+
+model Flow {
+  id            String  @id @default(cuid())
+  name          String
+  description   String?
+  isActive      Boolean @default(false)
+  trigger       String // Tipo de gatilho: NEW_MESSAGE, KEYWORD, NEW_CONTACT, SCHEDULE
+  triggerConfig String // JSON com configuração do gatilho (ex: keywords, horário, etc)
+
+  // Estatísticas
+  executionCount Int       @default(0)
+  lastExecutedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  nodes    FlowNode[]
+  sessions FlowSession[]
+
+  @@map("flows")
+}
+
+model FlowNode {
+  id     String @id @default(cuid())
+  flowId String
+  flow   Flow   @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  type     String // SEND_MESSAGE, WAIT_RESPONSE, CONDITION, DELAY, ADD_TAG, MOVE_PIPELINE, AI_RESPONSE, NOTIFY
+  name     String
+  position Int // Ordem do nó no fluxo
+
+  // Configuração do nó (JSON)
+  config String // JSON com configuração específica do tipo
+
+  // Conexões
+  nextNodeId     String? // Próximo nó (para fluxo linear)
+  conditionNodes String? // JSON array de {condition, nodeId} para branches
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([flowId])
+  @@map("flow_nodes")
+}
+
+model FlowSession {
+  id        String @id @default(cuid())
+  flowId    String
+  flow      Flow   @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  contactId String
+
+  // Estado atual
+  currentNodeId String?
+  status        String  @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED, EXPIRED
+
+  // Dados coletados durante o fluxo
+  collectedData String? // JSON com respostas e dados do cliente
+
+  // Controle de tempo
+  startedAt      DateTime  @default(now())
+  lastActivityAt DateTime  @default(now())
+  completedAt    DateTime?
+  expiresAt      DateTime? // Para timeout do fluxo
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([flowId])
+  @@index([contactId])
+  @@index([status])
+  @@map("flow_sessions")
+}
+
+// ==========================================
+// BASE DE CONHECIMENTO PARA IA
+// ==========================================
+
+model KnowledgeBase {
+  id          String  @id @default(cuid())
+  title       String  // Título/Categoria (ex: "Preços", "Horários", "Serviços")
+  content     String  @db.Text // Conteúdo completo
+  keywords    String? // Keywords para busca (separadas por vírgula)
+  isActive    Boolean @default(true)
+  priority    Int     @default(0) // Maior = mais importante
+  category    String? // Categoria para organização
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("knowledge_base")
+}
+
+// ==========================================
+// SISTEMA DE CAMPANHAS (ENVIO EM MASSA)
+// ==========================================
+
+model Campaign {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  status      String  @default("DRAFT") // DRAFT, SCHEDULED, RUNNING, PAUSED, COMPLETED, CANCELLED
+
+  // Template do WhatsApp
+  templateName      String
+  templateLanguage  String  @default("pt_BR")
+  templateVariables String? // JSON com mapeamento de variáveis
+
+  // Conta WhatsApp (multi-números)
+  whatsappAccountId String?
+  whatsappAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: SetNull)
+
+  // Segmentação de contatos
+  filterTags         String? // JSON array de tags para filtrar
+  filterStatus       String? // Status do cliente (Lead, Cliente, etc)
+  filterSource       String? // Origem do contato
+  filterCustomFields String? // JSON para filtrar por campos personalizados
+  excludeOptOut      Boolean @default(true)
+
+  // Agendamento
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Horário comercial para envio (ex: 08:00-18:00)
+  sendStartHour Int? // Hora de início (0-23)
+  sendEndHour   Int? // Hora de fim (0-23)
+  sendDays      String? // Dias da semana permitidos: "0,1,2,3,4,5,6" (0=Dom, 1=Seg... 6=Sab)
+
+  // Estatísticas
+  totalContacts  Int @default(0)
+  sentCount      Int @default(0)
+  deliveredCount Int @default(0)
+  readCount      Int @default(0)
+  failedCount    Int @default(0)
+
+  // Controle de velocidade
+  sendRatePerMinute Int @default(10) // msgs por minuto (para evitar bloqueio)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  messages CampaignMessage[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([whatsappAccountId])
+  @@map("campaigns")
+}
+
+model CampaignMessage {
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId    String
+  contactPhone String // Telefone do contato (para referência mesmo se contato for deletado)
+  contactName  String? // Nome do contato
+
+  status      String    @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
+  waMessageId String? // ID da mensagem no WhatsApp
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  error       String? // Mensagem de erro se falhou
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campaignId])
+  @@index([contactId])
+  @@index([status])
+  @@map("campaign_messages")
+}
+
+// ==========================================
+// CONFIGURAÇÕES GLOBAIS DO SISTEMA
+// ==========================================
+
+model SystemSettings {
+  id             String   @id @default(cuid())
+  companyName    String   @default("Minha Empresa")
+  companyLogo    String?
+  companyPhone   String?
+  companyEmail   String?
+  companyAddress String?
+  primaryColor   String   @default("#16a34a")
+  secondaryColor String   @default("#22c55e")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// ==========================================
+// CONTAS WHATSAPP (MULTI-NÚMEROS)
+// ==========================================
+
+model WhatsAppAccount {
+  id                 String @id @default(cuid())
+  name               String // Nome da conta: "Comercial", "Suporte", etc.
+  phoneNumber        String // Número formatado: +55 11 99999-9999
+  phoneNumberId      String @unique // ID do número no Meta
+  businessId         String // WABA ID (WhatsApp Business Account)
+  accessToken        String // Token de acesso da API
+  webhookVerifyToken String @default("sol_verify_token")
+
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false) // Conta padrão do sistema
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  conversations Conversation[]
+  campaigns     Campaign[]
+  users         UserWhatsAppAccount[] // Usuários que podem acessar esta conta
+
+  @@map("whatsapp_accounts")
+}
+
+// Tabela de relacionamento: Usuários <-> Contas WhatsApp
+// Se um usuário não tem nenhuma conta atribuída, ele vê TODAS (admin/compatibilidade)
+model UserWhatsAppAccount {
+  id        String   @id @default(cuid())
+  userId    String
+  accountId String
+  createdAt DateTime @default(now())
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account WhatsAppAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, accountId])
+  @@index([userId])
+  @@index([accountId])
+  @@map("user_whatsapp_accounts")
+}
+
+// Configurações do sistema (API Keys, integrações, etc)
+// Valores sensíveis são criptografados antes de salvar
+model IntegrationSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique // Ex: openai_api_key, google_client_id
+  value     String   // Valor (criptografado para dados sensíveis)
+  encrypted Boolean  @default(false) // Se o valor está criptografado
+  category  String   @default("general") // general, ai, integrations, etc
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@map("integration_settings")
+}
+
+// Tokens OAuth para integrações (Google, etc)
+model OAuthToken {
+  id           String   @id @default(cuid())
+  provider     String   // google, microsoft, etc
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?  // Escopos autorizados
+  email        String?  // Email da conta conectada
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider])
+  @@map("oauth_tokens")
+}

@@ -65,4 +65,25 @@ crmDENI/
 
 1. **Render:** Ajuste Root Directory para `apps/api` e as variáveis
 2. **Vercel:** Ajuste Root Directory para `apps/web` e as variáveis
-3. Faça push para o repositório conectado
+3. **Seed do banco:** Rode o seed para criar os usuários (veja abaixo)
+4. Faça push para o repositório conectado
+
+---
+
+## Seed do Banco (criar usuários para login)
+
+**Se aparecer "Credenciais Inválidas" no login**, o banco não tem usuários. Rode o seed:
+
+```powershell
+cd apps/api
+$env:DATABASE_URL="postgresql://postgres.zrtnrcwfprwfedtuvscl:Kurosaki7447%40%24%23@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+npx prisma db seed
+```
+
+**Usuários criados pelo seed:**
+
+| Email | Senha |
+|-------|-------|
+| admin@crm.com | admin123 |
+| agent@crm.com | agent123 |
+| deni.morais777@gmail.com | deni123 |
