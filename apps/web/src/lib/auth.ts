@@ -16,8 +16,11 @@ export const authOptions: AuthOptions = {
 
         try {
           // Chamar API do backend para validar credenciais
-          // API_URL no server (Vercel); NEXT_PUBLIC_API_URL no client
-          const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+          // API_URL no server; fallback para produção quando na Vercel
+          const apiUrl =
+            process.env.API_URL ||
+            process.env.NEXT_PUBLIC_API_URL ||
+            (process.env.VERCEL ? 'https://crm-drm.onrender.com' : 'http://localhost:4000')
           const response = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
             headers: {
