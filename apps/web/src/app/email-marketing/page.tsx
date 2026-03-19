@@ -90,7 +90,7 @@ export default function EmailMarketingPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
-        const [tagsRes, campaignsRes, statRes, statusOptsRes, sourceOptsRes] = await Promise.all([
+        const [tagsRes, campaignsRes, statRes, statusOptsRes, sourceOptsRes] = await Promise.allSettled([
           apiFetch(`${apiUrl}/api/contacts/tags`),
           apiFetch(`${apiUrl}/api/email-campaigns?limit=50`),
           apiFetch(`${apiUrl}/api/email-campaigns/stats`),
@@ -99,33 +99,43 @@ export default function EmailMarketingPage() {
         ])
 
         // tags
-        if (tagsRes?.ok) {
-          const data = await tagsRes.json()
+        if (tagsRes.status === 'fulfilled' && tagsRes.value?.ok) {
+          const data = await tagsRes.value.json()
           setAvailableTags(Array.isArray(data) ? data : [])
+        } else {
+          setAvailableTags([])
         }
 
         // status options
-        if (statusOptsRes?.ok) {
-          const data = await statusOptsRes.json()
+        if (statusOptsRes.status === 'fulfilled' && statusOptsRes.value?.ok) {
+          const data = await statusOptsRes.value.json()
           setCustomerStatusOptions(Array.isArray(data) ? data : [])
+        } else {
+          setCustomerStatusOptions([])
         }
 
         // source options
-        if (sourceOptsRes?.ok) {
-          const data = await sourceOptsRes.json()
+        if (sourceOptsRes.status === 'fulfilled' && sourceOptsRes.value?.ok) {
+          const data = await sourceOptsRes.value.json()
           setSourceOptions(Array.isArray(data) ? data : [])
+        } else {
+          setSourceOptions([])
         }
 
         // campaigns
-        if (campaignsRes?.ok) {
-          const data = await campaignsRes.json()
+        if (campaignsRes.status === 'fulfilled' && campaignsRes.value?.ok) {
+          const data = await campaignsRes.value.json()
           setCampaigns(data?.campaigns || [])
+        } else {
+          setCampaigns([])
         }
 
         // stats
-        if (statRes?.ok) {
-          const data = await statRes.json()
+        if (statRes.status === 'fulfilled' && statRes.value?.ok) {
+          const data = await statRes.value.json()
           setStats(data || null)
+        } else {
+          setStats(null)
         }
 
         setPreview(null)
