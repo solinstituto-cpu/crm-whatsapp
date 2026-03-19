@@ -202,7 +202,12 @@ export class EmailAuthService {
     }
 
     const transport = nodemailer.createTransport({
-      service: 'gmail',
+      // Evita ENETUNREACH em ambientes sem rota IPv6 (ex.: Render)
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      family: 4,
       auth: {
         type: 'OAuth2',
         user: email || fromEmail,
