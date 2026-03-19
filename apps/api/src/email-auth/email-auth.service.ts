@@ -246,6 +246,31 @@ export class EmailAuthService {
       .replace(/=+$/g, '');
   }
 
+  private encodeMimeHeader(value: string): string {
+    // RFC 2047 para headers com UTF-8 (ex.: assunto com acentos)
+    if (!/[^\x00-\x7F]/.test(value)) return value;
+    const encoded = Buffer.from(value, 'utf8').toString('base64');
+    return `=?UTF-8?B?${encoded}?=`;
+  }
+
+  private htmlToPlainText(html: string): string {
+    return html
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\r/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+  }
+
   async sendViaGmailApi(params: {
     from: string;
     to: string;
@@ -258,14 +283,29 @@ export class EmailAuthService {
       ? params.from.replace(/<[^>]+>/, `<${connectedEmail}>`)
       : params.from;
 
+    const boundary = `crmdeni_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const textBody = this.htmlToPlainText(params.html);
+
     const mime = [
       `From: ${safeFrom}`,
       `To: ${params.to}`,
-      `Subject: ${params.subject}`,
+      `Subject: ${this.encodeMimeHeader(params.subject)}`,
       'MIME-Version: 1.0',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset="UTF-8"',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      textBody,
+      '',
+      `--${boundary}`,
       'Content-Type: text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding: 8bit',
       '',
       params.html,
+      '',
+      `--${boundary}--`,
     ].join('\r\n');
 
     const raw = this.toBase64Url(mime);
@@ -294,6 +334,92 @@ export class EmailAuthService {
     return {
       messageId: response?.data?.id || null,
     };
+  }
+
+  async getDiagnostics() {
+    const requiredScopes = [
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'openid',
+    ];
+
+    const token = await this.prisma.oAuthToken.findUnique({
+      where: { provider: 'google' },
+      select: {
+        email: true,
+        scope: true,
+        expiresAt: true,
+        refreshToken: true,
+        updatedAt: true,
+      },
+    });
+
+    const configured = {
+      clientId:
+        Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID) ||
+        Boolean(await this.settingsService.getSetting('google_oauth_client_id')),
+      clientSecret:
+        Boolean(process.env.GOOGLE_OAUTH_CLIENT_SECRET) ||
+        Boolean(await this.settingsService.getSetting('google_oauth_client_secret')),
+      redirectUri:
+        Boolean(process.env.GOOGLE_OAUTH_REDIRECT_URI) ||
+        Boolean(await this.settingsService.getSetting('google_oauth_redirect_uri')),
+    };
+
+    const grantedScopes = (token?.scope || '')
+      .split(/\s+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    const missingScopes = requiredScopes.filter(scope => !grantedScopes.includes(scope));
+
+    const base: any = {
+      connected: Boolean(token),
+      configured,
+      accountEmail: token?.email || null,
+      tokenUpdatedAt: token?.updatedAt || null,
+      tokenExpiresAt: token?.expiresAt || null,
+      hasRefreshToken: Boolean(token?.refreshToken),
+      requiredScopes,
+      grantedScopes,
+      missingScopes,
+      gmailApi: {
+        canSend: false,
+        profileEmail: null,
+        message: 'Diagnóstico não executado',
+      },
+    };
+
+    if (!token) {
+      base.gmailApi.message = 'Gmail não conectado';
+      return base;
+    }
+
+    try {
+      const { accessToken } = await this.getGoogleAccessToken();
+      const profileRes = await axios.get('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      base.gmailApi = {
+        canSend: true,
+        profileEmail: profileRes?.data?.emailAddress || null,
+        message: 'Conexão Gmail API OK',
+      };
+      return base;
+    } catch (error: any) {
+      const apiMessage =
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.error_description ||
+        error?.message ||
+        String(error);
+
+      base.gmailApi = {
+        canSend: false,
+        profileEmail: null,
+        message: apiMessage,
+      };
+      return base;
+    }
   }
 }
 

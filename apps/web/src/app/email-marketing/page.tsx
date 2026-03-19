@@ -23,12 +23,20 @@ type EmailCampaign = {
   sentCount: number
   deliveredCount: number
   readCount: number
+  clickedCount?: number
   failedCount: number
+  scheduledAt?: string | null
   createdAt: string
   updatedAt: string
   startedAt?: string | null
   completedAt?: string | null
   _count?: { messages: number }
+}
+
+type PipelineStage = {
+  id: string
+  name: string
+  order: number
 }
 
 type FieldOption = {
@@ -52,6 +60,7 @@ export default function EmailMarketingPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [customerStatusOptions, setCustomerStatusOptions] = useState<FieldOption[]>([])
   const [sourceOptions, setSourceOptions] = useState<FieldOption[]>([])
+  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([])
 
   // Form
   const [simpleMode, setSimpleMode] = useState(true)
@@ -80,6 +89,13 @@ export default function EmailMarketingPage() {
   const [formFilterSource, setFormFilterSource] = useState<string>('')
   const [formExcludeOptOut, setFormExcludeOptOut] = useState(true)
   const [formSendRate, setFormSendRate] = useState(10)
+  const [formScheduleMode, setFormScheduleMode] = useState<'now' | 'schedule'>('now')
+  const [formScheduledAt, setFormScheduledAt] = useState('')
+  const [formAutomationEnabled, setFormAutomationEnabled] = useState(false)
+  const [formAutomationTrigger, setFormAutomationTrigger] = useState<'OPEN' | 'CLICK' | 'BOTH'>('BOTH')
+  const [formAutomationStageId, setFormAutomationStageId] = useState('')
+  const [formFollowupSubject, setFormFollowupSubject] = useState('Dando continuidade ao seu interesse')
+  const [formFollowupHtml, setFormFollowupHtml] = useState('<p>Percebemos seu interesse. Quer que eu te ajude com os próximos passos?</p>')
 
   const [preview, setPreview] = useState<{ total: number; contacts: { id: string; name: string; email: string }[] } | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -90,12 +106,13 @@ export default function EmailMarketingPage() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
-        const [tagsRes, campaignsRes, statRes, statusOptsRes, sourceOptsRes] = await Promise.allSettled([
+        const [tagsRes, campaignsRes, statRes, statusOptsRes, sourceOptsRes, stagesRes] = await Promise.allSettled([
           apiFetch(`${apiUrl}/api/contacts/tags`),
           apiFetch(`${apiUrl}/api/email-campaigns?limit=50`),
           apiFetch(`${apiUrl}/api/email-campaigns/stats`),
           apiFetch(`${apiUrl}/api/settings/field-options/customerStatus`),
           apiFetch(`${apiUrl}/api/settings/field-options/source`),
+          apiFetch(`${apiUrl}/api/pipeline/stages`),
         ])
 
         // tags
@@ -120,6 +137,18 @@ export default function EmailMarketingPage() {
           setSourceOptions(Array.isArray(data) ? data : [])
         } else {
           setSourceOptions([])
+        }
+
+        // pipeline stages
+        if (stagesRes.status === 'fulfilled' && stagesRes.value?.ok) {
+          const data = await stagesRes.value.json()
+          const stages = Array.isArray(data) ? data : []
+          setPipelineStages(stages)
+          if (!formAutomationStageId && stages.length > 0) {
+            setFormAutomationStageId(stages[0].id)
+          }
+        } else {
+          setPipelineStages([])
         }
 
         // campaigns
@@ -202,6 +231,38 @@ export default function EmailMarketingPage() {
     }
   }
 
+  const handleUnscheduleCampaign = async (id: string) => {
+    if (!confirm('Remover agendamento e voltar para rascunho?')) return
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/unschedule`, { method: 'POST' })
+      if (res.ok) {
+        await refreshCampaigns()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err?.message || 'Erro ao remover agendamento')
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao remover agendamento')
+    }
+  }
+
+  const handleCancelCampaign = async (id: string) => {
+    if (!confirm('Cancelar esta campanha?')) return
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/cancel`, { method: 'POST' })
+      if (res.ok) {
+        await refreshCampaigns()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err?.message || 'Erro ao cancelar')
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao cancelar')
+    }
+  }
+
   const handlePreview = async () => {
     setPreviewLoading(true)
     setPreview(null)
@@ -236,18 +297,37 @@ export default function EmailMarketingPage() {
     if (!formSubject.trim()) return alert('Assunto é obrigatório')
     if (!formHtml.trim()) return alert('HTML é obrigatório')
     if (!formName.trim()) return alert('Nome da campanha é obrigatório')
+    if (formScheduleMode === 'schedule' && !formScheduledAt) return alert('Informe data/hora para agendar')
+    if (formAutomationEnabled && !formAutomationStageId) {
+      return alert('Selecione a etapa de destino da automação')
+    }
 
     if (preview && preview.total === 0) {
       const ok = confirm('Preview está vazio. Ainda assim deseja enviar?')
       if (!ok) return
     }
 
-    const ok = confirm('Criar e iniciar o envio da campanha agora?')
+    const ok = confirm(
+      formScheduleMode === 'schedule'
+        ? 'Criar e agendar esta campanha para o horário selecionado?'
+        : 'Criar e iniciar o envio da campanha agora?',
+    )
     if (!ok) return
 
     setSaving(true)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const customPayload = formAutomationEnabled
+        ? {
+            automation: {
+              enabled: true,
+              trigger: formAutomationTrigger,
+              targetStageId: formAutomationStageId || undefined,
+              followupSubject: formFollowupSubject || undefined,
+              followupHtml: formFollowupHtml || undefined,
+            },
+          }
+        : undefined
 
       const createRes = await apiFetch(`${apiUrl}/api/email-campaigns`, {
         method: 'POST',
@@ -260,8 +340,10 @@ export default function EmailMarketingPage() {
           filterTags: formFilterTags.length > 0 ? formFilterTags : undefined,
           filterStatus: formFilterStatus || undefined,
           filterSource: formFilterSource || undefined,
+          filterCustomFields: customPayload,
           excludeOptOut: formExcludeOptOut,
           sendRatePerMinute: formSendRate,
+          scheduledAt: formScheduleMode === 'schedule' ? formScheduledAt || undefined : undefined,
         }),
       })
 
@@ -271,16 +353,18 @@ export default function EmailMarketingPage() {
       }
 
       const created = await createRes.json()
-
-      const startRes = await apiFetch(`${apiUrl}/api/email-campaigns/${created.id}/start`, {
-        method: 'POST',
-      })
-      if (!startRes.ok) {
-        const err = await startRes.json().catch(() => ({}))
-        throw new Error(err?.message || 'Erro ao iniciar envio')
+      if (formScheduleMode === 'schedule') {
+        alert('Campanha criada e agendada com sucesso.')
+      } else {
+        const startRes = await apiFetch(`${apiUrl}/api/email-campaigns/${created.id}/start`, {
+          method: 'POST',
+        })
+        if (!startRes.ok) {
+          const err = await startRes.json().catch(() => ({}))
+          throw new Error(err?.message || 'Erro ao iniciar envio')
+        }
+        alert('Campanha criada e envio iniciado em background.')
       }
-
-      alert('Campanha criada e envio iniciado em background.')
       // Recarregar
       await refreshCampaigns()
       setPreview(null)
@@ -324,7 +408,7 @@ export default function EmailMarketingPage() {
             <Mail className="h-8 w-8 text-green-600" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">E-mail Marketing</h1>
-              <p className="text-gray-500">Crie campanhas HTML e dispare via SMTP (Gmail/Hostgator).</p>
+              <p className="text-gray-500">Crie campanhas HTML e dispare via Gmail conectado ou SMTP.</p>
             </div>
           </div>
           <button
@@ -380,6 +464,32 @@ export default function EmailMarketingPage() {
                 <p className="text-sm text-gray-500">Pausadas</p>
                 <p className="text-xl font-bold text-yellow-700">{stats?.campaigns?.paused ?? 0}</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Funil de engajamento (e-mail)</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs text-gray-500">Enviados</p>
+              <p className="text-xl font-semibold text-gray-900">{stats?.messages?.sent ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs text-gray-500">Entregues</p>
+              <p className="text-xl font-semibold text-gray-900">{stats?.messages?.delivered ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs text-gray-500">Abertos</p>
+              <p className="text-xl font-semibold text-blue-700">{stats?.messages?.read ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs text-gray-500">Clicados</p>
+              <p className="text-xl font-semibold text-green-700">{stats?.messages?.clicked ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs text-gray-500">Falhados</p>
+              <p className="text-xl font-semibold text-red-700">{stats?.messages?.failed ?? 0}</p>
             </div>
           </div>
         </div>
@@ -554,6 +664,96 @@ export default function EmailMarketingPage() {
               </div>
             </div>
 
+            <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Agendamento</h4>
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    checked={formScheduleMode === 'now'}
+                    onChange={() => setFormScheduleMode('now')}
+                  />
+                  Enviar agora
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    checked={formScheduleMode === 'schedule'}
+                    onChange={() => setFormScheduleMode('schedule')}
+                  />
+                  Agendar
+                </label>
+                {formScheduleMode === 'schedule' && (
+                  <input
+                    type="datetime-local"
+                    value={formScheduledAt}
+                    onChange={(e) => setFormScheduledAt(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-3">
+                <input
+                  type="checkbox"
+                  checked={formAutomationEnabled}
+                  onChange={(e) => setFormAutomationEnabled(e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                Automação de funil após engajamento (abertura/clique)
+              </label>
+              {formAutomationEnabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Disparar automação quando</label>
+                    <select
+                      value={formAutomationTrigger}
+                      onChange={(e) => setFormAutomationTrigger(e.target.value as 'OPEN' | 'CLICK' | 'BOTH')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="BOTH">Abrir ou clicar</option>
+                      <option value="OPEN">Apenas abrir</option>
+                      <option value="CLICK">Apenas clicar</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mover para etapa do Pipeline</label>
+                    <select
+                      value={formAutomationStageId}
+                      onChange={(e) => setFormAutomationStageId(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Selecione</option>
+                      {pipelineStages.map((st) => (
+                        <option key={st.id} value={st.id}>
+                          {st.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Assunto do follow-up</label>
+                    <input
+                      value={formFollowupSubject}
+                      onChange={(e) => setFormFollowupSubject(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">HTML do follow-up</label>
+                    <textarea
+                      rows={5}
+                      value={formFollowupHtml}
+                      onChange={(e) => setFormFollowupHtml(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="mt-5 flex flex-wrap gap-3">
               <button
                 type="button"
@@ -572,7 +772,7 @@ export default function EmailMarketingPage() {
                 className="flex items-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70"
               >
                 <Send className="h-4 w-4" />
-                {saving ? 'Enviando...' : 'Criar e enviar agora'}
+                {saving ? 'Processando...' : formScheduleMode === 'schedule' ? 'Criar e agendar' : 'Criar e enviar agora'}
               </button>
             </div>
           </div>
@@ -604,6 +804,11 @@ export default function EmailMarketingPage() {
         {/* List */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Campanhas recentes</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Campanhas podem ficar em <span className="font-semibold text-yellow-700">PAUSED</span> quando ocorre falha
+            temporária de envio. Use <span className="font-semibold text-green-700">Retomar</span> para continuar os
+            pendentes.
+          </p>
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -612,6 +817,7 @@ export default function EmailMarketingPage() {
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Nome</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Status</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Assunto</th>
+                  <th className="text-left py-3 px-3 font-medium text-gray-600">Agendado para</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Destinatários</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Enviados</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Ações</th>
@@ -620,14 +826,14 @@ export default function EmailMarketingPage() {
               <tbody>
                 {campaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 px-3 text-gray-500">
+                    <td colSpan={7} className="py-6 px-3 text-gray-500">
                       Nenhuma campanha ainda.
                     </td>
                   </tr>
                 ) : (
                   campaigns.map((c) => {
                     const st = statusLabel(c.status)
-                    const canStart = c.status === 'DRAFT' || c.status === 'PAUSED'
+                    const canStart = c.status === 'DRAFT' || c.status === 'PAUSED' || c.status === 'SCHEDULED'
                     const canPause = c.status === 'RUNNING'
                     return (
                       <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50/50">
@@ -638,6 +844,9 @@ export default function EmailMarketingPage() {
                           </span>
                         </td>
                         <td className="py-3 px-3 text-gray-600">{c.subject}</td>
+                        <td className="py-3 px-3 text-gray-600">
+                          {c.scheduledAt ? new Date(c.scheduledAt).toLocaleString('pt-BR') : '—'}
+                        </td>
                         <td className="py-3 px-3 text-gray-600">{c.totalContacts ?? 0}</td>
                         <td className="py-3 px-3 text-gray-600">{c.sentCount ?? 0}</td>
                         <td className="py-3 px-3">
@@ -647,10 +856,16 @@ export default function EmailMarketingPage() {
                               onClick={() => handleStartOrResumeCampaign(c.id)}
                               disabled={saving}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-                              title={c.status === 'PAUSED' ? 'Retomar envio' : 'Iniciar envio'}
+                              title={
+                                c.status === 'PAUSED'
+                                  ? 'Retomar envio'
+                                  : c.status === 'SCHEDULED'
+                                  ? 'Iniciar agora'
+                                  : 'Iniciar envio'
+                              }
                             >
                               <Play className="h-4 w-4" />
-                              {c.status === 'PAUSED' ? 'Retomar' : 'Enviar'}
+                              {c.status === 'PAUSED' ? 'Retomar' : c.status === 'SCHEDULED' ? 'Iniciar agora' : 'Enviar'}
                             </button>
                           )}
                           {canPause && (
@@ -666,6 +881,26 @@ export default function EmailMarketingPage() {
                           )}
                           {(c.status === 'COMPLETED' || c.status === 'CANCELLED') && (
                             <span className="text-xs text-gray-400">—</span>
+                          )}
+                          {c.status === 'SCHEDULED' && (
+                            <button
+                              type="button"
+                              onClick={() => handleUnscheduleCampaign(c.id)}
+                              className="inline-flex items-center gap-1 ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300"
+                              title="Remover agendamento"
+                            >
+                              Remover agendamento
+                            </button>
+                          )}
+                          {(c.status === 'RUNNING' || c.status === 'PAUSED' || c.status === 'DRAFT' || c.status === 'SCHEDULED') && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelCampaign(c.id)}
+                              className="inline-flex items-center gap-1 ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                              title="Cancelar campanha"
+                            >
+                              Cancelar
+                            </button>
                           )}
                         </td>
                       </tr>

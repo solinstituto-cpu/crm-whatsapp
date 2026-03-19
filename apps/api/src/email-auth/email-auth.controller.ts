@@ -11,6 +11,11 @@ export class EmailAuthController {
     return this.emailAuthService.getStatus();
   }
 
+  @Get('google/diagnostics')
+  async googleDiagnostics() {
+    return this.emailAuthService.getDiagnostics();
+  }
+
   @Get('google/url')
   async googleUrl() {
     const url = await this.emailAuthService.getGoogleAuthUrl();

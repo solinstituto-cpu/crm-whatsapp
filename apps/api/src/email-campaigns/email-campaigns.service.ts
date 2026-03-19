@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { EmailAuthService } from '../email-auth/email-auth.service';
 import * as nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 type EmailContactForCampaign = {
   id: string;
@@ -15,6 +16,14 @@ type EmailContactForCampaign = {
   phoneE164: string;
   company: string | null;
   city: string | null;
+};
+
+type CampaignAutomationConfig = {
+  enabled?: boolean;
+  trigger?: 'OPEN' | 'CLICK' | 'BOTH';
+  targetStageId?: string;
+  followupSubject?: string;
+  followupHtml?: string;
 };
 
 @Injectable()
@@ -79,10 +88,11 @@ export class EmailCampaignsService {
       this.prisma.emailCampaign.count({ where: { status: 'PAUSED' } }),
     ]);
 
-    const [sent, delivered, read, failed] = await Promise.all([
+    const [sent, delivered, read, clicked, failed] = await Promise.all([
       this.prisma.emailCampaignMessage.count({ where: { status: 'SENT' } }),
       this.prisma.emailCampaignMessage.count({ where: { status: 'DELIVERED' } }),
       this.prisma.emailCampaignMessage.count({ where: { status: 'READ' } }),
+      this.prisma.emailCampaignMessage.count({ where: { clickCount: { gt: 0 } } }),
       this.prisma.emailCampaignMessage.count({ where: { status: 'FAILED' } }),
     ]);
 
@@ -101,6 +111,7 @@ export class EmailCampaignsService {
         sent,
         delivered,
         read,
+        clicked,
         failed,
       },
     };
@@ -138,6 +149,7 @@ export class EmailCampaignsService {
     sendRatePerMinute?: number;
     fromEmail?: string;
     fromName?: string;
+    scheduledAt?: string;
   }) {
     this.logger.log(`Criando campanha de e-mail: ${data.name}`);
 
@@ -155,7 +167,8 @@ export class EmailCampaignsService {
           ? JSON.stringify(data.filterCustomFields)
           : null,
         excludeOptOut: data.excludeOptOut ?? true,
-        status: 'DRAFT',
+        status: data.scheduledAt ? 'SCHEDULED' : 'DRAFT',
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         sendRatePerMinute: data.sendRatePerMinute || 10,
         fromEmail: data.fromEmail ?? null,
         fromName: data.fromName ?? null,
@@ -181,6 +194,7 @@ export class EmailCampaignsService {
       sendRatePerMinute?: number;
       fromEmail?: string;
       fromName?: string;
+      scheduledAt?: string | null;
     }>,
   ) {
     const campaign = await this.findOne(id);
@@ -195,6 +209,8 @@ export class EmailCampaignsService {
         ...data,
         filterTags: data.filterTags ? JSON.stringify(data.filterTags) : undefined,
         filterCustomFields: data.filterCustomFields ? JSON.stringify(data.filterCustomFields) : undefined,
+        scheduledAt: data.scheduledAt === undefined ? undefined : data.scheduledAt ? new Date(data.scheduledAt) : null,
+        status: data.scheduledAt === undefined ? undefined : data.scheduledAt ? 'SCHEDULED' : 'DRAFT',
       },
     });
   }
@@ -234,6 +250,71 @@ export class EmailCampaignsService {
     } catch {
       return null;
     }
+  }
+
+  private getTrackingSecret() {
+    return process.env.EMAIL_TRACKING_SECRET || process.env.JWT_SECRET || 'email_tracking_secret';
+  }
+
+  private signTrackingToken(messageId: string) {
+    return crypto
+      .createHmac('sha256', this.getTrackingSecret())
+      .update(messageId)
+      .digest('hex');
+  }
+
+  private isValidTrackingToken(messageId: string, token?: string) {
+    if (!token) return false;
+    const expected = this.signTrackingToken(messageId);
+    const a = Buffer.from(expected);
+    const b = Buffer.from(token);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  }
+
+  private getPublicApiBaseUrl() {
+    const raw =
+      process.env.PUBLIC_API_URL ||
+      process.env.API_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.WEBAPP_URL ||
+      'http://localhost:4000';
+    return String(raw).replace(/\/$/, '');
+  }
+
+  private rewriteLinksForTracking(html: string, messageId: string) {
+    const token = this.signTrackingToken(messageId);
+    const base = this.getPublicApiBaseUrl();
+    const hrefRegex = /href\s*=\s*["']([^"']+)["']/gi;
+    return html.replace(hrefRegex, (full, href: string) => {
+      const target = String(href || '').trim();
+      if (!/^https?:\/\//i.test(target)) return full;
+      const tracked = `${base}/api/email-campaigns/track/click/${messageId}?token=${token}&url=${encodeURIComponent(target)}`;
+      return full.replace(href, tracked);
+    });
+  }
+
+  private injectOpenPixel(html: string, messageId: string) {
+    const token = this.signTrackingToken(messageId);
+    const base = this.getPublicApiBaseUrl();
+    const pixelTag = `<img src="${base}/api/email-campaigns/track/open/${messageId}?token=${token}" width="1" height="1" style="display:none!important;opacity:0;" alt="" />`;
+    if (/<\/body>/i.test(html)) {
+      return html.replace(/<\/body>/i, `${pixelTag}</body>`);
+    }
+    return `${html}\n${pixelTag}`;
+  }
+
+  private applyTrackingToHtml(html: string, messageId: string) {
+    const withLinks = this.rewriteLinksForTracking(html, messageId);
+    return this.injectOpenPixel(withLinks, messageId);
+  }
+
+  private getAutomationConfig(filterCustomFields: string | null): CampaignAutomationConfig | null {
+    const parsed = this.safeParseJson(filterCustomFields);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const automation = (parsed as any)?.automation;
+    if (!automation || typeof automation !== 'object') return null;
+    return automation as CampaignAutomationConfig;
   }
 
   async previewContacts(filters: {
@@ -491,7 +572,7 @@ export class EmailCampaignsService {
     if (!campaign) throw new NotFoundException('Campanha não encontrada');
 
     if (!forceStart) {
-      if (campaign.status !== 'DRAFT' && campaign.status !== 'PAUSED') {
+      if (campaign.status !== 'DRAFT' && campaign.status !== 'PAUSED' && campaign.status !== 'SCHEDULED') {
         throw new BadRequestException(`Não é possível iniciar campanha com status: ${campaign.status}`);
       }
     }
@@ -533,6 +614,7 @@ export class EmailCampaignsService {
       where: { id },
       data: {
         status: 'RUNNING',
+        scheduledAt: null,
         startedAt: new Date(),
         totalContacts: recipients.length,
       },
@@ -632,7 +714,8 @@ export class EmailCampaignsService {
       const customFieldsObj = this.safeParseJson(contact.customFields) || {};
 
       const subject = this.renderTemplate(campaign.subject, contact as any, customFieldsObj);
-      const html = this.renderTemplate(campaign.htmlTemplate, contact as any, customFieldsObj);
+      const htmlBase = this.renderTemplate(campaign.htmlTemplate, contact as any, customFieldsObj);
+      const html = this.applyTrackingToHtml(htmlBase, message.id);
 
       const fromEmail = campaign.fromEmail || fromEnvEmail;
       const fromName = campaign.fromName || fromEnvName || undefined;
@@ -696,6 +779,163 @@ export class EmailCampaignsService {
     this.runningCampaigns.delete(campaignId);
   }
 
+  private getTransparentGifBuffer() {
+    return Buffer.from('R0lGODlhAQABAPAAAAAAAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==', 'base64');
+  }
+
+  private async processAutomationIfNeeded(params: {
+    messageId: string;
+    eventType: 'OPEN' | 'CLICK';
+  }) {
+    const message = await this.prisma.emailCampaignMessage.findUnique({
+      where: { id: params.messageId },
+      include: { emailCampaign: true },
+    });
+    if (!message || !message.contactId) return;
+    if (message.automationProcessedAt) return;
+
+    const automation = this.getAutomationConfig(message.emailCampaign.filterCustomFields);
+    if (!automation?.enabled || !automation.targetStageId) return;
+
+    const trigger = automation.trigger || 'BOTH';
+    if (trigger !== 'BOTH' && trigger !== params.eventType) return;
+
+    const stage = await this.prisma.pipelineStage.findUnique({ where: { id: automation.targetStageId } });
+    if (!stage) return;
+
+    const deal = await this.prisma.deal.findFirst({
+      where: { contactId: message.contactId },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (deal && deal.stageId !== stage.id) {
+      await this.prisma.deal.update({
+        where: { id: deal.id },
+        data: { stageId: stage.id },
+      });
+    }
+
+    if (automation.followupSubject && automation.followupHtml && message.contactEmail) {
+      try {
+        const { transport, fromEmail: fromEnvEmail, fromName: fromEnvName } = await this.getEmailTransport();
+        const fromEmail = message.emailCampaign.fromEmail || fromEnvEmail;
+        const fromName = message.emailCampaign.fromName || fromEnvName || undefined;
+        const subject = this.renderTemplate(automation.followupSubject, {
+          id: message.contactId,
+          name: message.contactName || '',
+          email: message.contactEmail,
+          customerStatus: null,
+          source: null,
+          tags: null,
+          customFields: null,
+          phoneE164: '',
+          company: null,
+          city: null,
+        }, {});
+        const html = this.applyTrackingToHtml(automation.followupHtml, message.id);
+
+        await transport.sendMail({
+          from: fromName ? `"${fromName}" <${fromEmail}>` : fromEmail,
+          to: message.contactEmail,
+          subject,
+          html,
+        });
+      } catch (error: any) {
+        this.logger.error(`Falha no follow-up automático da mensagem ${message.id}: ${error?.message || error}`);
+      }
+    }
+
+    await this.prisma.emailCampaignMessage.update({
+      where: { id: message.id },
+      data: {
+        automationProcessedAt: new Date(),
+      },
+    });
+  }
+
+  async trackOpen(params: {
+    messageId: string;
+    token?: string;
+    ip?: string | null;
+    userAgent?: string | null;
+  }) {
+    if (!this.isValidTrackingToken(params.messageId, params.token)) {
+      return this.getTransparentGifBuffer();
+    }
+
+    const message = await this.prisma.emailCampaignMessage.findUnique({
+      where: { id: params.messageId },
+      select: { id: true, emailCampaignId: true, readAt: true, status: true },
+    });
+    if (!message) return this.getTransparentGifBuffer();
+
+    if (!message.readAt) {
+      await this.prisma.emailCampaignMessage.update({
+        where: { id: message.id },
+        data: {
+          status: 'READ',
+          readAt: new Date(),
+        },
+      });
+
+      await this.prisma.emailCampaign.update({
+        where: { id: message.emailCampaignId },
+        data: { readCount: { increment: 1 } },
+      });
+    }
+
+    this.processAutomationIfNeeded({ messageId: params.messageId, eventType: 'OPEN' }).catch(() => null);
+    return this.getTransparentGifBuffer();
+  }
+
+  async trackClick(params: {
+    messageId: string;
+    token?: string;
+    url?: string;
+    ip?: string | null;
+    userAgent?: string | null;
+  }) {
+    const safeFallbackUrl = process.env.WEBAPP_URL || 'https://example.com';
+    if (!this.isValidTrackingToken(params.messageId, params.token)) return safeFallbackUrl;
+
+    const target = String(params.url || '').trim();
+    if (!/^https?:\/\//i.test(target)) return safeFallbackUrl;
+
+    const message = await this.prisma.emailCampaignMessage.findUnique({
+      where: { id: params.messageId },
+      select: { id: true, emailCampaignId: true, readAt: true, clickCount: true },
+    });
+    if (!message) return target;
+
+    await this.prisma.emailCampaignMessage.update({
+      where: { id: message.id },
+      data: {
+        status: 'READ',
+        readAt: message.readAt || new Date(),
+        clickCount: { increment: 1 },
+        firstClickedAt: message.clickCount === 0 ? new Date() : undefined,
+        lastClickedAt: new Date(),
+      },
+    });
+
+    if (!message.readAt) {
+      await this.prisma.emailCampaign.update({
+        where: { id: message.emailCampaignId },
+        data: { readCount: { increment: 1 } },
+      });
+    }
+
+    if (message.clickCount === 0) {
+      await this.prisma.emailCampaign.update({
+        where: { id: message.emailCampaignId },
+        data: { clickedCount: { increment: 1 } },
+      });
+    }
+
+    this.processAutomationIfNeeded({ messageId: params.messageId, eventType: 'CLICK' }).catch(() => null);
+    return target;
+  }
+
   async pause(id: string) {
     const campaign = await this.prisma.emailCampaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException('Campanha não encontrada');
@@ -708,6 +948,39 @@ export class EmailCampaignsService {
       data: { status: 'PAUSED' },
     });
     return { success: true, paused: true };
+  }
+
+  async schedule(id: string, scheduledAt: string) {
+    const campaign = await this.prisma.emailCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+    if (!scheduledAt) throw new BadRequestException('Informe a data/hora de agendamento');
+    if (campaign.status === 'RUNNING') {
+      throw new BadRequestException('Não é possível agendar campanha em execução');
+    }
+
+    return this.prisma.emailCampaign.update({
+      where: { id },
+      data: {
+        status: 'SCHEDULED',
+        scheduledAt: new Date(scheduledAt),
+      },
+    });
+  }
+
+  async unschedule(id: string) {
+    const campaign = await this.prisma.emailCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+    if (campaign.status !== 'SCHEDULED') {
+      throw new BadRequestException('Só é possível remover agendamento de campanhas SCHEDULED');
+    }
+
+    return this.prisma.emailCampaign.update({
+      where: { id },
+      data: {
+        status: 'DRAFT',
+        scheduledAt: null,
+      },
+    });
   }
 
   async cancel(id: string) {

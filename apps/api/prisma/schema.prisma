@@ -502,6 +502,7 @@ model EmailCampaign {
   sentCount      Int @default(0)
   deliveredCount Int @default(0)
   readCount      Int @default(0)
+  clickedCount   Int @default(0)
   failedCount    Int @default(0)
 
   // Remetente (pode vir de env; fica salvo por campanha para auditar)
@@ -534,6 +535,10 @@ model EmailCampaignMessage {
   sentAt      DateTime?
   deliveredAt DateTime?
   readAt      DateTime?
+  clickCount  Int      @default(0)
+  firstClickedAt DateTime?
+  lastClickedAt DateTime?
+  automationProcessedAt DateTime?
   error       String?
 
   createdAt DateTime @default(now())
