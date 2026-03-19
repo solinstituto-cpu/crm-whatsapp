@@ -29,6 +29,24 @@ export class EmailCampaignsController {
     return this.emailCampaignsService.findOne(id);
   }
 
+  @Get(':id/messages')
+  async listMessages(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('engagement') engagement?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.emailCampaignsService.listMessages(id, {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 50,
+      status,
+      engagement,
+      search,
+    });
+  }
+
   @Post()
   async create(
     @Body() body: {
@@ -117,6 +135,33 @@ export class EmailCampaignsController {
   @Post(':id/cancel')
   async cancel(@Param('id') id: string) {
     return this.emailCampaignsService.cancel(id);
+  }
+
+  @Post(':id/reprocess-failed')
+  async reprocessFailed(@Param('id') id: string) {
+    return this.emailCampaignsService.reprocessFailed(id);
+  }
+
+  @Post(':id/followup-opened-not-clicked')
+  async createFollowupOpenedNotClicked(
+    @Param('id') id: string,
+    @Body()
+    body?: {
+      name?: string;
+      subject?: string;
+      htmlTemplate?: string;
+      autoStart?: boolean;
+    },
+  ) {
+    return this.emailCampaignsService.createFollowupForOpenedNotClicked(id, body);
+  }
+
+  @Get(':id/export.csv')
+  async exportMessagesCsv(@Param('id') id: string, @Res() res: Response) {
+    const data = await this.emailCampaignsService.exportMessagesCsv(id);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${data.fileName}"`);
+    return res.status(200).send(`\uFEFF${data.csv}`);
   }
 
   @Get('track/open/:messageId')

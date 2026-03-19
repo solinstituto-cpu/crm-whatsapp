@@ -13,6 +13,7 @@ type EmailCampaign = {
   description?: string
   status: string
   subject: string
+  htmlTemplate?: string
   preheader?: string | null
   filterTags?: string | null
   filterStatus?: string | null
@@ -37,6 +38,19 @@ type PipelineStage = {
   id: string
   name: string
   order: number
+}
+
+type CampaignMessageItem = {
+  id: string
+  contactEmail: string
+  contactName?: string | null
+  status: string
+  clickCount?: number
+  sentAt?: string | null
+  readAt?: string | null
+  firstClickedAt?: string | null
+  lastClickedAt?: string | null
+  error?: string | null
 }
 
 type FieldOption = {
@@ -99,6 +113,18 @@ export default function EmailMarketingPage() {
 
   const [preview, setPreview] = useState<{ total: number; contacts: { id: string; name: string; email: string }[] } | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [campaignMessages, setCampaignMessages] = useState<CampaignMessageItem[]>([])
+  const [messagesPage, setMessagesPage] = useState(1)
+  const [messagesTotalPages, setMessagesTotalPages] = useState(1)
+  const [messagesSearch, setMessagesSearch] = useState('')
+  const [messagesEngagement, setMessagesEngagement] = useState<'ALL' | 'OPENED' | 'CLICKED' | 'FAILED'>('ALL')
+  const [followupModalOpen, setFollowupModalOpen] = useState(false)
+  const [followupSourceCampaignId, setFollowupSourceCampaignId] = useState('')
+  const [followupName, setFollowupName] = useState('')
+  const [followupSubject, setFollowupSubject] = useState('')
+  const [followupHtml, setFollowupHtml] = useState('')
 
   useEffect(() => {
     const loadAll = async () => {
@@ -180,6 +206,12 @@ export default function EmailMarketingPage() {
     }
   }, [status])
 
+  useEffect(() => {
+    if (!selectedCampaignId) return
+    loadCampaignMessages(selectedCampaignId, 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messagesEngagement])
+
   const refreshCampaigns = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
     const campaignsRes = await apiFetch(`${apiUrl}/api/email-campaigns?limit=50`)
@@ -191,6 +223,125 @@ export default function EmailMarketingPage() {
     if (statRes.ok) {
       const data = await statRes.json()
       setStats(data || null)
+    }
+  }
+
+  const loadCampaignMessages = async (campaignId: string, page = 1) => {
+    if (!campaignId) return
+    setMessagesLoading(true)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('limit', '20')
+      if (messagesSearch.trim()) params.set('search', messagesSearch.trim())
+      if (messagesEngagement !== 'ALL') params.set('engagement', messagesEngagement)
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${campaignId}/messages?${params.toString()}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Erro ao carregar mensagens da campanha')
+      }
+      const data = await res.json()
+      setCampaignMessages(data?.messages || [])
+      setMessagesPage(data?.pagination?.page || 1)
+      setMessagesTotalPages(data?.pagination?.pages || 1)
+    } catch (e: any) {
+      alert(e?.message || 'Falha ao carregar mensagens')
+    } finally {
+      setMessagesLoading(false)
+    }
+  }
+
+  const handleViewCampaignDetails = async (campaignId: string) => {
+    setSelectedCampaignId(campaignId)
+    await loadCampaignMessages(campaignId, 1)
+  }
+
+  const handleReprocessFailed = async (campaignId: string) => {
+    if (!confirm('Reprocessar apenas mensagens com falha desta campanha?')) return
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${campaignId}/reprocess-failed`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Erro ao reprocessar falhas')
+      }
+      const data = await res.json()
+      alert(`Mensagens reprocessadas: ${data?.updated ?? 0}`)
+      await refreshCampaigns()
+      if (selectedCampaignId === campaignId) {
+        await loadCampaignMessages(campaignId, 1)
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao reprocessar')
+    }
+  }
+
+  const handleExportCsv = async (campaignId: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${campaignId}/export.csv`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Erro ao exportar CSV')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `email-campaign-${campaignId}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao exportar CSV')
+    }
+  }
+
+  const openFollowupModal = (campaign: EmailCampaign) => {
+    setFollowupSourceCampaignId(campaign.id)
+    setFollowupName(`Follow-up (abriu e não clicou) - ${campaign.name}`)
+    setFollowupSubject(
+      campaign.subject.toLowerCase().includes('lembrete') ? campaign.subject : `Lembrete: ${campaign.subject}`,
+    )
+    setFollowupHtml(
+      `${campaign.htmlTemplate || formHtml}
+<div style="font-family:Arial,sans-serif;max-width:680px;margin:14px auto 0;color:#64748b;font-size:12px;">
+  <p>Percebemos que você abriu nosso e-mail anterior. Se quiser, é só clicar no botão acima para continuar.</p>
+</div>`,
+    )
+    setFollowupModalOpen(true)
+  }
+
+  const handleCreateOpenedNotClickedFollowup = async () => {
+    if (!followupSourceCampaignId) return
+    if (!followupSubject.trim()) return alert('Assunto do follow-up é obrigatório')
+    if (!followupHtml.trim()) return alert('HTML do follow-up é obrigatório')
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${followupSourceCampaignId}/followup-opened-not-clicked`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: followupName || undefined,
+          subject: followupSubject,
+          htmlTemplate: followupHtml,
+          autoStart: true,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Erro ao criar follow-up')
+      }
+      const data = await res.json()
+      alert(
+        `Follow-up criado e iniciado.\nSegmento: ${data?.totalSegmentContacts ?? 0} contato(s)\nCampanha: ${data?.campaignId || '-'}`,
+      )
+      setFollowupModalOpen(false)
+      await refreshCampaigns()
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao criar follow-up')
     }
   }
 
@@ -902,6 +1053,38 @@ export default function EmailMarketingPage() {
                               Cancelar
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => handleViewCampaignDetails(c.id)}
+                            className="inline-flex items-center gap-1 ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            title="Ver detalhes"
+                          >
+                            Detalhes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReprocessFailed(c.id)}
+                            className="inline-flex items-center gap-1 ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-orange-100 text-orange-700 hover:bg-orange-200"
+                            title="Reprocessar falhas"
+                          >
+                            Reprocessar falhas
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExportCsv(c.id)}
+                            className="inline-flex items-center gap-1 ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            title="Exportar CSV"
+                          >
+                            CSV
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openFollowupModal(c)}
+                            className="inline-flex items-center gap-1 ml-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-violet-100 text-violet-700 hover:bg-violet-200"
+                            title="Criar follow-up para quem abriu e não clicou"
+                          >
+                            Follow-up (abriu e não clicou)
+                          </button>
                         </td>
                       </tr>
                     )
@@ -910,8 +1093,160 @@ export default function EmailMarketingPage() {
               </tbody>
             </table>
           </div>
+
+          {selectedCampaignId && (
+            <div className="mt-5 border border-gray-200 rounded-lg p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <h3 className="text-md font-semibold text-gray-900">Detalhes da campanha</h3>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={messagesSearch}
+                    onChange={(e) => setMessagesSearch(e.target.value)}
+                    placeholder="Buscar por nome/e-mail"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => loadCampaignMessages(selectedCampaignId, 1)}
+                    className="px-3 py-2 rounded-lg text-sm bg-gray-100 hover:bg-gray-200"
+                  >
+                    Buscar
+                  </button>
+                  <select
+                    value={messagesEngagement}
+                    onChange={(e) => setMessagesEngagement(e.target.value as 'ALL' | 'OPENED' | 'CLICKED' | 'FAILED')}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="ALL">Todos</option>
+                    <option value="OPENED">Abertos</option>
+                    <option value="CLICKED">Clicados</option>
+                    <option value="FAILED">Falhados</option>
+                  </select>
+                </div>
+              </div>
+
+              {messagesLoading ? (
+                <p className="text-sm text-gray-500">Carregando mensagens...</p>
+              ) : campaignMessages.length === 0 ? (
+                <p className="text-sm text-gray-500">Sem mensagens para este filtro.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-2 font-medium text-gray-600">Destinatário</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-600">Status</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-600">Abertura</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-600">Cliques</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-600">Erro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {campaignMessages.map((m) => (
+                        <tr key={m.id} className="border-b border-gray-100">
+                          <td className="py-2 px-2">
+                            <div className="font-medium text-gray-900">{m.contactName || 'Sem nome'}</div>
+                            <div className="text-xs text-gray-500">{m.contactEmail}</div>
+                          </td>
+                          <td className="py-2 px-2 text-gray-700">{m.status}</td>
+                          <td className="py-2 px-2 text-gray-700">
+                            {m.readAt ? new Date(m.readAt).toLocaleString('pt-BR') : '—'}
+                          </td>
+                          <td className="py-2 px-2 text-gray-700">{m.clickCount ?? 0}</td>
+                          <td className="py-2 px-2 text-red-600 max-w-[300px] truncate" title={m.error || ''}>
+                            {m.error || '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                <span>Página {messagesPage} de {messagesTotalPages}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={messagesPage <= 1 || messagesLoading}
+                    onClick={() => loadCampaignMessages(selectedCampaignId, messagesPage - 1)}
+                    className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    disabled={messagesPage >= messagesTotalPages || messagesLoading}
+                    onClick={() => loadCampaignMessages(selectedCampaignId, messagesPage + 1)}
+                    className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-50"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+      {followupModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-3xl rounded-xl shadow-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Follow-up: abriu e não clicou</h3>
+              <button
+                type="button"
+                onClick={() => setFollowupModalOpen(false)}
+                className="px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome da campanha</label>
+                <input
+                  value={followupName}
+                  onChange={(e) => setFollowupName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assunto</label>
+                <input
+                  value={followupSubject}
+                  onChange={(e) => setFollowupSubject(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">HTML do follow-up</label>
+                <textarea
+                  rows={10}
+                  value={followupHtml}
+                  onChange={(e) => setFollowupHtml(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFollowupModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateOpenedNotClickedFollowup}
+                className="px-4 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700"
+              >
+                Criar e iniciar follow-up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }

@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { EmailAuthService } from '../email-auth/email-auth.service';
 import * as nodemailer from 'nodemailer';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 type EmailContactForCampaign = {
   id: string;
@@ -317,6 +317,14 @@ export class EmailCampaignsService {
     return automation as CampaignAutomationConfig;
   }
 
+  private getStaticContactIds(filterCustomFields: string | null): string[] {
+    const parsed = this.safeParseJson(filterCustomFields);
+    if (!parsed || typeof parsed !== 'object') return [];
+    const ids = (parsed as any)?.staticContactIds;
+    if (!Array.isArray(ids)) return [];
+    return ids.map((v: any) => String(v)).filter(Boolean);
+  }
+
   async previewContacts(filters: {
     filterTags?: string[];
     filterStatus?: string;
@@ -536,6 +544,12 @@ export class EmailCampaignsService {
 
     contacts = contacts.filter(c => c.email && String(c.email).trim() !== '');
 
+    const staticContactIds = this.getStaticContactIds(campaign.filterCustomFields);
+    if (staticContactIds.length > 0) {
+      const staticSet = new Set(staticContactIds);
+      contacts = contacts.filter(c => staticSet.has(c.id));
+    }
+
     const filterTagsArray: string[] = campaign.filterTags
       ? (this.safeParseJson(campaign.filterTags) || []).map(String)
       : [];
@@ -565,6 +579,95 @@ export class EmailCampaignsService {
     }
 
     return contacts as any;
+  }
+
+  async createFollowupForOpenedNotClicked(
+    sourceCampaignId: string,
+    options?: {
+      name?: string;
+      subject?: string;
+      htmlTemplate?: string;
+      autoStart?: boolean;
+    },
+  ) {
+    const sourceCampaign = await this.prisma.emailCampaign.findUnique({
+      where: { id: sourceCampaignId },
+      select: {
+        id: true,
+        name: true,
+        subject: true,
+        htmlTemplate: true,
+        preheader: true,
+        fromEmail: true,
+        fromName: true,
+        sendRatePerMinute: true,
+      },
+    });
+    if (!sourceCampaign) {
+      throw new NotFoundException('Campanha de origem não encontrada');
+    }
+
+    const engagedMessages = await this.prisma.emailCampaignMessage.findMany({
+      where: {
+        emailCampaignId: sourceCampaignId,
+        contactId: { not: null },
+        readAt: { not: null },
+        clickCount: 0,
+      },
+      select: { contactId: true },
+    });
+
+    const contactIds = Array.from(
+      new Set(
+        engagedMessages
+          .map(m => m.contactId)
+          .filter(Boolean) as string[],
+      ),
+    );
+
+    if (contactIds.length === 0) {
+      throw new BadRequestException('Nenhum contato encontrado no segmento "abriu e não clicou"');
+    }
+
+    const followupSubject = options?.subject || (sourceCampaign.subject.toLowerCase().includes('lembrete')
+      ? sourceCampaign.subject
+      : `Lembrete: ${sourceCampaign.subject}`);
+
+    const followupHtml = options?.htmlTemplate || `${sourceCampaign.htmlTemplate}
+<div style="font-family:Arial,sans-serif;max-width:680px;margin:14px auto 0;color:#64748b;font-size:12px;">
+  <p>Percebemos que você abriu nosso e-mail anterior. Se quiser, é só clicar no botão acima para continuar.</p>
+</div>`;
+
+    const followupCampaign = await this.prisma.emailCampaign.create({
+      data: {
+        name: options?.name || `Follow-up (abriu e não clicou) - ${sourceCampaign.name}`,
+        subject: followupSubject,
+        preheader: sourceCampaign.preheader,
+        htmlTemplate: followupHtml,
+        filterCustomFields: JSON.stringify({
+          staticContactIds: contactIds,
+          sourceCampaignId,
+          sourceSegment: 'OPENED_NOT_CLICKED',
+        }),
+        status: 'DRAFT',
+        excludeOptOut: true,
+        sendRatePerMinute: sourceCampaign.sendRatePerMinute || 10,
+        fromEmail: sourceCampaign.fromEmail,
+        fromName: sourceCampaign.fromName,
+      },
+    });
+
+    const shouldAutoStart = options?.autoStart !== false;
+    const startResult = shouldAutoStart
+      ? await this.start(followupCampaign.id)
+      : { success: true, totalContacts: 0, pendingCreated: 0 };
+    return {
+      success: true,
+      campaignId: followupCampaign.id,
+      totalSegmentContacts: contactIds.length,
+      autoStarted: shouldAutoStart,
+      ...startResult,
+    };
   }
 
   async start(id: string, forceStart = false) {
@@ -934,6 +1037,152 @@ export class EmailCampaignsService {
 
     this.processAutomationIfNeeded({ messageId: params.messageId, eventType: 'CLICK' }).catch(() => null);
     return target;
+  }
+
+  async listMessages(
+    campaignId: string,
+    query?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      engagement?: string;
+      search?: string;
+    },
+  ) {
+    const campaign = await this.prisma.emailCampaign.findUnique({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+
+    const page = Number(query?.page) > 0 ? Number(query?.page) : 1;
+    const limit = Number(query?.limit) > 0 ? Math.min(Number(query?.limit), 200) : 50;
+    const skip = (page - 1) * limit;
+
+    const where: any = { emailCampaignId: campaignId };
+    if (query?.status) where.status = query.status;
+    if (query?.engagement === 'OPENED') where.readAt = { not: null };
+    if (query?.engagement === 'CLICKED') where.clickCount = { gt: 0 };
+    if (query?.engagement === 'FAILED') where.status = 'FAILED';
+    if (query?.search) {
+      where.OR = [
+        { contactEmail: { contains: query.search, mode: 'insensitive' } },
+        { contactName: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [messages, total] = await Promise.all([
+      this.prisma.emailCampaignMessage.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.emailCampaignMessage.count({ where }),
+    ]);
+
+    return {
+      messages,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async reprocessFailed(id: string) {
+    const campaign = await this.prisma.emailCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+    if (campaign.status === 'RUNNING') {
+      throw new BadRequestException('Pause a campanha antes de reprocessar falhas');
+    }
+
+    const failedMessages = await this.prisma.emailCampaignMessage.findMany({
+      where: { emailCampaignId: id, status: 'FAILED' },
+      select: { id: true },
+    });
+
+    if (failedMessages.length === 0) {
+      return { success: true, updated: 0 };
+    }
+
+    await this.prisma.emailCampaignMessage.updateMany({
+      where: { emailCampaignId: id, status: 'FAILED' },
+      data: {
+        status: 'PENDING',
+        error: null,
+      },
+    });
+
+    const [pendingCount, failedCount] = await Promise.all([
+      this.prisma.emailCampaignMessage.count({
+        where: { emailCampaignId: id, status: 'PENDING' },
+      }),
+      this.prisma.emailCampaignMessage.count({
+        where: { emailCampaignId: id, status: 'FAILED' },
+      }),
+    ]);
+    await this.prisma.emailCampaign.update({
+      where: { id },
+      data: {
+        failedCount,
+        status: pendingCount > 0 ? 'PAUSED' : campaign.status,
+      },
+    });
+
+    return { success: true, updated: failedMessages.length };
+  }
+
+  private escapeCsvValue(value: any): string {
+    const s = String(value ?? '');
+    if (/[,"\n;]/.test(s)) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  }
+
+  async exportMessagesCsv(campaignId: string) {
+    const campaign = await this.prisma.emailCampaign.findUnique({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+
+    const messages = await this.prisma.emailCampaignMessage.findMany({
+      where: { emailCampaignId: campaignId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const header = [
+      'messageId',
+      'contactEmail',
+      'contactName',
+      'status',
+      'clickCount',
+      'sentAt',
+      'readAt',
+      'firstClickedAt',
+      'lastClickedAt',
+      'error',
+    ];
+
+    const rows = messages.map((m) => [
+      m.id,
+      m.contactEmail,
+      m.contactName || '',
+      m.status,
+      m.clickCount ?? 0,
+      m.sentAt ? m.sentAt.toISOString() : '',
+      m.readAt ? m.readAt.toISOString() : '',
+      m.firstClickedAt ? m.firstClickedAt.toISOString() : '',
+      m.lastClickedAt ? m.lastClickedAt.toISOString() : '',
+      m.error || '',
+    ]);
+
+    const csv = [header, ...rows]
+      .map((row) => row.map((v) => this.escapeCsvValue(v)).join(';'))
+      .join('\n');
+
+    return {
+      fileName: `email-campaign-${campaignId}-messages.csv`,
+      csv,
+    };
   }
 
   async pause(id: string) {
