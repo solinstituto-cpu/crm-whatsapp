@@ -223,11 +223,8 @@ export class EmailAuthService {
   }
 
   async sendTestEmail(params: { to: string; subject: string; html: string }) {
-    const fromEmail =
-      process.env.EMAIL_FROM ||
-      (await this.settingsService.getSetting('email_from_email')) ||
-      (await this.getGoogleAccessToken()).email ||
-      null;
+    const { email: connectedEmail } = await this.getGoogleAccessToken();
+    const fromEmail = connectedEmail || process.env.EMAIL_FROM || (await this.settingsService.getSetting('email_from_email')) || null;
     const fromName =
       process.env.EMAIL_FROM_NAME ||
       (await this.settingsService.getSetting('email_from_name')) ||
@@ -255,10 +252,14 @@ export class EmailAuthService {
     subject: string;
     html: string;
   }): Promise<{ messageId: string | null }> {
-    const { accessToken } = await this.getGoogleAccessToken();
+    const { accessToken, email: connectedEmail } = await this.getGoogleAccessToken();
+
+    const safeFrom = connectedEmail
+      ? params.from.replace(/<[^>]+>/, `<${connectedEmail}>`)
+      : params.from;
 
     const mime = [
-      `From: ${params.from}`,
+      `From: ${safeFrom}`,
       `To: ${params.to}`,
       `Subject: ${params.subject}`,
       'MIME-Version: 1.0',
@@ -269,16 +270,26 @@ export class EmailAuthService {
 
     const raw = this.toBase64Url(mime);
 
-    const response = await axios.post(
-      'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
-      { raw },
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+    let response: any;
+    try {
+      response = await axios.post(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+        { raw },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
         },
-      },
-    );
+      );
+    } catch (error: any) {
+      const apiMessage =
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.error_description ||
+        error?.message ||
+        String(error);
+      throw new Error(`Gmail API send failed: ${apiMessage}`);
+    }
 
     return {
       messageId: response?.data?.id || null,

@@ -337,11 +337,8 @@ export class EmailCampaignsService {
     // 1) Preferir Gmail OAuth conectado (login/autorizar dentro do CRM)
     const status = await this.emailAuthService.getStatus();
     if (status.google?.connected) {
-      const fromEmail =
-        process.env.EMAIL_FROM ||
-        (await this.settingsService.getSetting('email_from_email')) ||
-        (await this.emailAuthService.getGoogleAccessToken()).email ||
-        null;
+      const { email: connectedGoogleEmail } = await this.emailAuthService.getGoogleAccessToken();
+      const fromEmail = connectedGoogleEmail || process.env.EMAIL_FROM || (await this.settingsService.getSetting('email_from_email')) || null;
       const fromName =
         process.env.EMAIL_FROM_NAME ||
         (await this.settingsService.getSetting('email_from_name')) ||
@@ -667,7 +664,11 @@ export class EmailCampaignsService {
           },
         });
       } catch (error: any) {
-        const msg = error?.message || String(error);
+        const msg =
+          error?.response?.data?.error?.message ||
+          error?.response?.data?.error_description ||
+          error?.message ||
+          String(error);
         await this.prisma.emailCampaignMessage.update({
           where: { id: message.id },
           data: {
