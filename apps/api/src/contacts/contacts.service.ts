@@ -184,7 +184,7 @@ export class ContactsService {
   async findAllTags(): Promise<string[]> {
     const rows = await this.prisma.contact.findMany({
       select: { tags: true },
-      where: { tags: { not: null } },
+      // tags é String obrigatória no schema (não-null). Evitar filtro inválido (not: null).
     });
     const tagSet = new Set<string>();
     for (const row of rows) {
@@ -284,10 +284,13 @@ export class ContactsService {
     if (updateContactDto.customFields !== undefined) {
       if (typeof updateContactDto.customFields === 'string') {
         data.customFields = updateContactDto.customFields || null;
+      } else if (updateContactDto.customFields === null) {
+        data.customFields = null;
       } else if (typeof updateContactDto.customFields === 'object') {
-        data.customFields = Object.keys(updateContactDto.customFields).length > 0 
-          ? JSON.stringify(updateContactDto.customFields) 
-          : null;
+        data.customFields =
+          Object.keys(updateContactDto.customFields).length > 0
+            ? JSON.stringify(updateContactDto.customFields)
+            : null;
       }
     }
     
