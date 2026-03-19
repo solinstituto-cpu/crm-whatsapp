@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { useRequirePermission } from '@/hooks/use-require-permission'
 import { apiFetch } from '@/lib/api'
-import { Megaphone, Mail, RefreshCw, Send, Search, Tag } from 'lucide-react'
+import { Megaphone, Mail, RefreshCw, Send, Search, Tag, Play, Pause } from 'lucide-react'
 
 type EmailCampaign = {
   id: string
@@ -162,6 +162,43 @@ export default function EmailMarketingPage() {
     if (statRes.ok) {
       const data = await statRes.json()
       setStats(data || null)
+    }
+  }
+
+  const handleStartOrResumeCampaign = async (id: string) => {
+    if (!confirm('Iniciar (ou retomar) o envio desta campanha?')) return
+    setSaving(true)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/start`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        alert(data?.totalContacts ? `Envio iniciado para ${data.totalContacts} destinatário(s). Os e-mails saem em background.` : 'Envio iniciado.')
+        await refreshCampaigns()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err?.message || 'Erro ao iniciar envio')
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao iniciar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handlePauseCampaign = async (id: string) => {
+    if (!confirm('Pausar o envio desta campanha?')) return
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/pause`, { method: 'POST' })
+      if (res.ok) {
+        await refreshCampaigns()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err?.message || 'Erro ao pausar')
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Erro ao pausar')
     }
   }
 
@@ -577,18 +614,21 @@ export default function EmailMarketingPage() {
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Assunto</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Destinatários</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Enviados</th>
+                  <th className="text-left py-3 px-3 font-medium text-gray-600">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {campaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 px-3 text-gray-500">
+                    <td colSpan={6} className="py-6 px-3 text-gray-500">
                       Nenhuma campanha ainda.
                     </td>
                   </tr>
                 ) : (
                   campaigns.map((c) => {
                     const st = statusLabel(c.status)
+                    const canStart = c.status === 'DRAFT' || c.status === 'PAUSED'
+                    const canPause = c.status === 'RUNNING'
                     return (
                       <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                         <td className="py-3 px-3 font-medium text-gray-900">{c.name}</td>
@@ -600,6 +640,34 @@ export default function EmailMarketingPage() {
                         <td className="py-3 px-3 text-gray-600">{c.subject}</td>
                         <td className="py-3 px-3 text-gray-600">{c.totalContacts ?? 0}</td>
                         <td className="py-3 px-3 text-gray-600">{c.sentCount ?? 0}</td>
+                        <td className="py-3 px-3">
+                          {canStart && (
+                            <button
+                              type="button"
+                              onClick={() => handleStartOrResumeCampaign(c.id)}
+                              disabled={saving}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                              title={c.status === 'PAUSED' ? 'Retomar envio' : 'Iniciar envio'}
+                            >
+                              <Play className="h-4 w-4" />
+                              {c.status === 'PAUSED' ? 'Retomar' : 'Enviar'}
+                            </button>
+                          )}
+                          {canPause && (
+                            <button
+                              type="button"
+                              onClick={() => handlePauseCampaign(c.id)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600"
+                              title="Pausar envio"
+                            >
+                              <Pause className="h-4 w-4" />
+                              Pausar
+                            </button>
+                          )}
+                          {(c.status === 'COMPLETED' || c.status === 'CANCELLED') && (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
                       </tr>
                     )
                   })
