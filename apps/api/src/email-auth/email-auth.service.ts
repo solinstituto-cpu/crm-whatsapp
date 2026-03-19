@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OAuth2Client } from 'google-auth-library';
 import * as nodemailer from 'nodemailer';
+import axios from 'axios';
 
 type GoogleOAuthConfig = {
   clientId: string;
@@ -222,16 +223,66 @@ export class EmailAuthService {
   }
 
   async sendTestEmail(params: { to: string; subject: string; html: string }) {
-    const { transport, fromEmail, fromName } = await this.getGmailTransport();
-
-    const info = await transport.sendMail({
-      from: fromName ? `"${fromName}" <${fromEmail}>` : fromEmail,
+    const fromEmail =
+      process.env.EMAIL_FROM ||
+      (await this.settingsService.getSetting('email_from_email')) ||
+      (await this.getGoogleAccessToken()).email ||
+      null;
+    const fromName =
+      process.env.EMAIL_FROM_NAME ||
+      (await this.settingsService.getSetting('email_from_name')) ||
+      null;
+    const result = await this.sendViaGmailApi({
+      from: fromName ? `"${fromName}" <${fromEmail}>` : String(fromEmail || ''),
       to: params.to,
       subject: params.subject,
       html: params.html,
     });
+    return { success: true, messageId: result.messageId };
+  }
 
-    return { success: true, messageId: (info as any)?.messageId || null };
+  private toBase64Url(input: string): string {
+    return Buffer.from(input)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  async sendViaGmailApi(params: {
+    from: string;
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<{ messageId: string | null }> {
+    const { accessToken } = await this.getGoogleAccessToken();
+
+    const mime = [
+      `From: ${params.from}`,
+      `To: ${params.to}`,
+      `Subject: ${params.subject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset="UTF-8"',
+      '',
+      params.html,
+    ].join('\r\n');
+
+    const raw = this.toBase64Url(mime);
+
+    const response = await axios.post(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+      { raw },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    return {
+      messageId: response?.data?.id || null,
+    };
   }
 }
 

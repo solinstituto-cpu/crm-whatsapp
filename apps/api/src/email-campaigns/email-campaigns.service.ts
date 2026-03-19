@@ -337,12 +337,35 @@ export class EmailCampaignsService {
     // 1) Preferir Gmail OAuth conectado (login/autorizar dentro do CRM)
     const status = await this.emailAuthService.getStatus();
     if (status.google?.connected) {
+      const fromEmail =
+        process.env.EMAIL_FROM ||
+        (await this.settingsService.getSetting('email_from_email')) ||
+        (await this.emailAuthService.getGoogleAccessToken()).email ||
+        null;
+      const fromName =
+        process.env.EMAIL_FROM_NAME ||
+        (await this.settingsService.getSetting('email_from_name')) ||
+        null;
+
+      if (!fromEmail) {
+        throw new Error('EMAIL_FROM não definido para envio via Gmail');
+      }
+
       try {
-        const gmail = await this.emailAuthService.getGmailTransport();
         return {
-          transport: gmail.transport,
-          fromEmail: gmail.fromEmail,
-          fromName: gmail.fromName,
+          transport: {
+            sendMail: async (opts: { from: string; to: string; subject: string; html: string }) => {
+              const result = await this.emailAuthService.sendViaGmailApi({
+                from: opts.from,
+                to: opts.to,
+                subject: opts.subject,
+                html: opts.html,
+              });
+              return { messageId: result.messageId };
+            },
+          } as any,
+          fromEmail,
+          fromName,
         };
       } catch (error: any) {
         const detail = error?.message || String(error);
