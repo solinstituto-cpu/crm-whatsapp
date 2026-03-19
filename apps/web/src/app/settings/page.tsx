@@ -38,6 +38,7 @@ import {
   Bot,
   Table,
   TestTube,
+  Mail,
   Eye,
   EyeOff,
   ExternalLink,
@@ -378,6 +379,8 @@ function IntegrationsSettings() {
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null)
+  const [gmailStatus, setGmailStatus] = useState<{ connected: boolean, email?: string | null } | null>(null)
+  const [gmailTestTo, setGmailTestTo] = useState('')
   
   // OpenAI Config
   const [showApiKey, setShowApiKey] = useState(false)
@@ -430,10 +433,87 @@ function IntegrationsSettings() {
           configured: data.configured,
         })
       }
+
+      // Load Gmail OAuth status
+      const gmailRes = await apiFetch(`${apiUrl}/api/email-auth/status`)
+      if (gmailRes.ok) {
+        const data = await gmailRes.json()
+        setGmailStatus({
+          connected: !!data?.google?.connected,
+          email: data?.google?.email || null,
+        })
+      } else {
+        setGmailStatus({ connected: false })
+      }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error)
     }
     setLoading(false)
+  }
+
+  const connectGmail = async () => {
+    setSaving(true)
+    setTestResult(null)
+    try {
+      const res = await apiFetch(`${apiUrl}/api/email-auth/google/url`)
+      const data = await res.json()
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.message || 'Falha ao iniciar conexão com Gmail')
+      }
+      window.location.href = data.url
+    } catch (e: any) {
+      setTestResult({ success: false, message: e?.message || 'Erro ao conectar Gmail' })
+      setSaving(false)
+    }
+  }
+
+  const disconnectGmail = async () => {
+    if (!confirm('Desconectar o Gmail deste CRM?')) return
+    setSaving(true)
+    setTestResult(null)
+    try {
+      const res = await apiFetch(`${apiUrl}/api/email-auth/google`, { method: 'DELETE' })
+      if (res.ok) {
+        setGmailStatus({ connected: false })
+        setTestResult({ success: true, message: 'Gmail desconectado.' })
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setTestResult({ success: false, message: data?.message || 'Falha ao desconectar' })
+      }
+    } catch {
+      setTestResult({ success: false, message: 'Erro de conexão' })
+    }
+    setSaving(false)
+  }
+
+  const sendGmailTest = async () => {
+    if (!gmailTestTo.trim()) {
+      setTestResult({ success: false, message: 'Informe um e-mail para enviar o teste.' })
+      return
+    }
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await apiFetch(`${apiUrl}/api/email-auth/google/test-send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: gmailTestTo.trim(),
+          subject: 'Teste de envio - CRM',
+          html: `<div style="font-family:Arial,sans-serif;padding:16px"><h2 style="margin:0 0 8px">Teste de envio</h2><p style="margin:0">Se você recebeu este e-mail, a conexão com o Gmail está OK.</p></div>`,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.success) {
+        setTestResult({ success: true, message: 'Teste enviado! Verifique sua caixa de entrada.' })
+      } else {
+        setTestResult({ success: false, message: data?.message || 'Falha ao enviar teste' })
+      }
+    } catch (e: any) {
+      setTestResult({ success: false, message: e?.message || 'Erro de conexão' })
+    } finally {
+      setTesting(false)
+    }
   }
 
   const saveOpenAIConfig = async () => {
@@ -536,6 +616,93 @@ function IntegrationsSettings() {
       )}
 
       <div className="space-y-8">
+        {/* Gmail (OAuth) */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg">
+                <Mail className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Gmail (envio de e-mails)</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Conecte seu Gmail e autorize o CRM a enviar campanhas (sem senha/SMTP).
+                </p>
+              </div>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${gmailStatus?.connected ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {gmailStatus?.connected ? 'Conectado' : 'Não conectado'}
+            </div>
+          </div>
+
+          {gmailStatus?.connected && (
+            <div className="mb-4 p-3 bg-white dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                Conta conectada: <span className="font-semibold">{gmailStatus.email || '—'}</span>
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            {!gmailStatus?.connected ? (
+              <button
+                type="button"
+                onClick={connectGmail}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg text-white font-medium bg-red-600 hover:bg-red-700 disabled:opacity-70"
+              >
+                Conectar Gmail
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={disconnectGmail}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg font-medium border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-70"
+              >
+                Desconectar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={loadConfigs}
+              className="px-4 py-2 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Recarregar status
+            </button>
+          </div>
+
+          {gmailStatus?.connected && (
+            <div className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">Enviar e-mail de teste</p>
+              <div className="flex flex-col md:flex-row gap-3">
+                <input
+                  type="email"
+                  value={gmailTestTo}
+                  onChange={(e) => setGmailTestTo(e.target.value)}
+                  placeholder="email@destino.com"
+                  className="flex-1 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2"
+                />
+                <button
+                  type="button"
+                  onClick={sendGmailTest}
+                  disabled={testing || saving}
+                  className="px-4 py-2 rounded-lg text-white font-medium bg-green-600 hover:bg-green-700 disabled:opacity-70"
+                >
+                  {testing ? 'Enviando...' : 'Enviar teste'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Isso usa o Gmail conectado. Se falhar, normalmente é falta de configuração do Google OAuth/Redirect URI.
+              </p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+            Observação: para o botão funcionar em produção, a API precisa estar com o Google OAuth configurado (Client ID/Secret + Redirect URI).
+          </p>
+        </div>
+
         {/* OpenAI / ChatGPT */}
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start justify-between mb-4">

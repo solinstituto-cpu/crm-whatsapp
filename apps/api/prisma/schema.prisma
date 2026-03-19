@@ -469,6 +469,81 @@ model CampaignMessage {
 }
 
 // ==========================================
+// SISTEMA DE E-MAIL MARKETING (ENVIO HTML)
+// ==========================================
+model EmailCampaign {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  status      String @default("DRAFT") // DRAFT, SCHEDULED, RUNNING, PAUSED, COMPLETED, CANCELLED
+  subject     String
+  preheader   String?
+  htmlTemplate String @db.Text
+
+  // Segmentação de contatos
+  filterTags         String? // JSON array de tags para filtrar
+  filterStatus       String? // Status do cliente (Lead, Cliente, etc)
+  filterSource       String? // Origem do contato
+  filterCustomFields String? // JSON para filtrar por campos personalizados (opcional)
+  excludeOptOut      Boolean @default(true)
+
+  // Agendamento (opcional no MVP, mas deixa a estrutura pronta)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Controle de velocidade
+  sendRatePerMinute Int @default(10) // emails por minuto (para evitar bloqueio)
+
+  totalContacts  Int @default(0)
+  sentCount      Int @default(0)
+  deliveredCount Int @default(0)
+  readCount      Int @default(0)
+  failedCount    Int @default(0)
+
+  // Remetente (pode vir de env; fica salvo por campanha para auditar)
+  fromEmail String?
+  fromName  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  messages EmailCampaignMessage[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("email_campaigns")
+}
+
+model EmailCampaignMessage {
+  id String @id @default(cuid())
+
+  emailCampaignId String
+  emailCampaign   EmailCampaign @relation(fields: [emailCampaignId], references: [id], onDelete: Cascade)
+
+  contactId    String? // Opcional: se quiser manter vínculo caso o contato exista
+  contactEmail String
+  contactName  String?
+
+  status      String    @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
+  smtpMessageId String?
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  error       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([emailCampaignId])
+  @@index([contactId])
+  @@index([status])
+  @@map("email_campaign_messages")
+}
+
+// ==========================================
 // CONFIGURAÇÕES GLOBAIS DO SISTEMA
 // ==========================================
 

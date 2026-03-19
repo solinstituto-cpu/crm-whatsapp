@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formação em Medicina Chinesa Integrativa | Acupuntura Sem Agulhas</title>
+  <meta name="description" content="Curso completo de Medicina Chinesa Integrativa em 18 meses. Técnicas sem agulhas: Ventosa, Guashá, Moxa, Laserterapia, Magnetoterapia, Cromoacupuntura e Stiper.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      /* Paleta principal: vermelho + verde complementar */
+      --red-900: #7f1d1d;
+      --red-800: #991b1b;
+      --red-700: #b91c1c;
+      --red-600: #dc2626;
+      --red-500: #ef4444;
+      --green-700: #15803d;
+      --green-600: #16a34a;
+      --dark: #111827;
+      --gray: #4b5563;
+      --light: #f8fafc;
+      --white: #ffffff;
+      --card: #ffffff;
+      --radius: 18px;
+      --shadow: 0 16px 40px rgba(17, 24, 39, 0.14);
+    }
+
+    body {
+      font-family: Inter, Arial, sans-serif;
+      color: var(--dark);
+      background: var(--light);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .container { width: min(1160px, 92vw); margin: 0 auto; }
+    .section { padding: 88px 0; }
+    .section-title {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      text-align: center;
+      margin-bottom: 14px;
+      color: var(--dark);
+    }
+    .section-sub {
+      text-align: center;
+      color: var(--gray);
+      max-width: 720px;
+      margin: 0 auto 44px;
+      font-size: 1.06rem;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 94vh;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+      gap: 42px;
+      padding: 44px 0;
+      background:
+        linear-gradient(115deg, rgba(127,29,29,0.92) 0%, rgba(185,28,28,0.88) 55%, rgba(21,128,61,0.86) 100%),
+        url("https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=1900&q=80") center/cover no-repeat;
+      position: relative;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 25%, rgba(255,255,255,0.10), transparent 36%);
+      pointer-events: none;
+    }
+    .hero .container {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 42px;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    .hero-content { color: var(--white); }
+    .hero-kicker {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.32);
+      border-radius: 100px;
+      padding: 9px 16px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 1.14;
+      margin-bottom: 12px;
+    }
+    .hero h1 span { color: #fecaca; }
+    .hero p {
+      font-size: 1.08rem;
+      color: rgba(255,255,255,0.93);
+      margin-bottom: 24px;
+      max-width: 620px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 20px;
+      font-size: 0.95rem;
+    }
+    .hero-meta span {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.26);
+      padding: 8px 12px;
+      border-radius: 999px;
+    }
+    .hero-photo {
+      background: var(--white);
+      border-radius: 22px;
+      padding: 12px;
+      box-shadow: 0 28px 60px rgba(0,0,0,0.34);
+      transform: rotate(-1.1deg);
+    }
+    .hero-photo img {
+      width: 100%;
+      height: 470px;
+      object-fit: cover;
+      border-radius: 14px;
+      display: block;
+    }
+
+    /* BOTÕES */
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      text-decoration: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 22px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .25s, box-shadow .25s, background .25s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      font-size: 1rem;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary {
+      background: #22c55e;
+      color: #052e16;
+      box-shadow: 0 10px 26px rgba(34,197,94,.34);
+    }
+    .btn-primary:hover { background: #16a34a; color: #f0fdf4; }
+    .btn-ghost {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.36);
+    }
+
+    /* BARRA DE PROVA SOCIAL */
+    .trust {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 16px 0;
+    }
+    .trust-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 26px;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    /* RESUMO DO CURSO DINÂMICO */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid #e5e7eb;
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .summary-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: var(--red-800);
+    }
+    .summary-card p { color: var(--gray); }
+    .chip-row {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      background: #fee2e2;
+      color: var(--red-800);
+      border: 1px solid #fecaca;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: .86rem;
+      font-weight: 600;
+    }
+
+    /* TÉCNICAS COM FOTOS */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .tech-card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      transition: transform .25s, box-shadow .25s;
+    }
+    .tech-card:hover { transform: translateY(-4px); box-shadow: 0 18px 36px rgba(0,0,0,.11); }
+    .tech-card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      display: block;
+    }
+    .tech-card .body { padding: 16px; }
+    .tech-card h4 { margin-bottom: 6px; color: var(--dark); }
+    .tech-card p { color: var(--gray); font-size: .95rem; }
+
+    /* TURMAS + CTA */
+    .classes {
+      background:
+        linear-gradient(130deg, rgba(255,255,255,.92), rgba(255,255,255,.95)),
+        url("https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1800&q=70") center/cover no-repeat;
+    }
+    .class-grid {
+      max-width: 860px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .class-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .class-card h4 { font-size: 1.45rem; color: var(--red-700); margin-bottom: 6px; }
+    .class-card p { color: var(--gray); }
+
+    /* INVESTIMENTO (CLARO) */
+    .pricing {
+      background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
+    }
+    .price-grid {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .price-card {
+      background: #fff;
+      border: 2px solid #fecaca;
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 14px 36px rgba(185, 28, 28, 0.12);
+      position: relative;
+    }
+    .price-card h3 { margin-bottom: 4px; color: var(--dark); }
+    .price-card .tag { color: var(--gray); font-size: .95rem; margin-bottom: 18px; }
+    .old { text-decoration: line-through; color: #9ca3af; margin-bottom: 2px; }
+    .new { font-size: 2.2rem; font-weight: 800; color: var(--red-700); }
+    .badge-best {
+      position: absolute;
+      top: -10px;
+      right: 12px;
+      background: var(--green-600);
+      color: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    /* FAQ */
+    .faq-list { max-width: 820px; margin: 0 auto; }
+    .faq-item {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      background: #fff;
+      border: 0;
+      padding: 18px 20px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .faq-a {
+      display: none;
+      padding: 0 20px 18px;
+      color: var(--gray);
+    }
+    .faq-item.open .faq-a { display: block; }
+
+    /* CTA FINAL */
+    .final-cta {
+      background:
+        linear-gradient(115deg, rgba(127,29,29,.92), rgba(153,27,27,.88)),
+        url("https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=1900&q=70") center/cover no-repeat;
+      color: #fff;
+      text-align: center;
+      padding: 82px 0;
+    }
+    .final-cta h2 {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      margin-bottom: 8px;
+    }
+    .final-cta p { opacity: .95; margin-bottom: 20px; }
+
+    .footer {
+      background: #0f172a;
+      color: rgba(255,255,255,.78);
+      text-align: center;
+      padding: 28px 0;
+      font-size: .95rem;
+    }
+
+    .wa-float {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: #22c55e;
+      color: #fff;
+      text-decoration: none;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 28px rgba(34,197,94,.45);
+      z-index: 50;
+      font-weight: 800;
+    }
+
+    @media (max-width: 980px) {
+      .hero .container { grid-template-columns: 1fr; }
+      .hero-photo { display: none; }
+      .summary-grid, .tech-grid, .class-grid, .price-grid { grid-template-columns: 1fr; }
+      .section { padding: 70px 0; }
+      .actions { width: 100%; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <span class="hero-kicker">Turma de maio 2026 • Vagas limitadas</span>
+        <h1>Medicina Chinesa <span>Integrativa</span></h1>
+        <p class="hero-sub">Acupuntura Sem Agulhas • Formação Profissional em 18 meses</p>
+        <p>Aprenda técnicas aplicáveis no dia a dia clínico e se prepare para atuar com segurança: Ventosa, Guashá, Moxa, Laserterapia, Magnetoterapia, Cromoacupuntura, Stiper e muito mais.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20garantir%20minha%20vaga%20no%20curso%20de%20Medicina%20Chinesa%20Integrativa">Garantir minha vaga</a>
+          <a class="btn btn-ghost" href="#tecnicas">Ver técnicas</a>
+        </div>
+        <div class="hero-meta">
+          <span>18 meses de formação</span>
+          <span>Terças: manhã e noite</span>
+          <span>Ambulatório supervisionado</span>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=1000&q=84" alt="Terapia com ventosa nas costas">
+      </div>
+    </div>
+  </header>
+
+  <section class="trust">
+    <div class="container">
+      <div class="trust-wrap">
+        <span>✓ Formação estruturada em 2 anos</span>
+        <span>✓ Técnicas sem agulhas</span>
+        <span>✓ Conteúdo prático + EAD</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Como funciona a formação</h2>
+      <p class="section-sub">Estrutura clara para você aprender teoria, prática e posicionamento profissional.</p>
+      <div class="summary-grid">
+        <article class="summary-card">
+          <h3>Base teórica sólida</h3>
+          <p>Você aprende os fundamentos da MTC (Yin Yang, Cinco Movimentos, meridianos, diagnóstico) com aplicação clínica real.</p>
+          <div class="chip-row">
+            <span class="chip">Yin Yang</span>
+            <span class="chip">Cinco Movimentos</span>
+            <span class="chip">Diagnóstico</span>
+          </div>
+        </article>
+        <article class="summary-card">
+          <h3>Prática orientada</h3>
+          <p>Além das técnicas presenciais, há ambulatório prático e disciplinas EAD para consolidar sua atuação com segurança.</p>
+          <div class="chip-row">
+            <span class="chip">Ambulatório</span>
+            <span class="chip">EAD</span>
+            <span class="chip">Casos clínicos</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="tecnicas">
+    <div class="container">
+      <h2 class="section-title">Técnicas trabalhadas no curso</h2>
+      <p class="section-sub">Conteúdo focado em recursos terapêuticos não invasivos e aplicáveis.</p>
+      <div class="tech-grid">
+        <article class="tech-card">
+          <img src="https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=700&q=80" alt="Ventosaterapia">
+          <div class="body"><h4>Ventosaterapia</h4><p>Aplicação de vácuo terapêutico para estimular circulação e reduzir tensões.</p></div>
+        </article>
+        <article class="tech-card">
+          <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=700&q=80" alt="Guashá">
+          <div class="body"><h4>Guashá</h4><p>Raspagem terapêutica para desbloqueio energético e melhora da mobilidade.</p></div>
+        </article>
+        <article class="tech-card">
+          <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=700&q=80" alt="Moxaterapia">
+          <div class="body"><h4>Moxaterapia</h4><p>Uso de calor com moxa para tonificação do Qi e conforto terapêutico.</p></div>
+        </article>
+        <article class="tech-card">
+          <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=700&q=80" alt="Laserterapia">
+          <div class="body"><h4>Laserterapia</h4><p>Estimulação de pontos com laser de baixa intensidade, técnica moderna e precisa.</p></div>
+        </article>
+        <article class="tech-card">
+          <img src="https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=700&q=80" alt="Magnetoterapia">
+          <div class="body"><h4>Magnetoterapia</h4><p>Aplicação de ímãs para suporte ao equilíbrio energético dos meridianos.</p></div>
+        </article>
+        <article class="tech-card">
+          <img src="https://images.unsplash.com/photo-1582719478250-c89c6d9dba20?w=700&q=80" alt="Stiper e cromoacupuntura">
+          <div class="body"><h4>Cromoacupuntura e Stiper</h4><p>Recursos complementares não invasivos com foco em regulação funcional.</p></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section classes" id="turmas">
+    <div class="container">
+      <h2 class="section-title">Próximas turmas</h2>
+      <p class="section-sub">Início em 05/05/2026 • Aulas presenciais às terças</p>
+      <div class="class-grid">
+        <article class="class-card">
+          <h4>Turma da manhã</h4>
+          <p>Terças-feiras</p>
+          <p><strong>Início: 05 de maio de 2026</strong></p>
+        </article>
+        <article class="class-card">
+          <h4>Turma da noite</h4>
+          <p>Terças-feiras</p>
+          <p><strong>Início: 05 de maio de 2026</strong></p>
+        </article>
+      </div>
+      <div style="text-align:center; margin-top:24px;">
+        <a class="btn btn-primary" href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20na%20turma%20de%20maio">Quero reservar minha vaga</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section pricing" id="investimento">
+    <div class="container">
+      <h2 class="section-title">Investimento</h2>
+      <p class="section-sub">Escolha a modalidade ideal para o seu objetivo profissional.</p>
+      <div class="price-grid">
+        <article class="price-card">
+          <h3>Formação Livre</h3>
+          <div class="tag">Atuação em terapias integrativas</div>
+          <div class="old">20x de R$ 430</div>
+          <div class="new">20x de R$ 344</div>
+          <div style="margin-top:18px;">
+            <a class="btn btn-primary" href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20na%20Forma%C3%A7%C3%A3o%20Livre">Garantir vaga</a>
+          </div>
+        </article>
+        <article class="price-card">
+          <span class="badge-best">Mais escolhida</span>
+          <h3>Pós-Graduação</h3>
+          <div class="tag">Lato Sensu com aprofundamento</div>
+          <div class="old">20x de R$ 530</div>
+          <div class="new">20x de R$ 424</div>
+          <div style="margin-top:18px;">
+            <a class="btn btn-primary" href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20na%20P%C3%B3s-Gradua%C3%A7%C3%A3o">Garantir vaga</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Perguntas frequentes</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-q">O curso utiliza agulhas?<span>+</span></button>
+          <div class="faq-a"><p>Não. O foco é em recursos não invasivos: ventosa, guashá, moxa, laserterapia, magnetoterapia, stiper, auriculoterapia e acupressão.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Quem pode fazer?<span>+</span></button>
+          <div class="faq-a"><p>Profissionais de saúde e pessoas interessadas em atuar com terapias integrativas, conforme modalidade escolhida.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Qual a diferença entre Formação Livre e Pós?<span>+</span></button>
+          <div class="faq-a"><p>A Formação Livre é voltada à prática profissional. A Pós-Graduação amplia profundidade acadêmica e certificação.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="container">
+      <h2>Pronto para transformar sua carreira?</h2>
+      <p>Fale com nossa equipe e garanta sua vaga na turma de maio.</p>
+      <a class="btn btn-primary" href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20garantir%20minha%20vaga%20no%20curso">Falar no WhatsApp</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p><strong>Sol Instituto Terapêutico</strong> — Medicina Chinesa Integrativa (Acupuntura Sem Agulhas)</p>
+    </div>
+  </footer>
+
+  <a class="wa-float" href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Tenho%20interesse%20no%20curso" aria-label="WhatsApp">WA</a>
+
+  <script>
+    document.querySelectorAll('.faq-q').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        btn.parentElement.classList.toggle('open');
+      });
+    });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicina Chinesa Integrativa | Acupuntura Sem Agulhas - Sol Instituto</title>
+  <meta name="description" content="Formação em Medicina Chinesa Integrativa. Ventosaterapia, Guashá, Moxaterapia, Laserterapia e mais. Turmas maio 2026. Fale no WhatsApp!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --green: #047857;
+      --green-light: #059669;
+      --green-dark: #065f46;
+      --gold: #d97706;
+      --gold-light: #fbbf24;
+      --dark: #111827;
+      --gray: #6b7280;
+      --white: #ffffff;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* ===== HERO - FULL SCREEN, IMAGEM DE FUNDO ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+      position: relative;
+      background: url('https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=1920&q=85') center/cover no-repeat;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(6,95,70,0.92) 0%, rgba(4,120,87,0.88) 50%, rgba(5,150,105,0.85) 100%);
+      pointer-events: none;
+    }
+    .hero .container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 720px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.6rem, 5vw, 3.8rem);
+      font-weight: 700;
+      color: white;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 span { color: #fde68a; }
+    .hero-sub {
+      font-size: 1.4rem;
+      color: rgba(255,255,255,0.95);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    .hero-desc {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+    .hero-cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 18px 32px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 14px;
+      transition: all 0.3s;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-whatsapp {
+      background: #25D366;
+      color: white;
+      box-shadow: 0 8px 30px rgba(37,211,102,0.5);
+    }
+    .btn-whatsapp:hover {
+      background: #20bd5a;
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 40px rgba(37,211,102,0.6);
+    }
+    .btn-whatsapp::before {
+      content: '';
+      width: 24px;
+      height: 24px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+    .btn-light { background: white; color: var(--green); border: 2px solid white; }
+    .btn-light:hover { background: transparent; color: white; transform: translateY(-4px); }
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 28px;
+      margin-top: 40px;
+      color: rgba(255,255,255,0.9);
+      font-size: 0.95rem;
+    }
+    .hero-meta span { display: flex; align-items: center; gap: 8px; }
+    .hero-meta span::before { content: '✓'; color: #fde68a; font-weight: 800; }
+
+    .urgency-banner {
+      background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+      color: var(--dark);
+      padding: 16px 24px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .urgency-banner a { color: var(--dark); text-decoration: underline; margin-left: 6px; }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.3rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 24px;
+    }
+
+    /* ===== TÉCNICAS COM FOTOS ===== */
+    .tecnicas {
+      padding: 100px 24px;
+      background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #f8fafc 100%);
+      position: relative;
+    }
+    .tecnicas::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(5,150,105,0.03) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(217,119,6,0.03) 0%, transparent 40%);
+      pointer-events: none;
+    }
+    .tecnicas h2 { text-align: center; margin-bottom: 16px; position: relative; }
+    .tecnicas-sub { text-align: center; color: var(--gray); margin-bottom: 56px; font-size: 1.1rem; position: relative; }
+    .tecnicas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .tecnica-card {
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(4,120,87,0.1);
+      border: 1px solid #d1fae5;
+      transition: all 0.4s;
+    }
+    .tecnica-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 24px 60px rgba(4,120,87,0.2);
+      border-color: var(--green);
+    }
+    .tecnica-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .tecnica-body { padding: 24px; }
+    .tecnica-card h3 { font-size: 1.2rem; margin-bottom: 8px; color: var(--dark); }
+    .tecnica-card p { font-size: 0.95rem; color: var(--gray); line-height: 1.6; }
+
+    /* ===== SOBRE ===== */
+    .about {
+      padding: 100px 24px;
+      background: white;
+      position: relative;
+    }
+    .about::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=20') center/cover;
+      opacity: 0.04;
+      pointer-events: none;
+    }
+    .about-wrap { max-width: 800px; margin: 0 auto; position: relative; }
+    .about h2 { text-align: center; margin-bottom: 32px; }
+    .about p { font-size: 1.12rem; color: var(--gray); margin-bottom: 18px; line-height: 1.8; }
+    .about p strong { color: var(--dark); }
+    .about-cta { text-align: center; margin-top: 36px; }
+
+    /* ===== BENEFÍCIOS ===== */
+    .benefits {
+      padding: 80px 24px;
+      background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+      color: white;
+    }
+    .benefits h2 { text-align: center; margin-bottom: 48px; color: white; }
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 28px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .benefit-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s;
+    }
+    .benefit-card:hover {
+      background: rgba(255,255,255,0.15);
+      transform: translateY(-4px);
+    }
+    .benefit-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .benefit-card h3 { font-size: 1.15rem; margin-bottom: 10px; }
+    .benefit-card p { font-size: 0.98rem; opacity: 0.95; line-height: 1.6; }
+
+    /* ===== TURMAS ===== */
+    .turmas {
+      padding: 80px 24px;
+      background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+    }
+    .turmas h2 { text-align: center; margin-bottom: 48px; }
+    .turmas-grid { max-width: 400px; margin: 0 auto; }
+    .turma-card {
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 16px 48px rgba(4,120,87,0.15);
+      border: 2px solid #a7f3d0;
+    }
+    .turma-card .day { font-size: 2rem; font-weight: 800; color: var(--green); margin-bottom: 8px; }
+    .turma-card .date { font-size: 1.2rem; font-weight: 600; color: var(--dark); margin-bottom: 20px; }
+    .turma-card .times { display: flex; flex-direction: column; gap: 12px; }
+    .turma-card .time {
+      background: #ecfdf5;
+      padding: 16px;
+      border-radius: 14px;
+      font-weight: 600;
+      color: var(--green-dark);
+    }
+    .turmas-cta { text-align: center; margin-top: 40px; }
+
+    /* ===== DEPOIMENTOS ===== */
+    .testimonials {
+      padding: 80px 24px;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .testimonials h2 { text-align: center; margin-bottom: 12px; }
+    .testimonials-sub { text-align: center; color: var(--gray); margin-bottom: 48px; font-size: 1.05rem; }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 28px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .testimonial-card {
+      background: white;
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s;
+    }
+    .testimonial-card:hover { box-shadow: 0 16px 48px rgba(4,120,87,0.12); transform: translateY(-4px); }
+    .testimonial-stars { color: var(--gold); font-size: 1.2rem; margin-bottom: 16px; letter-spacing: 2px; }
+    .testimonial-card p { font-size: 1.05rem; color: var(--gray); margin-bottom: 24px; line-height: 1.75; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 16px; }
+    .testimonial-avatar {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--green), var(--green-light));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: white;
+    }
+    .testimonial-author .name { font-weight: 700; color: var(--dark); }
+    .testimonial-author .role { font-size: 0.9rem; color: var(--gray); }
+
+    /* ===== PROGRAMA COM IMAGENS ===== */
+    .program {
+      padding: 100px 24px;
+      background: white;
+      position: relative;
+    }
+    .program::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        linear-gradient(90deg, rgba(5,150,105,0.02) 0%, transparent 50%),
+        linear-gradient(270deg, rgba(5,150,105,0.02) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .program .section-title { text-align: center; margin-bottom: 12px; position: relative; }
+    .program-intro { text-align: center; max-width: 600px; margin: 0 auto 40px; font-size: 1.08rem; color: var(--gray); position: relative; }
+    .year-tabs { display: flex; gap: 16px; justify-content: center; margin-bottom: 36px; flex-wrap: wrap; position: relative; }
+    .year-tab {
+      padding: 14px 28px;
+      background: #f8fafc;
+      border: 2px solid var(--green);
+      color: var(--green);
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .year-tab:hover, .year-tab.active { background: var(--green); color: white; }
+    .year-content { display: none; position: relative; }
+    .year-content.active { display: block; }
+    .program-accordion { max-width: 800px; margin: 0 auto; }
+    .accordion-item {
+      background: white;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s;
+    }
+    .accordion-item:hover { border-color: #a7f3d0; }
+    .accordion-header {
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .accordion-header:hover { background: #f8fafc; }
+    .accordion-left { display: flex; align-items: center; gap: 20px; }
+    .accordion-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      object-fit: cover;
+    }
+    .accordion-header h3 { font-size: 1.1rem; font-weight: 600; color: var(--dark); }
+    .accordion-arrow { font-size: 1.1rem; color: var(--green); transition: transform 0.3s; }
+    .accordion-item.open .accordion-arrow { transform: rotate(180deg); }
+    .accordion-body { padding: 0 28px 24px; display: none; }
+    .accordion-item.open .accordion-body { display: block; }
+    .accordion-body ul { list-style: none; padding-left: 84px; }
+    .accordion-body li { padding: 8px 0; color: var(--gray); position: relative; }
+    .accordion-body li::before { content: '•'; position: absolute; left: -14px; color: var(--green); font-weight: 700; }
+    .program-cta { text-align: center; margin-top: 48px; position: relative; }
+
+    /* ===== INVESTIMENTO ===== */
+    .pricing {
+      padding: 100px 24px;
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+      position: relative;
+    }
+    .pricing::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1576091160394-9c4282666f84?w=1920&q=15') center/cover;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+    .pricing h2 { text-align: center; margin-bottom: 12px; position: relative; }
+    .pricing-sub { text-align: center; color: var(--gray); margin-bottom: 48px; font-size: 1.05rem; position: relative; }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .pricing-card {
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      border: 2px solid #a7f3d0;
+      transition: all 0.4s;
+      box-shadow: 0 12px 40px rgba(4,120,87,0.12);
+    }
+    .pricing-card:hover {
+      border-color: var(--green);
+      transform: translateY(-8px);
+      box-shadow: 0 24px 60px rgba(4,120,87,0.2);
+    }
+    .pricing-card.popular { border-color: var(--gold); box-shadow: 0 16px 50px rgba(217,119,6,0.15); }
+    .pricing-card.popular::before {
+      content: 'MAIS ESCOLHIDA';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: white;
+      padding: 8px 24px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+    .pricing-card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; text-align: center; color: var(--dark); }
+    .pricing-card .type-desc { text-align: center; color: var(--gray); font-size: 0.95rem; margin-bottom: 24px; }
+    .pricing-card .price-wrap { text-align: center; margin-bottom: 24px; }
+    .pricing-card .old-price { text-decoration: line-through; font-size: 1rem; color: var(--gray); margin-bottom: 4px; }
+    .pricing-card .price { font-size: 2.5rem; font-weight: 800; color: var(--green); }
+    .pricing-card .btn { width: 100%; padding: 18px; font-size: 1.05rem; }
+    .pricing-dates {
+      text-align: center;
+      margin-top: 48px;
+      padding: 28px;
+      background: white;
+      border-radius: 20px;
+      max-width: 450px;
+      margin-left: auto;
+      margin-right: auto;
+      border: 2px solid #a7f3d0;
+      position: relative;
+    }
+    .pricing-dates p { font-size: 1.05rem; color: var(--dark); }
+    .pricing-dates strong { color: var(--green); }
+
+    /* ===== FAQ ===== */
+    .faq {
+      padding: 80px 24px;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .faq h2 { text-align: center; margin-bottom: 48px; }
+    .faq-list { max-width: 700px; margin: 0 auto; }
+    .faq-item {
+      background: white;
+      border-radius: 16px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .faq-q {
+      padding: 22px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--dark);
+      transition: background 0.3s;
+    }
+    .faq-q:hover { background: #f8fafc; }
+    .faq-q span { font-size: 1.2rem; color: var(--green); transition: transform 0.3s; }
+    .faq-item.open .faq-q span { transform: rotate(45deg); }
+    .faq-a { padding: 0 26px 0; display: none; }
+    .faq-item.open .faq-a { display: block; }
+    .faq-a p { padding: 0 0 22px; color: var(--gray); line-height: 1.7; }
+
+    /* ===== CTA FINAL ===== */
+    .cta-final {
+      padding: 100px 24px;
+      background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-final::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=1920&q=30') center/cover;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+    .cta-final .container { position: relative; z-index: 1; }
+    .cta-final h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700;
+      color: white;
+      margin-bottom: 16px;
+    }
+    .cta-final p { font-size: 1.2rem; color: rgba(255,255,255,0.95); margin-bottom: 28px; }
+    .cta-urgency {
+      background: var(--gold);
+      color: white;
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 100px;
+      font-weight: 800;
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+    .cta-final .btn-whatsapp { padding: 22px 44px; font-size: 1.2rem; }
+
+    .footer {
+      padding: 40px 24px;
+      background: #0f172a;
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+    }
+
+    .float-wa {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 60px;
+      height: 60px;
+      background: #25D366;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 28px rgba(37,211,102,0.5);
+      z-index: 999;
+      transition: transform 0.3s;
+      text-decoration: none;
+    }
+    .float-wa:hover { transform: scale(1.1); }
+    .float-wa svg { width: 32px; height: 32px; fill: white; }
+
+    @media (max-width: 768px) {
+      .hero { padding: 60px 20px 80px; min-height: 90vh; }
+      .hero h1 { font-size: 2.2rem; }
+      .hero-sub { font-size: 1.2rem; }
+      .hero-cta { flex-direction: column; }
+      .hero-cta .btn { width: 100%; justify-content: center; }
+      .accordion-left { flex-direction: column; align-items: flex-start; }
+      .accordion-img { width: 56px; height: 56px; }
+      .accordion-body ul { padding-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <span class="hero-badge">Turma maio 2026 • Vagas limitadas</span>
+      <h1>Medicina Chinesa <span>Integrativa</span></h1>
+      <p class="hero-sub">Acupuntura Sem Agulhas</p>
+      <p class="hero-desc">Formação profissional em 18 meses. Aprenda ventosaterapia, guashá, moxaterapia, laserterapia e outras técnicas. Atue em terapias integrativas.</p>
+      <div class="hero-cta">
+        <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20garantir%20minha%20vaga%20no%20curso%20de%20Medicina%20Chinesa%20Integrativa" class="btn btn-whatsapp">Garantir minha vaga</a>
+        <a href="#tecnicas" class="btn btn-light">Conhecer as técnicas</a>
+      </div>
+      <div class="hero-meta">
+        <span>18 meses de formação</span>
+        <span>Terças manhã e noite</span>
+        <span>Ambulatório prático 6 meses</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="urgency-banner">
+    ⏰ Últimas vagas para maio! <a href="https://wa.me/5511997333868?text=Quero%20reservar%20minha%20vaga">Fale no WhatsApp</a>
+  </div>
+
+  <!-- SOBRE -->
+  <section class="about">
+    <div class="container">
+      <div class="about-wrap">
+        <h2 class="section-title">O que é este curso?</h2>
+        <p>Formação profissional em <strong>Medicina Chinesa Integrativa</strong> oferecida pelo <strong>Sol Instituto Terapêutico</strong>. Em 18 meses você aprende a teoria da MTC (Yin Yang, Cinco Movimentos, meridianos, diagnóstico) e técnicas terapêuticas <strong>sem agulhas</strong>.</p>
+        <p><strong>O que você vai fazer:</strong> Auriculoterapia, ventosaterapia, moxaterapia, guashá, laserterapia, magnetoterapia, acupressão (shiatsu e do-in). Mais 6 meses de ambulatório prático supervisionado e disciplinas EAD (fitoterapia, empreendedorismo, práticas integrativas).</p>
+        <p><strong>Para quem:</strong> Profissionais de saúde e quem quer atuar em terapias complementares. Duas opções: Formação Livre ou Pós-Graduação Lato Sensu.</p>
+        <div class="about-cta">
+          <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20curso" class="btn btn-whatsapp">Tirar dúvidas</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TÉCNICAS -->
+  <section class="tecnicas" id="tecnicas">
+    <div class="container">
+      <h2 class="section-title">Técnicas que você vai aprender</h2>
+      <p class="tecnicas-sub">Todas as práticas da Medicina Chinesa sem uso de agulhas</p>
+      <div class="tecnicas-grid">
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=600&q=80" alt="Ventosaterapia">
+          <div class="tecnica-body">
+            <h3>Ventosaterapia</h3>
+            <p>Terapia com copos de vidro ou silicone que criam vácuo na pele, estimulando pontos de acupuntura e melhorando a circulação.</p>
+          </div>
+        </div>
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&q=80" alt="Guashá">
+          <div class="tecnica-body">
+            <h3>Guashá</h3>
+            <p>Scraping terapêutico com instrumentos de pedra ou jade que liberam tensão, ativam a circulação e estimulam os meridianos.</p>
+          </div>
+        </div>
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80" alt="Moxaterapia">
+          <div class="tecnica-body">
+            <h3>Moxaterapia</h3>
+            <p>Aquecimento de pontos com artemísia (moxa), técnica milenar que tonifica o Qi e trata desequilíbrios energéticos.</p>
+          </div>
+        </div>
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=80" alt="Laserterapia">
+          <div class="tecnica-body">
+            <h3>Laserterapia</h3>
+            <p>Estimulação de pontos com laser de baixa potência. Técnica moderna, indolor e eficaz para diversas condições.</p>
+          </div>
+        </div>
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=600&q=80" alt="Magnetoterapia">
+          <div class="tecnica-body">
+            <h3>Magnetoterapia</h3>
+            <p>Uso de ímãs para estimular pontos energéticos. Método não invasivo que equilibra o fluxo de energia nos meridianos.</p>
+          </div>
+        </div>
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=600&q=80" alt="Cromoacupuntura">
+          <div class="tecnica-body">
+            <h3>Cromoacupuntura</h3>
+            <p>Estimulação de pontos com cores (luz colorida). Cada cor corresponde a um elemento da MTC e trata desequilíbrios específicos.</p>
+          </div>
+        </div>
+        <div class="tecnica-card">
+          <img class="tecnica-img" src="https://images.unsplash.com/photo-1582719478250-c89c6d9dba20?w=600&q=80" alt="Stiper">
+          <div class="tecnica-body">
+            <h3>Stiper</h3>
+            <p>Microvibrações em pontos de acupuntura com dispositivos de sílica. Técnica complementar que potencializa o tratamento.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFÍCIOS -->
+  <section class="benefits">
+    <div class="container">
+      <h2 class="section-title">Por que fazer este curso?</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">🌿</div>
+          <h3>Técnicas sem agulhas</h3>
+          <p>Todas as técnicas que você precisa para atuar com segurança e confiança.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🏥</div>
+          <h3>Ambulatório prático</h3>
+          <p>6 meses de prática supervisionada com pacientes reais.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📜</div>
+          <h3>Duas modalidades</h3>
+          <p>Formação Livre ou Pós-Graduação Lato Sensu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TURMAS -->
+  <section class="turmas" id="turmas">
+    <div class="container">
+      <h2 class="section-title">Próximas turmas</h2>
+      <div class="turmas-grid">
+        <div class="turma-card">
+          <div class="day">Terças</div>
+          <div class="date">05 de maio de 2026</div>
+          <div class="times">
+            <div class="time">☀️ Turma da manhã</div>
+            <div class="time">🌙 Turma da noite</div>
+          </div>
+        </div>
+      </div>
+      <div class="turmas-cta">
+        <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20na%20turma%20de%20maio" class="btn btn-whatsapp">Garantir minha vaga</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPOIMENTOS -->
+  <section class="testimonials">
+    <div class="container">
+      <h2 class="section-title">Quem fez, recomenda</h2>
+      <p class="testimonials-sub">Veja o que nossos alunos falam sobre a formação</p>
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p>"A formação mudou minha perspectiva profissional. Hoje atendo com técnicas que não imaginava antes. O ambulatório foi essencial. Recomendo muito!"</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">M</div>
+            <div>
+              <div class="name">Maria Silva</div>
+              <div class="role">Fisioterapeuta</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p>"O ambulatório prático fez toda a diferença. Saí do curso pronto para atender. Hoje tenho meu próprio consultório. Melhor investimento da minha carreira."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">C</div>
+            <div>
+              <div class="name">Carlos Ribeiro</div>
+              <div class="role">Terapeuta</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p>"Conteúdo excelente e professores muito preparados. A abordagem integrativa é o diferencial. Quem quer atuar em terapias complementares precisa fazer."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">A</div>
+            <div>
+              <div class="name">Ana Lima</div>
+              <div class="role">Nutricionista</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROGRAMA COM IMAGENS -->
+  <section class="program" id="programa">
+    <div class="container">
+      <h2 class="section-title">O que você vai aprender</h2>
+      <p class="program-intro">Conteúdo completo em 18 meses. Clique para expandir cada módulo.</p>
+      <div class="year-tabs">
+        <button class="year-tab active" data-year="1">1º Ano</button>
+        <button class="year-tab" data-year="2">2º Ano</button>
+      </div>
+      <div id="year1" class="year-content active">
+        <div class="program-accordion">
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=200&q=80" alt="">
+                <h3>Apresentação do curso</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Apresentação do Sol Instituto Terapêutico</li>
+                <li>História da Medicina Chinesa</li>
+                <li>Áreas de atuação profissional</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=200&q=80" alt="">
+                <h3>Estudos da Medicina Chinesa</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Teoria do Tao, Yin e Yang</li>
+                <li>Fatores Patogênicos e Oito Princípios</li>
+                <li>Teoria dos Cinco Movimentos</li>
+                <li>Circulação da Energia</li>
+                <li>Ética profissional e Biossegurança</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=200&q=80" alt="">
+                <h3>Meridianos e Pontos</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Corpo Energético e Circulação</li>
+                <li>Meridianos Yin e Yang (mão e perna)</li>
+                <li>Vaso Governador e Concepção</li>
+                <li>Pontos Extra</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&q=80" alt="">
+                <h3>Diagnóstico na MTC</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Interrogatório e Órgãos (Zang Fu)</li>
+                <li>Síndromes dos 5 Elementos</li>
+                <li>Estudo da Língua e Pulsologia</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1598986646512-9330bcc4c0dc?w=200&q=80" alt="">
+                <h3>Auriculoterapia</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Fundamentos da MTC aplicados</li>
+                <li>Pontos auriculares e protocolos</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="year2" class="year-content">
+        <div class="program-accordion">
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=200&q=80" alt="">
+                <h3>Ambulatório prático</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Prática supervisionada por 6 meses</li>
+                <li>Discussão de casos clínicos</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=200&q=80" alt="">
+                <h3>Recursos Terapêuticos</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Moxaterapia, Ventosaterapia, Guashá</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&q=80" alt="">
+                <h3>Técnicas de Tratamento</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Vasos maravilhosos</li>
+                <li>Coluna, emocionais, respiratórios, ginecológicos</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=200&q=80" alt="">
+                <h3>Técnicas não invasivas</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Laserterapia, Magnetoterapia, Cromoacupuntura, Stiper</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&q=80" alt="">
+                <h3>Acupressão - Shiatsu e Do-in</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>História, Filosofia e Sequência prática</li>
+                <li>Aplicações clínicas</li>
+              </ul>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <div class="accordion-left">
+                <img class="accordion-img" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=200&q=80" alt="">
+                <h3>Disciplinas EAD</h3>
+              </div>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul>
+                <li>Fitoterapia chinesa</li>
+                <li>Empreendedorismo e Marketing</li>
+                <li>Psicossomática</li>
+                <li>Ética e biossegurança</li>
+                <li>Práticas integrativas (SUS, aromaterapia, cromoterapia)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="program-cta">
+        <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20-%20Vi%20o%20programa" class="btn btn-whatsapp">Quero me inscrever</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVESTIMENTO -->
+  <section class="pricing" id="investimento">
+    <div class="container">
+      <h2 class="section-title">Investimento</h2>
+      <p class="pricing-sub">18 meses • Parcelamento em até 20x</p>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>Formação Livre</h3>
+          <p class="type-desc">Atuação profissional em terapias integrativas</p>
+          <div class="price-wrap">
+            <p class="old-price">20x de R$ 430</p>
+            <p class="price">20x de R$ 344</p>
+          </div>
+          <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20na%20Forma%C3%A7%C3%A3o%20Livre" class="btn btn-whatsapp">Garantir vaga</a>
+        </div>
+        <div class="pricing-card popular">
+          <h3>Pós-Graduação</h3>
+          <p class="type-desc">Lato sensu com certificação completa</p>
+          <div class="price-wrap">
+            <p class="old-price">20x de R$ 530</p>
+            <p class="price">20x de R$ 424</p>
+          </div>
+          <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20me%20inscrever%20na%20P%C3%B3s-Gradua%C3%A7%C3%A3o" class="btn btn-whatsapp">Garantir vaga</a>
+        </div>
+      </div>
+      <div class="pricing-dates">
+        <p><strong>Início:</strong> Terças, 05/05/2026</p>
+        <p>Turmas manhã e noite</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <div class="container">
+      <h2 class="section-title">Principais perguntas</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q">O curso usa agulhas? <span>+</span></div>
+          <div class="faq-a"><p>Não. O curso é focado em <strong>acupuntura sem agulhas</strong>. Você aprende técnicas como auriculoterapia, ventosaterapia, moxaterapia, guashá, laserterapia, magnetoterapia e acupressão. Todas são técnicas não invasivas.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Quem pode fazer o curso? <span>+</span></div>
+          <div class="faq-a"><p>Profissionais de saúde e qualquer pessoa interessada em atuar em terapias integrativas. Não é necessário ter formação prévia em saúde para a Formação Livre.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Qual a diferença entre Formação Livre e Pós-Graduação? <span>+</span></div>
+          <div class="faq-a"><p>A <strong>Formação Livre</strong> permite atuar profissionalmente. A <strong>Pós-Graduação Lato Sensu</strong> oferece certificação de especialização de nível superior.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Como funcionam as aulas? <span>+</span></div>
+          <div class="faq-a"><p>As aulas presenciais acontecem às <strong>terças-feiras</strong>, com turmas pela manhã e à noite. Há disciplinas EAD e ambulatório prático presencial supervisionado.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Posso parcelar? <span>+</span></div>
+          <div class="faq-a"><p>Sim. O curso pode ser parcelado em até 20x. Entre em contato pelo WhatsApp para conferir as condições.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="container">
+      <div class="cta-urgency">⏰ Vagas limitadas para maio</div>
+      <h2>Pronto para começar?</h2>
+      <p>Fale com nossa equipe e garanta sua vaga na próxima turma.</p>
+      <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Quero%20garantir%20minha%20vaga%20no%20curso%20de%20Medicina%20Chinesa%20Integrativa" class="btn btn-whatsapp">FALAR NO WHATSAPP</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p><strong>Sol Instituto Terapêutico</strong></p>
+      <p>Medicina Chinesa Integrativa • Acupuntura Sem Agulhas</p>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/5511997333868?text=Ol%C3%A1!%20Tenho%20interesse%20no%20curso" class="float-wa" aria-label="WhatsApp">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+  </a>
+
+  <script>
+    document.querySelectorAll('.accordion-header').forEach(h => {
+      h.addEventListener('click', () => { h.parentElement.classList.toggle('open'); });
+    });
+    document.querySelectorAll('.year-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.year-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('year' + tab.dataset.year).classList.add('active');
+      });
+    });
+    document.querySelectorAll('.faq-q').forEach(q => {
+      q.addEventListener('click', () => { q.parentElement.classList.toggle('open'); });
+    });
+  </script>
+</body>
+</html>

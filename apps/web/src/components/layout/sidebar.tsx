@@ -19,6 +19,7 @@ import {
   X,
   TestTube,
   Megaphone,
+  Mail,
   UserCog,
   HelpCircle,
   BookOpen
@@ -38,6 +39,7 @@ const navigation = [
   { name: 'Automação', href: '/automation', icon: Zap, permission: 'automation' },
   { name: 'Base de Conhecimento', href: '/knowledge', icon: BookOpen, permission: 'knowledge' },
   { name: 'Campanhas', href: '/campaigns', icon: Megaphone, permission: 'campaigns' },
+  { name: 'E-mail Marketing', href: '/email-marketing', icon: Mail, permission: 'campaigns' },
   { name: 'Relatórios', href: '/reports', icon: BarChart3, permission: 'reports' },
   { name: 'Usuários', href: '/users', icon: UserCog, permission: 'users' },
   { name: 'Configurações', href: '/settings', icon: Settings, permission: 'settings' },

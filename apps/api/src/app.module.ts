@@ -20,6 +20,8 @@ import { FlowsModule } from './flows/flows.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { QuickRepliesModule } from './quick-replies/quick-replies.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
+import { EmailCampaignsModule } from './email-campaigns/email-campaigns.module';
+import { EmailAuthModule } from './email-auth/email-auth.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { KnowledgeModule } from './knowledge/knowledge.module';
     CampaignsModule,
     QuickRepliesModule,
     KnowledgeModule,
+    EmailCampaignsModule,
+    EmailAuthModule,
   ],
 })
 export class AppModule {}
