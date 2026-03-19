@@ -335,60 +335,21 @@ export class EmailCampaignsService {
 
   private async getEmailTransport() {
     // 1) Preferir Gmail OAuth conectado (login/autorizar dentro do CRM)
-    try {
-      const status = await this.emailAuthService.getStatus();
-      if (status.google?.connected) {
-        const { accessToken, email } = await this.emailAuthService.getGoogleAccessToken();
-
-        const clientId =
-          process.env.GOOGLE_OAUTH_CLIENT_ID ||
-          (await this.settingsService.getSetting('google_oauth_client_id')) ||
-          '';
-        const clientSecret =
-          process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
-          (await this.settingsService.getSetting('google_oauth_client_secret')) ||
-          '';
-
-        if (!clientId || !clientSecret) {
-          throw new Error('Google OAuth clientId/clientSecret ausentes');
-        }
-
-        const stored = await this.prisma.oAuthToken.findUnique({ where: { provider: 'google' } });
-        if (!stored?.refreshToken) throw new Error('refreshToken não encontrado');
-
-        const fromEmail =
-          process.env.EMAIL_FROM ||
-          (await this.settingsService.getSetting('email_from_email')) ||
-          email ||
-          null;
-
-        const fromName =
-          process.env.EMAIL_FROM_NAME ||
-          (await this.settingsService.getSetting('email_from_name')) ||
-          null;
-
-        if (!fromEmail) {
-          throw new Error('EMAIL_FROM não definido');
-        }
-
+    const status = await this.emailAuthService.getStatus();
+    if (status.google?.connected) {
+      try {
+        const gmail = await this.emailAuthService.getGmailTransport();
         return {
-          transport: nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              type: 'OAuth2',
-              user: email || fromEmail,
-              clientId,
-              clientSecret,
-              refreshToken: stored.refreshToken,
-              accessToken,
-            },
-          }),
-          fromEmail,
-          fromName,
+          transport: gmail.transport,
+          fromEmail: gmail.fromEmail,
+          fromName: gmail.fromName,
         };
+      } catch (error: any) {
+        const detail = error?.message || String(error);
+        throw new Error(
+          `Integração Gmail conectada, mas falhou ao obter credenciais de envio. Reconecte o Gmail em Configurações > Integrações. Detalhe: ${detail}`,
+        );
       }
-    } catch {
-      // Se falhar, cai para SMTP abaixo
     }
 
     // 2) Fallback SMTP (Hostgator/Gmail com credenciais)
