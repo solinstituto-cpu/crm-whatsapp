@@ -249,9 +249,21 @@ export class ContactsService {
                           'cpf', 'address', 'city', 'state', 'source', 'interest', 
                           'customerStatus', 'referredBy', 'optedOut', 'assignedToId'];
     
+    const normalizeOptionalString = (v: any) => {
+      if (v === undefined) return undefined;
+      if (v === null) return null;
+      if (typeof v === 'string') {
+        const trimmed = v.trim();
+        return trimmed === '' ? null : trimmed;
+      }
+      return v;
+    };
+
     for (const field of simpleFields) {
       if (updateContactDto[field] !== undefined) {
-        data[field] = updateContactDto[field] || null;
+        // Não usar "|| null" (isso quebrava valores como false/0 e pode forçar null indevido)
+        // Strings vazias viram null; demais tipos preservados.
+        data[field] = normalizeOptionalString(updateContactDto[field]);
       }
     }
     
@@ -281,10 +293,21 @@ export class ContactsService {
     
     this.logger.log(`Updating contact ${id} with data:`, JSON.stringify(data));
     
-    const updated = await this.prisma.contact.update({
-      where: { id },
-      data,
-    });
+    let updated: any;
+    try {
+      updated = await this.prisma.contact.update({
+        where: { id },
+        data,
+      });
+    } catch (error: any) {
+      // Erros comuns: constraint de unique (ex: phoneE164) / tipo inválido / null em campo obrigatório
+      const code = error?.code;
+      if (code === 'P2002') {
+        const target = Array.isArray(error?.meta?.target) ? error.meta.target.join(',') : error?.meta?.target;
+        throw new Error(`Já existe um contato com este valor em: ${target || 'campo único'}`);
+      }
+      throw error;
+    }
 
     return {
       ...updated,
