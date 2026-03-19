@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { EmailAuthService } from '../email-auth/email-auth.service';
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 type EmailContactForCampaign = {
   id: string;

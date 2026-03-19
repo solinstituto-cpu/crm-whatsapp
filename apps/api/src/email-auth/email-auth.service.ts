@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { OAuth2Client } from 'google-auth-library';
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 type GoogleOAuthConfig = {
   clientId: string;
