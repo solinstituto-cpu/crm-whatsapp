@@ -32,7 +32,11 @@ import {
   Zap,
   Settings,
   Plus,
-  Download
+  Download,
+  Star,
+  StarOff,
+  Megaphone,
+  CheckCircle2
 } from 'lucide-react'
 
 interface MetaTemplate {
@@ -108,8 +112,8 @@ export default function InboxPage() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [transferring, setTransferring] = useState(false)
   
-  // Estado para filtro de conversas (ativas ou arquivadas)
-  const [conversationFilter, setConversationFilter] = useState<'active' | 'archived'>('active')
+  // Estado para filtro de conversas (ativas, campanhas ou arquivadas)
+  const [conversationFilter, setConversationFilter] = useState<'active' | 'campaigns' | 'archived'>('active')
   
   // Referência para área de mensagens (scroll)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -482,6 +486,8 @@ export default function InboxPage() {
         // Mapear para o formato do frontend
         return {
           id: conv.id,
+          contactId: conv.contact?.id,
+          contactTags: conv.contact?.tags ? JSON.parse(conv.contact.tags) : [],
           contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
           contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
           lastMessage: formatLastMessage(lastMsg),
@@ -662,6 +668,9 @@ export default function InboxPage() {
         setMediaUrl('')
         setSelectedFile(null)
         
+        // Marcar como lida agora que respondeu
+        markConversationAsRead(selectedConversation.id.toString())
+        
         setTimeout(() => fetchConversationsBackground(), 1000)
       } else {
         const error = await response.json()
@@ -744,6 +753,9 @@ export default function InboxPage() {
         setSelectedTemplateForEdit(null)
         setTemplateVariables([])
         setMediaUrl('')
+        
+        // Marcar como lida agora que respondeu
+        markConversationAsRead(selectedConversation.id.toString())
         
         // Atualizar conversa do servidor
         setTimeout(() => fetchConversationsBackground(), 1000)
@@ -831,16 +843,16 @@ export default function InboxPage() {
       }
     }
     
-    // Mostrar imediatamente com mensagens locais e zerar unread (preservar lastMessageTime)
+    // Mostrar imediatamente com mensagens locais e preservar unreadCount
     setSelectedConversation({ 
       ...conversation, 
       messages: localMessages, 
-      unreadCount: 0,
+      unreadCount: conversation.unreadCount,
       assignedTo: getAssignedToWithColor(assignResult.assignedTo || conversation.assignedTo)
     })
     
-    // Marcar como lido no backend
-    markConversationAsRead(conversation.id.toString())
+    // Antigamente marcava como lido ao abrir, agora só marca ao responder
+    // markConversationAsRead(conversation.id.toString())
     
     // Buscar detalhes completos da API
     const fullConversation = await fetchConversationDetails(conversation.id.toString())
@@ -854,15 +866,15 @@ export default function InboxPage() {
       const updatedConv = { 
         ...fullConversation, 
         messages: mergedMessages, 
-        unreadCount: 0,
+        unreadCount: conversation.unreadCount,
         lastMessageTime: conversation.lastMessageTime, // Manter horário original
         assignedTo: assignedToWithColor
       }
       setSelectedConversation(updatedConv)
       
-      // Atualizar na lista - apenas unreadCount, não o horário
+      // Atualizar na lista - preservar unreadCount, não o horário
       setConversations(prev => prev.map(c => 
-        c.id === conversation.id ? { ...c, unreadCount: 0, assignedTo: assignedToWithColor } : c
+        c.id === conversation.id ? { ...c, unreadCount: conversation.unreadCount, assignedTo: assignedToWithColor } : c
       ))
     }
   }
@@ -1077,7 +1089,13 @@ export default function InboxPage() {
         params.append('search', currentSearchTerm)
       }
       if (currentConversationFilter === 'archived') {
-        params.append('status', 'archived')
+        params.append('status', 'ARCHIVED')
+      } else if (currentConversationFilter === 'campaigns') {
+        params.append('status', 'OPEN')
+        params.append('hasTags', 'true')
+      } else {
+        params.append('status', 'OPEN')
+        params.append('hasTags', 'false')
       }
       
       console.log('🔄 Polling com filtros:', { 
@@ -1212,9 +1230,15 @@ export default function InboxPage() {
       if (searchTerm) {
         params.append('search', searchTerm)
       }
-      // Filtro de status (ativas vs arquivadas)
+      // Filtro de status (ativas vs arquivadas vs campanhas)
       if (conversationFilter === 'archived') {
-        params.append('status', 'archived')
+        params.append('status', 'ARCHIVED')
+      } else if (conversationFilter === 'campaigns') {
+        params.append('status', 'OPEN')
+        params.append('hasTags', 'true')
+      } else {
+        params.append('status', 'OPEN')
+        params.append('hasTags', 'false')
       }
       
       const response = await fetch(`${apiUrl}/api/conversations?${params.toString()}`, {
@@ -1323,6 +1347,31 @@ export default function InboxPage() {
           (conversation.contactTags && conversation.contactTags.includes(inboxFilters.tag))
         
         return matchesTag
+      }).sort((a, b) => {
+        const getSlaPriority = (conv: any) => {
+          if (conv.unreadCount > 0) {
+            const incomingTime = conv.lastIncomingMessageAt || conv.updatedAt || new Date().toISOString()
+            const waitTimeMs = new Date().getTime() - new Date(incomingTime).getTime()
+            const waitTimeHours = waitTimeMs / (1000 * 60 * 60)
+            
+            if (waitTimeHours > 4) return 3 // Vermelho
+            if (waitTimeHours > 2) return 2 // Amarelo
+            return 1 // Verde
+          }
+          return 4 // Outros
+        }
+        
+        const priorityA = getSlaPriority(a)
+        const priorityB = getSlaPriority(b)
+        
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB
+        }
+        
+        // Em ordem de horários (mais recente primeiro)
+        const timeA = new Date(a.lastMessageAt || a.updatedAt || 0).getTime()
+        const timeB = new Date(b.lastMessageAt || b.updatedAt || 0).getTime()
+        return timeB - timeA
       })
     : []
   
@@ -1466,12 +1515,13 @@ export default function InboxPage() {
       replyToMessageId: currentReplyTo?.waMessageId || currentReplyTo?.id
     }
 
-    // Atualizar conversa localmente (otimistic update)
+    // Atualizar conversa localmente (otimistic update) e zerar unreadCount
     const updatedConversation = {
       ...selectedConversation,
       messages: [...selectedConversation.messages, message],
       lastMessage: messageContent,
-      lastMessageTime: 'Agora'
+      lastMessageTime: 'Agora',
+      unreadCount: 0
     }
     
     setSelectedConversation(updatedConversation)
@@ -1501,6 +1551,9 @@ export default function InboxPage() {
       if (response.ok) {
         const data = await response.json()
         console.log('✅ Mensagem enviada:', data)
+        
+        // Marcar como lida agora que respondeu
+        markConversationAsRead(selectedConversation.id.toString())
       } else {
         const errorData = await response.json()
         console.error('❌ Erro ao enviar mensagem:', errorData)
@@ -1867,6 +1920,84 @@ export default function InboxPage() {
       case 'export':
         handleExportConversation()
         break
+        
+      case 'toggle-golden':
+        handleToggleGolden()
+        break
+    }
+  }
+
+  const updateConversationTags = (conversationId: string, isGolden: boolean) => {
+    setConversations(prev => prev.map(conv => {
+      if (conv.id === conversationId) {
+        let newTags = conv.contactTags || []
+        if (isGolden && !newTags.includes('Golden')) {
+          newTags = [...newTags, 'Golden']
+        } else if (!isGolden) {
+          newTags = newTags.filter((t: string) => t !== 'Golden')
+        }
+        return { ...conv, contactTags: newTags }
+      }
+      return conv
+    }))
+
+    setSelectedConversation(prev => {
+      if (prev && prev.id === conversationId) {
+        let newTags = prev.contactTags || []
+        if (isGolden && !newTags.includes('Golden')) {
+          newTags = [...newTags, 'Golden']
+        } else if (!isGolden) {
+          newTags = newTags.filter((t: string) => t !== 'Golden')
+        }
+        return { ...prev, contactTags: newTags }
+      }
+      return prev
+    })
+  }
+
+  const handleToggleGolden = async () => {
+    if (!selectedConversation || !selectedConversation.contactId) {
+      alert('Contato não encontrado para adicionar marcação.')
+      return
+    }
+
+    const isCurrentlyGolden = selectedConversation.contactTags?.includes('Golden')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const contactId = selectedConversation.contactId
+
+    try {
+      if (isCurrentlyGolden) {
+        // Remover tag
+        const response = await fetch(`${apiUrl}/api/contacts/${contactId}/tags/Golden`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session?.user?.token}`,
+          }
+        })
+        if (response.ok) {
+          updateConversationTags(selectedConversation.id, false)
+        } else {
+          alert('Erro ao remover marcação Golden')
+        }
+      } else {
+        // Adicionar tag
+        const response = await fetch(`${apiUrl}/api/contacts/${contactId}/tags`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.user?.token}`,
+          },
+          body: JSON.stringify({ tag: 'Golden' })
+        })
+        if (response.ok) {
+          updateConversationTags(selectedConversation.id, true)
+        } else {
+          alert('Erro ao adicionar marcação Golden')
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao alternar status Golden', error)
+      alert('Erro de conexão ao atualizar status do cliente')
     }
   }
   
@@ -2185,7 +2316,8 @@ export default function InboxPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: toUserId,
-          userName: toUserName
+          userName: toUserName,
+          transferredBy: (session?.user as any)?.name || 'Outro atendente'
         })
       })
       
@@ -2315,7 +2447,7 @@ export default function InboxPage() {
             <div className="flex space-x-1 mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 onClick={() => setConversationFilter('active')}
-                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   conversationFilter === 'active'
                     ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -2325,8 +2457,19 @@ export default function InboxPage() {
                 Ativas
               </button>
               <button
+                onClick={() => setConversationFilter('campaigns')}
+                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  conversationFilter === 'campaigns'
+                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Megaphone className="inline h-4 w-4 mr-1" />
+                Campanhas
+              </button>
+              <button
                 onClick={() => setConversationFilter('archived')}
-                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   conversationFilter === 'archived'
                     ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -2436,7 +2579,7 @@ export default function InboxPage() {
               <select
                 value={inboxFilters.tag}
                 onChange={(e) => setInboxFilters(prev => ({ ...prev, tag: e.target.value }))}
-                className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 dark:text-white"
+                className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 dark:text-white max-w-[150px]"
               >
                 <option value="">Tag</option>
                 {allTags.map(tag => (
@@ -2484,35 +2627,69 @@ export default function InboxPage() {
             )}
             {filteredConversations.length > 0 ? (
               <>
-                {filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  onClick={() => handleSelectConversation(conversation)}
-                  className={`p-4 border-b dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                    selectedConversation?.id === conversation.id ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-500' : ''
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-medium text-green-800 dark:text-green-400">
-                        {conversation.contactName.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {conversation.contactName}
-                        </p>
-                        <div className="flex items-center space-x-2">
-                          {/* Indicador de atendente com cor personalizada */}
-                          {conversation.assignedTo && (
-                            <span 
-                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
-                              style={{ backgroundColor: conversation.assignedTo.color || '#3B82F6' }}
-                            >
-                              {conversation.assignedTo.name.split(' ')[0]}
-                            </span>
-                          )}
+                {filteredConversations.map((conversation) => {
+                  const isGolden = conversation.contactTags?.includes('Golden')
+                  let bgColorClass = isGolden ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-white dark:bg-gray-800'
+                  
+                  // Se houver mensagem não lida E houver data de recebimento (SLA)
+                  if (conversation.unreadCount > 0) {
+                    // Usar lastIncomingMessageAt, se não existir cai para fallback (melhor que nada)
+                    const incomingTime = conversation.lastIncomingMessageAt || conversation.updatedAt || new Date().toISOString();
+                    const waitTimeMs = new Date().getTime() - new Date(incomingTime).getTime()
+                    const waitTimeHours = waitTimeMs / (1000 * 60 * 60)
+                    
+                    if (waitTimeHours > 4) {
+                      bgColorClass = 'bg-red-100 dark:bg-red-900/40' // Vermelho claro
+                    } else if (waitTimeHours > 2) {
+                      bgColorClass = 'bg-yellow-100 dark:bg-yellow-900/40' // Amarelo claro
+                    } else {
+                      bgColorClass = 'bg-green-100 dark:bg-green-900/40' // Verde claro
+                    }
+                  } else if (selectedConversation?.id === conversation.id) {
+                    // Selecionado mas não tem mensagem não lida
+                    bgColorClass = 'bg-blue-50 dark:bg-blue-900/20'
+                  }
+
+                  const borderClass = selectedConversation?.id === conversation.id 
+                    ? 'border-l-4 border-l-blue-500' 
+                    : 'border-l-4 border-transparent'
+
+                  return (
+                  <div
+                    key={conversation.id}
+                    onClick={() => handleSelectConversation(conversation)}
+                    className={`p-4 border-b dark:border-gray-700 cursor-pointer hover:opacity-80 transition-all ${bgColorClass} ${borderClass}`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-12 h-12 ${isGolden ? 'bg-amber-200 dark:bg-amber-700' : 'bg-green-200 dark:bg-green-800'} rounded-full flex items-center justify-center flex-shrink-0`}>
+                        <span className={`text-sm font-medium ${isGolden ? 'text-amber-900 dark:text-amber-100' : 'text-green-900 dark:text-green-100'}`}>
+                          {conversation.contactName.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate pr-2">
+                            {conversation.contactName}
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            {/* Bolinha dourada indicando cliente Golden */}
+                            {isGolden && (
+                              <span className="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_5px_rgba(250,204,21,0.6)]" title="Cliente Golden"></span>
+                            )}
+                            {/* Bolinha verde indicando demanda de resposta */}
+                            {conversation.unreadCount > 0 && (
+                              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.6)]" title="Aguardando resposta do consultor"></span>
+                            )}
+
+                            {/* Indicador de atendente com cor personalizada */}
+                            {conversation.assignedTo && (
+                              <span 
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
+                                style={{ backgroundColor: conversation.assignedTo.color || '#3B82F6' }}
+                              >
+                                {conversation.assignedTo.name.split(' ')[0]}
+                              </span>
+                            )}
                           <p className="text-xs text-gray-500 dark:text-gray-400">{conversation.lastMessageTime}</p>
                           {conversation.unreadCount > 0 && (
                             <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-green-600 rounded-full">
@@ -2531,7 +2708,8 @@ export default function InboxPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
               {/* Indicador de carregamento e botão para carregar mais */}
               {loadingMore && (
                 <div className="p-4 text-center">
@@ -2610,10 +2788,38 @@ export default function InboxPage() {
                         }
                       })()}
                     </div>
-                    <p className="text-sm text-gray-500">{selectedConversation.contactPhone}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-500">{selectedConversation.contactPhone}</p>
+                      {selectedConversation.contactTags && selectedConversation.contactTags.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-400 font-medium">Tags:</span>
+                          {selectedConversation.contactTags.map((tag: string, index: number) => (
+                            <span 
+                              key={index} 
+                              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                tag.toLowerCase() === 'golden' 
+                                  ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
+                                  : 'bg-gray-100 text-gray-600 border border-gray-200'
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="flex items-center space-x-1 relative">
+                  {selectedConversation.unreadCount > 0 && (
+                    <button
+                      onClick={() => markConversationAsRead(selectedConversation.id.toString())}
+                      className="text-green-600 hover:text-green-700 p-2 rounded-full hover:bg-green-50 transition-colors"
+                      title="Dispensar Resposta (Marcar como lido)"
+                    >
+                      <CheckCircle2 className="h-5 w-5" />
+                    </button>
+                  )}
                   <button 
                     className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
                     onClick={(e) => {
@@ -2626,7 +2832,7 @@ export default function InboxPage() {
                   </button>
                   
                   {showContactMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border"
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-md shadow-2xl z-50 border border-[#E8B868]/30"
                          onClick={(e) => e.stopPropagation()}>
                       <div className="py-1">
                         <button
@@ -2681,6 +2887,34 @@ export default function InboxPage() {
                             Sair do Atendimento
                           </button>
                         )}
+                        {selectedConversation.unreadCount > 0 && (
+                          <button
+                            onClick={() => {
+                              setShowContactMenu(false);
+                              markConversationAsRead(selectedConversation.id.toString());
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-[#2A3A32] hover:bg-[#E8B868]/20 transition-colors font-bold"
+                          >
+                            <CheckCircle2 className="mr-3 h-4 w-4 text-green-600" />
+                            Fim de Interação
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleContactAction('toggle-golden')}
+                          className="flex items-center w-full px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-50 transition-colors font-medium"
+                        >
+                          {selectedConversation.contactTags?.includes('Golden') ? (
+                            <>
+                              <StarOff className="mr-3 h-4 w-4" />
+                              Remover Golden
+                            </>
+                          ) : (
+                            <>
+                              <Star className="mr-3 h-4 w-4" />
+                              Marcar como Golden
+                            </>
+                          )}
+                        </button>
                         <button
                           onClick={() => handleContactAction('transfer')}
                           className="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
@@ -2731,6 +2965,16 @@ export default function InboxPage() {
                         fromMe: replyMsg.fromMe
                       }
                     }
+                  }
+                  
+                  if (message.type === 'system') {
+                    return (
+                      <div key={message.id} className="flex justify-center my-4 w-full">
+                        <span className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full border border-gray-200 shadow-sm text-center">
+                          {message.content}
+                        </span>
+                      </div>
+                    )
                   }
                   
                   return (

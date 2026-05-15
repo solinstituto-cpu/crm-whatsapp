@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [recentContacts, setRecentContacts] = useState<any[]>([])
   const [recentCampaigns, setRecentCampaigns] = useState<any[]>([])
+  const [agentSlaStats, setAgentSlaStats] = useState<any[]>([])
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
   const [loading, setLoading] = useState(true)
   const isAdmin = session?.user?.role === 'ADMIN'
@@ -93,6 +94,7 @@ export default function DashboardPage() {
         setRecentActivity(data.recentActivity || [])
         setRecentContacts(data.recentContacts || [])
         setRecentCampaigns(data.recentCampaigns || [])
+        setAgentSlaStats(data.agentSlaStats || [])
       } else {
         console.error('Erro na resposta:', response.status, await response.text())
       }
@@ -157,7 +159,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-blue-100 mr-4">
@@ -187,32 +189,69 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-yellow-100 mr-4">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Deals Ativos</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.openDeals}</p>
-                {stats.wonDeals > 0 && (
-                  <p className="text-xs text-green-600">{stats.wonDeals} fechados</p>
-                )}
-              </div>
-            </div>
+        {/* SLA por Consultor */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">SLA de Atendimentos Pendentes por Consultor</h2>
           </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 mr-4">
-                <DollarSign className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                <p className="text-2xl font-bold text-gray-900">R$ {stats.totalRevenue.toLocaleString()}</p>
-              </div>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Consultor
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-1 align-middle"></span>Até 2h
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-1 align-middle"></span>Até 4h
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-1 align-middle"></span>Até 6h
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="inline-block w-3 h-3 border border-gray-300 bg-white rounded-full mr-1 align-middle"></span>+6h
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Pendentes
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {agentSlaStats.map((agent) => (
+                  <tr key={agent.agentId} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {agent.agentName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-green-700 bg-green-50/50">
+                      {agent.green > 0 ? agent.green : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-yellow-700 bg-yellow-50/50">
+                      {agent.yellow > 0 ? agent.yellow : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-red-700 bg-red-50/50">
+                      {agent.red > 0 ? agent.red : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-600 bg-gray-50/50">
+                      {agent.white > 0 ? agent.white : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-900 bg-gray-100/30">
+                      {agent.total}
+                    </td>
+                  </tr>
+                ))}
+                {agentSlaStats.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                      Nenhum atendimento aguardando resposta no momento. Muito bem!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

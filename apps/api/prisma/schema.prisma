@@ -5,20 +5,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// CONFIGURAÇÃO PARA PRODUÇÃO (HOSTGATOR)
+// CONFIGURAÇÃO PARA DESENVOLVIMENTO LOCAL
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Para migrations no Render/Supabase: use conexão direta (sem pooler/pgbouncer)
-  directUrl = env("DIRECT_URL")
 }
-
-// ALTERNATIVA PARA DESENVOLVIMENTO LOCAL
-// Descomente as linhas abaixo e comente o PostgreSQL acima para usar SQLite local
-// datasource db {
-//   provider = "sqlite"
-//   url      = env("DATABASE_URL")
-// }
 
 model User {
   id        String   @id @default(cuid())
@@ -376,7 +367,7 @@ model FlowSession {
 model KnowledgeBase {
   id          String  @id @default(cuid())
   title       String  // Título/Categoria (ex: "Preços", "Horários", "Serviços")
-  content     String  @db.Text // Conteúdo completo
+  content     String  // Conteúdo completo
   keywords    String? // Keywords para busca (separadas por vírgula)
   isActive    Boolean @default(true)
   priority    Int     @default(0) // Maior = mais importante
@@ -481,7 +472,7 @@ model EmailCampaign {
   status      String @default("DRAFT") // DRAFT, SCHEDULED, RUNNING, PAUSED, COMPLETED, CANCELLED
   subject     String
   preheader   String?
-  htmlTemplate String @db.Text
+  htmlTemplate String
 
   // Segmentação de contatos
   filterTags         String? // JSON array de tags para filtrar

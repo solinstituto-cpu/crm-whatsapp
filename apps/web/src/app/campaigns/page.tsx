@@ -1159,32 +1159,44 @@ export default function CampaignsPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         🏷️ Filtrar por Tags
                       </label>
-                      <div className="flex flex-wrap gap-2">
-                        {availableTags.map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => {
-                              if (formFilterTags.includes(tag)) {
-                                setFormFilterTags(formFilterTags.filter(t => t !== tag))
-                              } else {
-                                setFormFilterTags([...formFilterTags, tag])
-                              }
-                            }}
-                            className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                              formFilterTags.includes(tag)
-                                ? 'bg-green-500 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                          >
+                      <select
+                        onChange={(e) => {
+                          const tag = e.target.value;
+                          if (tag && !formFilterTags.includes(tag)) {
+                            setFormFilterTags([...formFilterTags, tag]);
+                          }
+                          // Reseta para a opção inicial para permitir selecionar a mesma opção novamente se for removida
+                          e.target.value = "";
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="">Selecione uma tag para adicionar</option>
+                        {[...availableTags].sort((a, b) => a.localeCompare(b)).map((tag) => (
+                          <option key={tag} value={tag}>
                             {tag}
-                          </button>
+                          </option>
                         ))}
-                      </div>
+                      </select>
+                      
+                      {/* Tags selecionadas */}
                       {formFilterTags.length > 0 && (
-                        <p className="text-sm text-green-600 mt-2">
-                          ✓ Selecionadas: {formFilterTags.join(', ')}
-                        </p>
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-500 mb-2">Tags selecionadas (clique no X para remover):</p>
+                          <div className="flex flex-wrap gap-2">
+                            {formFilterTags.map((tag) => (
+                              <span key={tag} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                                {tag}
+                                <button
+                                  type="button"
+                                  onClick={() => setFormFilterTags(formFilterTags.filter(t => t !== tag))}
+                                  className="ml-2 text-green-600 hover:text-green-900 focus:outline-none"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}

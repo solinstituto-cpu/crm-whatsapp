@@ -16,12 +16,15 @@ export class ConversationsController {
     @Query('unreadOnly') unreadOnly?: string,
     @Query('assignedToId') assignedToId?: string,
     @Query('search') search?: string,
+    @Query('hasTags') hasTags?: string,
   ) {
     const filters = {
       unreadOnly: unreadOnly === 'true',
       assignedToId,
       search,
+      hasTags: hasTags === 'true' ? true : hasTags === 'false' ? false : undefined,
     };
+    console.log('Filters received:', filters);
     return this.conversationsService.findAll(page, limit, status, accountId, filters);
   }
 
@@ -49,8 +52,9 @@ export class ConversationsController {
     @Param('id') id: string,
     @Body('userId') userId: string,
     @Body('userName') userName: string,
+    @Body('transferredBy') transferredBy?: string,
   ) {
-    return this.conversationsService.assignToUser(id, userId, userName);
+    return this.conversationsService.assignToUser(id, userId, userName, transferredBy);
   }
 
   /**

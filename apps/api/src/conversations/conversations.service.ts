@@ -12,7 +12,7 @@ export class ConversationsService {
     limit = 10, 
     status?: string, 
     accountId?: string,
-    filters?: { unreadOnly?: boolean; assignedToId?: string; search?: string }
+    filters?: { unreadOnly?: boolean; assignedToId?: string; search?: string; hasTags?: boolean }
   ) {
     try {
       // Garantir que page e limit são números
@@ -43,6 +43,47 @@ export class ConversationsService {
           { contact: { name: { contains: filters.search, mode: 'insensitive' } } },
           { contact: { phoneE164: { contains: filters.search } } },
         ];
+      }
+      
+      if (filters?.hasTags !== undefined) {
+        if (filters.hasTags === true) {
+          // Campanhas: tem contato E tem alguma tag que NÃO seja apenas "Golden"
+          if (!where.contact) where.contact = {};
+          where.contact = {
+            ...where.contact,
+            AND: [
+              { tags: { not: '[]' } },
+              { tags: { not: '' } },
+              { tags: { not: '["Golden"]' } }
+            ]
+          };
+        } else {
+          // Ativas: sem contato OU contato sem tags ou apenas "Golden"
+          const noTagsCondition = {
+            OR: [
+              { contactId: null },
+              {
+                contact: {
+                  OR: [
+                    { tags: '[]' },
+                    { tags: '' },
+                    { tags: '["Golden"]' }
+                  ]
+                }
+              }
+            ]
+          };
+          
+          if (where.OR) {
+            where.AND = [
+              { OR: where.OR },
+              noTagsCondition
+            ];
+            delete where.OR;
+          } else {
+            where.OR = noTagsCondition.OR;
+          }
+        }
       }
 
       this.logger.log(`Fetching conversations: page=${pageNum}, limit=${limitNum}, status=${status || 'all'}, accountId=${accountId || 'all'}, filters=${JSON.stringify(filters)}`);
@@ -230,7 +271,7 @@ export class ConversationsService {
   /**
    * Atribuir um atendente a uma conversa
    */
-  async assignToUser(conversationId: string, userId: string, userName: string) {
+  async assignToUser(conversationId: string, userId: string, userName: string, transferredBy?: string) {
     this.logger.log(`Assigning conversation ${conversationId} to user ${userId} (${userName})`);
 
     // Verificar se já tem alguém atribuído
@@ -272,19 +313,35 @@ export class ConversationsService {
       };
     }
 
-    // Atribuir ao novo usuário
-    const updated = await this.prisma.conversation.update({
-      where: { id: conversationId },
-      data: {
-        assignedToId: userId,
-        assignedAt: new Date(),
-      },
-      include: {
-        assignedTo: {
-          select: { id: true, name: true, color: true },
+    // Atribuir ao novo usuário e adicionar mensagem de sistema
+    let messageText = `Atendimento iniciado por ${userName}`;
+    if (transferredBy) {
+      messageText = `Conversa transferida de ${transferredBy} para ${userName}`;
+    }
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+          assignedToId: userId,
+          assignedAt: new Date(),
         },
-      },
-    });
+        include: {
+          assignedTo: {
+            select: { id: true, name: true, color: true },
+          },
+        },
+      }),
+      this.prisma.message.create({
+        data: {
+          conversationId,
+          direction: 'OUT',
+          type: 'system',
+          body: messageText,
+          status: 'SENT'
+        }
+      })
+    ]);
 
     // Também atualizar o contato vinculado com o mesmo atendente
     if (conversation.contactId) {

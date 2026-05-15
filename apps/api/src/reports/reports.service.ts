@@ -234,6 +234,49 @@ export class ReportsService {
       },
     });
 
+    // SLA stats por Atendente
+    const openConversationsSLA = await this.prisma.conversation.findMany({
+      where: { unreadCount: { gt: 0 } },
+      include: { assignedTo: true },
+    });
+
+    const agentSlaStatsMap: Record<string, any> = {};
+    const nowTime = new Date().getTime();
+
+    openConversationsSLA.forEach(conv => {
+      const agentId = conv.assignedToId || 'unassigned';
+      const agentName = conv.assignedTo?.name || 'Sem Atendente';
+      
+      if (!agentSlaStatsMap[agentId]) {
+        agentSlaStatsMap[agentId] = {
+          agentId,
+          agentName,
+          green: 0,
+          yellow: 0,
+          red: 0,
+          white: 0,
+          total: 0,
+        };
+      }
+
+      const incomingTime = conv.lastIncomingMessageAt || conv.updatedAt || new Date().toISOString();
+      const waitTimeMs = nowTime - new Date(incomingTime).getTime();
+      const waitTimeHours = waitTimeMs / (1000 * 60 * 60);
+
+      agentSlaStatsMap[agentId].total++;
+      if (waitTimeHours > 6) {
+        agentSlaStatsMap[agentId].white++;
+      } else if (waitTimeHours > 4) {
+        agentSlaStatsMap[agentId].red++;
+      } else if (waitTimeHours > 2) {
+        agentSlaStatsMap[agentId].yellow++;
+      } else {
+        agentSlaStatsMap[agentId].green++;
+      }
+    });
+
+    const agentSlaStats = Object.values(agentSlaStatsMap).sort((a: any, b: any) => b.total - a.total);
+
     return {
       // Cards principais
       summary: {
@@ -280,6 +323,8 @@ export class ReportsService {
         completedAt: c.completedAt,
         createdAt: c.createdAt,
       })),
+      // SLA por Atendente
+      agentSlaStats,
       // Timestamp
       generatedAt: new Date(),
     };

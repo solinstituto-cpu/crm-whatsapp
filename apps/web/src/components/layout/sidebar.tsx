@@ -32,7 +32,7 @@ let cachedCompanyName: string = 'DRM CRM'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, permission: 'dashboard' },
-  { name: 'Inbox', href: '/inbox', icon: MessageSquare, permission: 'inbox' },
+  { name: 'Conversas', href: '/inbox', icon: MessageSquare, permission: 'inbox' },
   { name: 'Contatos', href: '/contacts', icon: Users, permission: 'contacts' },
   { name: 'Pipeline', href: '/pipeline', icon: TrendingUp, permission: 'pipeline' },
   { name: 'Templates', href: '/templates', icon: FileText, permission: 'templates' },
@@ -167,43 +167,37 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 dark:bg-gray-950 text-white transform transition-transform duration-300 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#2A3A32] text-white transform transition-transform duration-300 ease-in-out border-r border-[#E8B868]/20
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo - usa cor dinâmica e nome/logo da empresa */}
           <div 
-            className="flex items-center justify-center h-16 border-b border-slate-700"
-            style={{ backgroundColor: 'var(--color-primary)' }}
+            className="flex items-center justify-center h-16 border-b border-[#394D43] bg-[#1A251F]"
           >
             <div className="flex items-center space-x-2">
-              {companyLogo ? (
-                <img 
-                  src={companyLogo} 
-                  alt={companyName}
-                  className="h-8 w-8 object-contain rounded flex-shrink-0"
-                />
-              ) : (
-                <div className="h-8 w-8 flex-shrink-0 rounded bg-white/20" aria-hidden />
-              )}
-              <span className="text-xl font-bold text-white truncate max-w-[160px]">{companyName}</span>
+              <img 
+                src="/images/logo.png?v=3" 
+                alt={companyName}
+                className="h-10 w-10 object-contain flex-shrink-0"
+              />
+              <span className="text-xl font-bold text-[#E8B868] truncate max-w-[160px]">{companyName}</span>
             </div>
           </div>
 
           {/* User info */}
-          <div className="p-4 border-b border-slate-700">
+          <div className="p-4 border-b border-[#394D43]">
             <div className="flex items-center space-x-3">
               <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-primary)' }}
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#E8B868]"
               >
-                <span className="text-sm font-medium text-white">
-                  {session?.user?.name?.charAt(0) || 'U'}
+                <span className="text-sm font-bold text-[#2A3A32]">
+                  {session?.user?.name?.replace(/[^a-zA-ZÀ-ÿ]/g, '').charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <div>
-                <p className="text-sm font-medium">{session?.user?.name}</p>
-                <p className="text-xs text-slate-400">{session?.user?.email}</p>
+                <p className="text-sm font-medium text-white">{session?.user?.name}</p>
+                <p className="text-xs text-[#E8B868]/70">{session?.user?.email}</p>
               </div>
             </div>
           </div>
@@ -222,11 +216,10 @@ export default function Sidebar() {
                   className={`
                     flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive 
-                      ? 'text-white' 
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      ? 'text-[#2A3A32] bg-[#E8B868] font-bold shadow-sm' 
+                      : 'text-slate-200 hover:bg-[#394D43] hover:text-[#E8B868]'
                     }
                   `}
-                  style={isActive ? { backgroundColor: 'var(--color-primary)' } : {}}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}

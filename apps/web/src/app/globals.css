@@ -70,7 +70,7 @@
     font-size: var(--font-size-base);
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#F9F6F0] text-[#1A2E22];
   }
 }
 

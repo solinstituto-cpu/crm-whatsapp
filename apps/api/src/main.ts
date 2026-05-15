@@ -16,6 +16,7 @@ async function bootstrap() {
   // Enable CORS - permite domínios fixos + previews Vercel (*.vercel.app)
   const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:3001',
     'https://whatsapp-crm-eight.vercel.app',
     'https://whatsapp-crmsol.vercel.app',
     'https://crm-drm-nuyq.vercel.app',
