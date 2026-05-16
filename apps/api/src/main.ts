@@ -17,6 +17,8 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://192.168.1.131:3000',
+    'http://192.168.1.131:3001',
     'https://whatsapp-crm-eight.vercel.app',
     'https://whatsapp-crmsol.vercel.app',
     'https://crm-drm-nuyq.vercel.app',
@@ -68,9 +70,9 @@ async function bootstrap() {
   }
 
   const port = process.env.PORT || 4000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   
-  logger.log(`🚀 API running on http://localhost:${port}`);
+  logger.log(`🚀 API running on http://0.0.0.0:${port} (rede: http://192.168.1.131:${port})`);
 }
 
 bootstrap();
