@@ -28,7 +28,7 @@ import { canAccess } from '@/lib/permissions'
 
 // Cache do logo para evitar flash do ícone ao navegar entre telas (Sidebar remonta)
 let cachedCompanyLogo: string | null = null
-let cachedCompanyName: string = 'DRM CRM'
+let cachedCompanyName: string = 'Sol Instituto'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, permission: 'dashboard' },
@@ -57,7 +57,7 @@ export default function Sidebar() {
   useEffect(() => {
     const loadBusinessConfig = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
         const token = (session as any)?.user?.token || (session as any)?.accessToken
         const response = await fetch(`${apiUrl}/api/settings/system`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -100,7 +100,7 @@ export default function Sidebar() {
     if (!session?.user?.id) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       await fetch(`${apiUrl}/api/users/heartbeat`, {
         method: 'POST',
         headers: {
@@ -128,7 +128,7 @@ export default function Sidebar() {
   const handleSignOut = async () => {
     if (session?.user?.id) {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
         await fetch(`${apiUrl}/api/users/logout`, {
           method: 'POST',
           headers: {
@@ -203,7 +203,7 @@ export default function Sidebar() {
           </div>
 
           {/* Navigation - filtrado por permissão do perfil */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation
               .filter((item) => canAccess(session?.user?.role as string, item.permission))
               .map((item) => {
@@ -229,10 +229,10 @@ export default function Sidebar() {
           </nav>
 
           {/* Sign out button */}
-          <div className="p-4 border-t border-slate-700">
+          <div className="p-4 border-t border-[#394D43]">
             <button
               onClick={handleSignOut}
-              className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-300 rounded-md hover:bg-slate-800 hover:text-white transition-colors"
+              className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-200 rounded-md hover:bg-[#394D43] hover:text-[#E8B868] transition-colors"
             >
               <LogOut className="mr-3 h-5 w-5" />
               Sair

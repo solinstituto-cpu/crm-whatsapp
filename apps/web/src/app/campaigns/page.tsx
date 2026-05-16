@@ -169,7 +169,7 @@ export default function CampaignsPage() {
   // Buscar contas WhatsApp (multi-números)
   const fetchWhatsAppAccounts = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const userId = (session?.user as any)?.id
       const url = userId 
         ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
@@ -196,7 +196,7 @@ export default function CampaignsPage() {
 
   const fetchCustomFields = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/settings/custom-fields`)
       if (response.ok) {
         const data = await response.json()
@@ -210,7 +210,7 @@ export default function CampaignsPage() {
   // Buscar todas as tags únicas dos contatos
   const fetchAvailableTags = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/contacts?limit=1000`)
       if (response.ok) {
         const data = await response.json()
@@ -231,7 +231,7 @@ export default function CampaignsPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const params = new URLSearchParams({ limit: '100' })
       if (filterStatus) params.append('status', filterStatus)
       
@@ -249,7 +249,7 @@ export default function CampaignsPage() {
 
   const fetchTemplates = async (accountId?: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       // Se tiver accountId, buscar templates daquela conta específica
       const params = accountId ? `?accountId=${accountId}` : ''
       const response = await fetch(`${apiUrl}/api/templates${params}`)
@@ -315,7 +315,7 @@ export default function CampaignsPage() {
   const handleMediaUpload = async (file: File) => {
     setUploadingMedia(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const formData = new FormData()
       formData.append('file', file)
       
@@ -350,7 +350,7 @@ export default function CampaignsPage() {
 
   const fetchStats = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/campaigns/stats`)
       if (response.ok) {
         setStats(await response.json())
@@ -362,7 +362,7 @@ export default function CampaignsPage() {
 
   const fetchPreviewContacts = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/campaigns/preview-contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -434,7 +434,7 @@ export default function CampaignsPage() {
 
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/campaigns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -479,7 +479,7 @@ export default function CampaignsPage() {
     if (!confirm('Iniciar envio da campanha?')) return
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/campaigns/${id}/start`, {
         method: 'POST',
       })
@@ -500,7 +500,7 @@ export default function CampaignsPage() {
 
   const handlePauseCampaign = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/campaigns/${id}/pause`, {
         method: 'POST',
       })
@@ -520,7 +520,7 @@ export default function CampaignsPage() {
     if (!confirm('Excluir esta campanha?')) return
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/campaigns/${id}`, {
         method: 'DELETE',
       })

@@ -746,9 +746,7 @@ export default function ContactsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">1º CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ÚLT. CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">TAGS</th>
-                {contactFieldOptions.length > 0 && (
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">DADOS COLETADOS</th>
-                )}
+
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ATIVO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">AÇÕES</th>
               </tr>
@@ -830,25 +828,7 @@ export default function ContactsPage() {
                       )}
                     </div>
                   </td>
-                  {contactFieldOptions.length > 0 && (
-                    <td className="px-4 py-4">
-                      {contact.customFields && Object.keys(contact.customFields).length > 0 ? (
-                        <div className="flex flex-wrap gap-1 max-w-[200px]">
-                          {contactFieldOptions.map(field => {
-                            const value = contact.customFields?.[field.value]
-                            if (!value) return null
-                            return (
-                              <span key={field.value} className="px-2 py-0.5 rounded text-xs bg-teal-100 text-teal-800" title={`${field.label}: ${value}`}>
-                                {field.label}: {value.length > 15 ? value.substring(0, 15) + '...' : value}
-                              </span>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-xs">-</span>
-                      )}
-                    </td>
-                  )}
+
                   <td className="px-4 py-4">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       contact.optedOut ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'

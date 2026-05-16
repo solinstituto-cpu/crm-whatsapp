@@ -130,7 +130,7 @@ export default function EmailMarketingPage() {
     const loadAll = async () => {
       setLoading(true)
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
 
         const [tagsRes, campaignsRes, statRes, statusOptsRes, sourceOptsRes, stagesRes] = await Promise.allSettled([
           apiFetch(`${apiUrl}/api/contacts/tags`),
@@ -213,7 +213,7 @@ export default function EmailMarketingPage() {
   }, [messagesEngagement])
 
   const refreshCampaigns = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
     const campaignsRes = await apiFetch(`${apiUrl}/api/email-campaigns?limit=50`)
     if (campaignsRes.ok) {
       const data = await campaignsRes.json()
@@ -230,7 +230,7 @@ export default function EmailMarketingPage() {
     if (!campaignId) return
     setMessagesLoading(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const params = new URLSearchParams()
       params.set('page', String(page))
       params.set('limit', '20')
@@ -260,7 +260,7 @@ export default function EmailMarketingPage() {
   const handleReprocessFailed = async (campaignId: string) => {
     if (!confirm('Reprocessar apenas mensagens com falha desta campanha?')) return
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${campaignId}/reprocess-failed`, {
         method: 'POST',
       })
@@ -281,7 +281,7 @@ export default function EmailMarketingPage() {
 
   const handleExportCsv = async (campaignId: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${campaignId}/export.csv`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -319,7 +319,7 @@ export default function EmailMarketingPage() {
     if (!followupSubject.trim()) return alert('Assunto do follow-up é obrigatório')
     if (!followupHtml.trim()) return alert('HTML do follow-up é obrigatório')
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${followupSourceCampaignId}/followup-opened-not-clicked`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -349,7 +349,7 @@ export default function EmailMarketingPage() {
     if (!confirm('Iniciar (ou retomar) o envio desta campanha?')) return
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/start`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
@@ -369,7 +369,7 @@ export default function EmailMarketingPage() {
   const handlePauseCampaign = async (id: string) => {
     if (!confirm('Pausar o envio desta campanha?')) return
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/pause`, { method: 'POST' })
       if (res.ok) {
         await refreshCampaigns()
@@ -385,7 +385,7 @@ export default function EmailMarketingPage() {
   const handleUnscheduleCampaign = async (id: string) => {
     if (!confirm('Remover agendamento e voltar para rascunho?')) return
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/unschedule`, { method: 'POST' })
       if (res.ok) {
         await refreshCampaigns()
@@ -401,7 +401,7 @@ export default function EmailMarketingPage() {
   const handleCancelCampaign = async (id: string) => {
     if (!confirm('Cancelar esta campanha?')) return
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/${id}/cancel`, { method: 'POST' })
       if (res.ok) {
         await refreshCampaigns()
@@ -418,7 +418,7 @@ export default function EmailMarketingPage() {
     setPreviewLoading(true)
     setPreview(null)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const res = await apiFetch(`${apiUrl}/api/email-campaigns/preview-contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -467,7 +467,7 @@ export default function EmailMarketingPage() {
 
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const customPayload = formAutomationEnabled
         ? {
             automation: {

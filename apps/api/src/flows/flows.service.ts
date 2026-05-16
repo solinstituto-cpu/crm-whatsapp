@@ -513,7 +513,7 @@ export class FlowsService {
       }
       
       // Verificar cooldown
-      const cooldownHours = config.cooldownHours || 24; // Padrão 24h para NEW_MESSAGE
+      const cooldownHours = config.cooldownHours ?? 0; // 0 = sem cooldown (padrão sem restrição)
       const canRun = await this.checkCooldown(flow.id, phoneE164, cooldownHours);
       if (!canRun) {
         this.logger.log(`  ⏳ Flow "${flow.name}" skipped: cooldown not expired`);

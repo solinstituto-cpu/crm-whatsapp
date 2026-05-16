@@ -103,7 +103,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await apiFetch(`${apiUrl}/api/users`, {
         headers: {
           'Content-Type': 'application/json'
@@ -168,7 +168,7 @@ export default function UsersPage() {
 
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Se estiver editando, primeiro atualizar a cor (endpoint separado, sem precisar de admin)
       if (editingUser && formData.color !== editingUser.color) {
@@ -225,7 +225,7 @@ export default function UsersPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await apiFetch(`${apiUrl}/api/users/${id}`, {
         method: 'DELETE',
         headers: {

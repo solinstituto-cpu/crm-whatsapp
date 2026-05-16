@@ -14,6 +14,23 @@ const nextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "your-nextauth-secret-key-here-change-in-production",
+    // When NEXT_PUBLIC_API_URL is not set (e.g. on Vercel), default to empty string
+    // so API calls use relative paths that go through the rewrite proxy
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "",
+  },
+  async rewrites() {
+    // Backend URL for server-side proxy (set via API_URL env var on Vercel)
+    const backendUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    return {
+      // NextAuth API routes are handled by Next.js (takes priority over rewrites)
+      // All other /api/* calls are proxied to the Render backend
+      fallback: [
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ],
+    }
   },
 }
 

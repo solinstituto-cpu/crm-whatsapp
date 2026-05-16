@@ -314,7 +314,7 @@ export default function InboxPage() {
     // Extrair URL de mídia de várias fontes possíveis
     // Se for URL relativa do proxy (/api/wa/media/...), converte para URL completa
     const extractMediaUrl = () => {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       const resolveUrl = (url: string | null | undefined): string | null => {
         if (!url) return null
@@ -467,7 +467,7 @@ export default function InboxPage() {
   // Função para buscar conversa completa com mensagens
   const fetchConversationDetails = async (conversationId: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/conversations/${conversationId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
@@ -515,7 +515,7 @@ export default function InboxPage() {
   const fetchTemplates = async () => {
     setLoadingTemplates(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/templates?status=APPROVED`, {
         headers: { 'Content-Type': 'application/json' }
       })
@@ -556,7 +556,7 @@ export default function InboxPage() {
   const handleFileUploadForTemplate = async (file: File): Promise<string | null> => {
     setUploadingImage(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const formData = new FormData()
       formData.append('file', file)
       
@@ -607,7 +607,7 @@ export default function InboxPage() {
     
     setSendingTemplate(template.id)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Determinar tipo de mídia baseado no headerFormat
       const mediaType = template.headerFormat?.toLowerCase() || 'image'
@@ -690,7 +690,7 @@ export default function InboxPage() {
     
     setSendingTemplate(template.id)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Determinar tipo de mídia baseado no headerFormat
       const mediaType = template.headerFormat?.toLowerCase() || 'image'
@@ -774,7 +774,7 @@ export default function InboxPage() {
   // Marcar mensagens como lidas
   const markConversationAsRead = async (conversationId: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       await fetch(`${apiUrl}/api/conversations/${conversationId}/read`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' }
@@ -795,7 +795,7 @@ export default function InboxPage() {
     if (!session?.user) return { success: false }
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/conversations/${conversationId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -932,7 +932,7 @@ export default function InboxPage() {
   
   // Buscar contas WhatsApp (multi-números) - filtradas pelo usuário logado
   const fetchWhatsAppAccounts = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
     const userId = (session?.user as any)?.id
     try {
       // Passa userId para filtrar contas que o usuário pode acessar
@@ -966,7 +966,7 @@ export default function InboxPage() {
   
   // Buscar dados para os filtros (campanhas, tags, usuários)
   const fetchInboxFiltersData = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
     
     // Buscar campanhas
     try {
@@ -1011,7 +1011,7 @@ export default function InboxPage() {
       // Priorizar conversationId se fornecido
       if (conversationId) {
         // Buscar conversa completa pelo ID
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
         fetch(`${apiUrl}/api/conversations/${conversationId}`)
           .then(res => res.json())
           .then(conv => {
@@ -1063,7 +1063,7 @@ export default function InboxPage() {
   // Busca em background - usa os mesmos filtros para manter consistência
   const fetchConversationsBackground = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Usar refs para pegar valores atuais (evita closure stale)
       const currentFilters = inboxFiltersRef.current
@@ -1210,7 +1210,7 @@ export default function InboxPage() {
         setLoadingSearch(true) // Busca/filtro: mantém a página visível
       }
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Buscar conversas com paginação, filtro de conta e filtros de inbox
       const params = new URLSearchParams({
@@ -1379,7 +1379,7 @@ export default function InboxPage() {
   const fetchQuickReplies = async () => {
     setLoadingQuickReplies(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/quick-replies/categories`, {
         headers: { 'Content-Type': 'application/json' }
       })
@@ -1441,7 +1441,7 @@ export default function InboxPage() {
   // Arquivar/Desarquivar conversa
   const handleArchiveConversation = async (conversationId: string, archive: boolean) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/conversations/${conversationId}/archive`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1531,7 +1531,7 @@ export default function InboxPage() {
 
     // Enviar mensagem pela API do backend (que salva no banco e envia para WhatsApp)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Usar o endpoint público do backend - enviar context com waMessageId para quote no WhatsApp
       const response = await fetch(`${apiUrl}/api/wa/send-public`, {
@@ -1571,7 +1571,7 @@ export default function InboxPage() {
     }
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/conversations/${conversationId}`, {
         method: 'DELETE',
       })
@@ -1704,7 +1704,7 @@ export default function InboxPage() {
       } : null)
       
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
         
         // 1. Fazer upload do arquivo para obter o media_id
         const formData = new FormData()
@@ -1818,7 +1818,7 @@ export default function InboxPage() {
     } : null)
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Formato de contato do WhatsApp Business API
       const contactPayload = [{
@@ -1962,7 +1962,7 @@ export default function InboxPage() {
     }
 
     const isCurrentlyGolden = selectedConversation.contactTags?.includes('Golden')
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
     const contactId = selectedConversation.contactId
 
     try {
@@ -2081,7 +2081,7 @@ export default function InboxPage() {
     }
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/conversations/${selectedConversation.id}/unassign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -2119,7 +2119,7 @@ export default function InboxPage() {
     const conversationAssignedToId = selectedConversation.assignedTo?.id || selectedConversation.assignedToId || ''
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Buscar contato pelo telefone
       const response = await fetch(`${apiUrl}/api/contacts?search=${encodeURIComponent(selectedConversation.contactPhone)}&limit=1`)
@@ -2189,7 +2189,7 @@ export default function InboxPage() {
     e.preventDefault()
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       let phone = contactFormData.phoneE164.trim()
       if (!phone.startsWith('+')) {
@@ -2276,7 +2276,7 @@ export default function InboxPage() {
     setLoadingUsers(true)
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/users`, {
         headers: { 'Content-Type': 'application/json' }
       })
@@ -2302,7 +2302,7 @@ export default function InboxPage() {
     setTransferring(true)
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Primeiro remover atribuição atual
       await fetch(`${apiUrl}/api/conversations/${selectedConversation.id}/unassign`, {

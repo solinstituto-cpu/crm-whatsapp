@@ -335,7 +335,7 @@ export default function AutomationPage() {
 
   const fetchAvailableAgents = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/users`)
       if (response.ok) {
         const data = await response.json()
@@ -348,7 +348,7 @@ export default function AutomationPage() {
 
   const fetchContactFieldOptions = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/settings/field-options/contactField`)
       if (response.ok) {
         const data = await response.json()
@@ -361,7 +361,7 @@ export default function AutomationPage() {
 
   const fetchFlows = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows`)
       if (response.ok) {
         const data = await response.json()
@@ -383,7 +383,7 @@ export default function AutomationPage() {
 
   const fetchStats = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows/stats`)
       if (response.ok) {
         setStats(await response.json())
@@ -395,7 +395,7 @@ export default function AutomationPage() {
 
   const fetchActiveSessions = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows/sessions/active`)
       if (response.ok) {
         setActiveSessions(await response.json())
@@ -407,7 +407,7 @@ export default function AutomationPage() {
 
   const handleCancelSession = async (sessionId: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows/sessions/${sessionId}/cancel`, {
         method: 'POST',
       })
@@ -424,7 +424,7 @@ export default function AutomationPage() {
     if (!confirm('Tem certeza que deseja cancelar TODAS as sessões ativas?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows/sessions/cancel-all`, {
         method: 'POST',
       })
@@ -443,7 +443,7 @@ export default function AutomationPage() {
 
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -489,7 +489,7 @@ export default function AutomationPage() {
   const handleCreateFromTemplate = async (template: typeof FLOW_TEMPLATES[0]) => {
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // 1. Criar o fluxo
       const flowResponse = await fetch(`${apiUrl}/api/flows`, {
@@ -571,7 +571,7 @@ export default function AutomationPage() {
 
   const handleToggleFlow = async (flowId: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows/${flowId}/toggle`, {
         method: 'POST',
       })
@@ -589,7 +589,7 @@ export default function AutomationPage() {
     if (!confirm('Tem certeza que deseja excluir este fluxo?')) return
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       await fetch(`${apiUrl}/api/flows/${flowId}`, { method: 'DELETE' })
       setFlows(flows.filter(f => f.id !== flowId))
       if (selectedFlow?.id === flowId) {
@@ -1167,7 +1167,7 @@ function FlowEditor({ flow, onClose, onUpdate, contactFieldOptions, availableAge
   const handleAddNode = async (type: string) => {
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const nodeData = {
         type,
         name: NODE_TYPES.find(n => n.type === type)?.name || type,
@@ -1203,7 +1203,7 @@ function FlowEditor({ flow, onClose, onUpdate, contactFieldOptions, availableAge
     try {
       // Separar nextNodeId do config
       const { nextNodeId, ...config } = configWithNextNodeId
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/flows/nodes/${nodeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1225,7 +1225,7 @@ function FlowEditor({ flow, onClose, onUpdate, contactFieldOptions, availableAge
     if (!confirm('Excluir esta etapa?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       await fetch(`${apiUrl}/api/flows/nodes/${nodeId}`, { method: 'DELETE' })
       setNodes(nodes.filter(n => n.id !== nodeId))
     } catch (error) {
@@ -1239,7 +1239,7 @@ function FlowEditor({ flow, onClose, onUpdate, contactFieldOptions, availableAge
     if (nodeIndex <= 0) return // Já é o primeiro
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const currentNode = nodes[nodeIndex]
       const previousNode = nodes[nodeIndex - 1]
       
@@ -1275,7 +1275,7 @@ function FlowEditor({ flow, onClose, onUpdate, contactFieldOptions, availableAge
     if (nodeIndex >= nodes.length - 1) return // Já é o último
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const currentNode = nodes[nodeIndex]
       const nextNode = nodes[nodeIndex + 1]
       
@@ -1708,7 +1708,7 @@ function NodeEditor({ node, allNodes, onSave, onClose, saving, contactFieldOptio
   const fetchTemplates = async () => {
     setLoadingTemplates(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/templates`)
       if (response.ok) {
         const data = await response.json()
@@ -1726,7 +1726,7 @@ function NodeEditor({ node, allNodes, onSave, onClose, saving, contactFieldOptio
   const handleFileUpload = async (file: File): Promise<string | null> => {
     setUploadingFile(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const formData = new FormData()
       formData.append('file', file)
       
