@@ -225,6 +225,12 @@ export class WebhookService {
     // ==========================================
     // PROCESSAR FLUXOS DE AUTOMAÇÃO
     // ==========================================
+    // 🛑 HUMAN TAKEOVER: Se um operador humano está atribuído à conversa, a IA fica em silêncio
+    if (conversation.assignedToId) {
+      this.logger.log(`🙋 Human takeover ativo para ${phoneNumber} (operador: ${conversation.assignedToId}) — IA pausada.`);
+      return;
+    }
+
     try {
       const flowResult = await this.flowEngineService.processIncomingMessage(phoneNumber, messageBody);
       
