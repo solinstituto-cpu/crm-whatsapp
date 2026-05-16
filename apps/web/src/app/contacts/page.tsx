@@ -211,7 +211,7 @@ export default function ContactsPage() {
   // Buscar usuários/atendentes
   const fetchUsers = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/users`)
       if (response.ok) {
         const data = await response.json()
@@ -232,7 +232,7 @@ export default function ContactsPage() {
         setLoadingSearch(true) // Busca/filtro: mantém a página visível
       }
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       // Construir query string com filtros
       const params = new URLSearchParams()
@@ -292,7 +292,7 @@ export default function ContactsPage() {
   // Buscar todas as tags únicas (endpoint leve, sem carregar 5000 contatos)
   const fetchAllTags = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/contacts/tags`)
       if (response.ok) {
         const tags = await response.json()
@@ -312,7 +312,7 @@ export default function ContactsPage() {
 
   const fetchFieldOptions = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/settings/field-options`)
       
       if (response.ok) {
@@ -440,7 +440,7 @@ export default function ContactsPage() {
     e.preventDefault()
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       
       let phone = formData.phoneE164.trim()
       if (!phone.startsWith('+')) {
@@ -516,7 +516,7 @@ export default function ContactsPage() {
     if (!confirm('Tem certeza que deseja excluir este contato?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       await fetch(`${apiUrl}/api/contacts/${id}`, { method: 'DELETE' })
       fetchContacts()
     } catch (error) {
@@ -527,7 +527,7 @@ export default function ContactsPage() {
   const handleOpenChat = async (contact: Contact) => {
     try {
       // Criar ou buscar conversa existente
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
       const response = await fetch(`${apiUrl}/api/conversations/find-or-create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -740,13 +740,9 @@ export default function ContactsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">CONTATO</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap w-48 max-w-[200px]">CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">WHATSAPP</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ORIGEM</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">INTERESSE</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">STATUS CLIENTE</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ATENDENTE</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">CIDADE/UF</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">1º CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ÚLT. CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">TAGS</th>
@@ -760,15 +756,15 @@ export default function ContactsPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {contacts.map((contact) => (
                 <tr key={contact.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center">
+                  <td className="px-4 py-4 w-48 max-w-[200px]">
+                    <div className="flex items-center truncate">
                       <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-medium text-green-800">{contact.name?.charAt(0).toUpperCase()}</span>
                       </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900 whitespace-nowrap">{contact.name}</div>
+                      <div className="ml-3 truncate">
+                        <div className="text-sm font-medium text-gray-900 truncate">{contact.name}</div>
                         {contact.email && (
-                          <div className="text-xs text-gray-500">{contact.email}</div>
+                          <div className="text-xs text-gray-500 truncate">{contact.email}</div>
                         )}
                       </div>
                     </div>
@@ -779,38 +775,7 @@ export default function ContactsPage() {
                       {contact.phoneE164}
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    {contact.source ? (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 whitespace-nowrap">
-                        {contact.source}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    {contact.interest ? (
-                      <span className="text-sm text-gray-700 whitespace-nowrap">{contact.interest}</span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    {contact.customerStatus ? (
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                        contact.customerStatus === 'Aluno Ativo' ? 'bg-green-100 text-green-800' :
-                        contact.customerStatus === 'Ex-Aluno' ? 'bg-orange-100 text-orange-800' :
-                        contact.customerStatus === 'Lead' ? 'bg-yellow-100 text-yellow-800' :
-                        contact.customerStatus === 'Prospect' ? 'bg-blue-100 text-blue-800' :
-                        contact.customerStatus === 'Desistente' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {contact.customerStatus}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
-                  </td>
+
                   <td className="px-4 py-4">
                     {contact.assignedTo ? (
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 whitespace-nowrap">
@@ -820,15 +785,7 @@ export default function ContactsPage() {
                       <span className="text-gray-400 text-xs">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-4">
-                    {(contact.city || contact.state) ? (
-                      <span className="text-sm text-gray-700 whitespace-nowrap">
-                        {contact.city}{contact.city && contact.state ? '/' : ''}{contact.state}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
-                  </td>
+
                   <td className="px-4 py-4">
                     {contact.firstContactAt ? (
                       <div className="text-xs text-gray-700 whitespace-nowrap">
@@ -1385,7 +1342,7 @@ export default function ContactsPage() {
                           return;
                         }
 
-                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+                        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
                         const response = await fetch(`${apiUrl}/api/contacts/import`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
