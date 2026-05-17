@@ -2666,9 +2666,12 @@ export default function InboxPage() {
                     className={`p-4 border-b dark:border-gray-700 cursor-pointer hover:opacity-80 transition-all ${bgColorClass} ${borderClass}`}
                   >
                     <div className="flex items-start space-x-3">
-                      <div className={`w-12 h-12 ${isGolden ? 'bg-amber-200 dark:bg-amber-700' : 'bg-green-200 dark:bg-green-800'} rounded-full flex items-center justify-center flex-shrink-0`}>
-                        <span className={`text-sm font-medium ${isGolden ? 'text-amber-900 dark:text-amber-100' : 'text-green-900 dark:text-green-100'}`}>
-                          {conversation.contactName.charAt(0)}
+                      <div 
+                        className={`w-12 h-12 ${!conversation.assignedTo ? (isGolden ? 'bg-amber-200 dark:bg-amber-700' : 'bg-green-200 dark:bg-green-800') : ''} rounded-full flex items-center justify-center flex-shrink-0`}
+                        style={conversation.assignedTo ? { backgroundColor: conversation.assignedTo.color || '#3B82F6' } : {}}
+                      >
+                        <span className={`text-lg font-bold ${conversation.assignedTo ? 'text-white' : (isGolden ? 'text-amber-900 dark:text-amber-100' : 'text-green-900 dark:text-green-100')}`}>
+                          {conversation.contactName.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2757,9 +2760,12 @@ export default function InboxPage() {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-green-800">
-                      {selectedConversation.contactName.charAt(0)}
+                  <div 
+                    className={`w-10 h-10 ${!selectedConversation.assignedTo ? 'bg-green-100' : ''} rounded-full flex items-center justify-center flex-shrink-0`}
+                    style={selectedConversation.assignedTo ? { backgroundColor: selectedConversation.assignedTo.color || '#3B82F6' } : {}}
+                  >
+                    <span className={`text-base font-bold ${selectedConversation.assignedTo ? 'text-white' : 'text-green-800'}`}>
+                      {selectedConversation.contactName.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
