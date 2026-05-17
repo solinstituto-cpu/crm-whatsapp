@@ -2631,6 +2631,7 @@ export default function InboxPage() {
                   const isGolden = conversation.contactTags?.includes('Golden')
                   let bgColorClass = isGolden ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-white dark:bg-gray-800'
                   
+                  let isOver6Hours = false;
                   // Se houver mensagem não lida E houver data de recebimento (SLA)
                   if (conversation.unreadCount > 0) {
                     // Usar lastIncomingMessageAt, se não existir cai para fallback (melhor que nada)
@@ -2638,7 +2639,10 @@ export default function InboxPage() {
                     const waitTimeMs = new Date().getTime() - new Date(incomingTime).getTime()
                     const waitTimeHours = waitTimeMs / (1000 * 60 * 60)
                     
-                    if (waitTimeHours > 4) {
+                    if (waitTimeHours > 6) {
+                      bgColorClass = 'bg-gray-200 dark:bg-gray-700' // Cinza
+                      isOver6Hours = true;
+                    } else if (waitTimeHours > 4) {
                       bgColorClass = 'bg-red-100 dark:bg-red-900/40' // Vermelho claro
                     } else if (waitTimeHours > 2) {
                       bgColorClass = 'bg-yellow-100 dark:bg-yellow-900/40' // Amarelo claro
@@ -2676,9 +2680,9 @@ export default function InboxPage() {
                             {isGolden && (
                               <span className="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_5px_rgba(250,204,21,0.6)]" title="Cliente Golden"></span>
                             )}
-                            {/* Bolinha verde indicando demanda de resposta */}
+                            {/* Bolinha verde/preta indicando demanda de resposta */}
                             {conversation.unreadCount > 0 && (
-                              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.6)]" title="Aguardando resposta do consultor"></span>
+                              <span className={`w-2 h-2 rounded-full ${isOver6Hours ? 'bg-black shadow-[0_0_5px_rgba(0,0,0,0.6)]' : 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.6)]'}`} title="Aguardando resposta do consultor"></span>
                             )}
 
                             {/* Indicador de atendente com cor personalizada */}
@@ -2692,7 +2696,7 @@ export default function InboxPage() {
                             )}
                           <p className="text-xs text-gray-500 dark:text-gray-400">{conversation.lastMessageTime}</p>
                           {conversation.unreadCount > 0 && (
-                            <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-green-600 rounded-full">
+                            <span className={`inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full ${isOver6Hours ? 'bg-gray-800 dark:bg-black' : 'bg-green-600'}`}>
                               {conversation.unreadCount}
                             </span>
                           )}
