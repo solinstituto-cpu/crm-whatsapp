@@ -3058,6 +3058,7 @@ REGRAS:
 
 QUANDO TRANSFERIR:
 - Se o cliente pedir para falar com humano/atendente
+- Se o cliente mencionar deficiência física, visual ou auditiva (encerre e transfira)
 - Se o assunto for muito complexo
 - Se o cliente demonstrar frustração`
                   })}
