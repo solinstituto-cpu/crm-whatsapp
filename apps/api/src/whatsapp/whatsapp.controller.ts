@@ -85,6 +85,8 @@ export class WhatsAppController {
     
     console.log('📤 Sending to WhatsAppService:', JSON.stringify(sendMessageDto, null, 2));
     
+    // Cancelar sessões ativas (IA) já que um humano interagiu
+    await this.whatsappService.cancelActiveFlows(sendMessageDto.to);
     // Skip 24-hour window check for CRM interface
     return this.whatsappService.sendMessage(sendMessageDto, true);
   }
@@ -95,6 +97,7 @@ export class WhatsAppController {
   async sendMessage(
     @Body(new ZodValidationPipe(SendMessageSchema)) sendMessageDto: SendMessageDto,
   ) {
+    await this.whatsappService.cancelActiveFlows(sendMessageDto.to);
     return this.whatsappService.sendMessage(sendMessageDto);
   }
 
@@ -110,6 +113,7 @@ export class WhatsAppController {
       bodyText: body.bodyText,
       components: body.components,
     };
+    await this.whatsappService.cancelActiveFlows(sendTemplateDto.to);
     return this.whatsappService.sendTemplate(sendTemplateDto);
   }
 

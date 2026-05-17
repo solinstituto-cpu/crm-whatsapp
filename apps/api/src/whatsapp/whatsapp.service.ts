@@ -643,4 +643,18 @@ export class WhatsAppService {
       return null;
     }
   }
+
+  async cancelActiveFlows(phoneE164: string) {
+    try {
+      const result = await this.prisma.flowSession.updateMany({
+        where: { contactId: phoneE164, status: 'ACTIVE' },
+        data: { status: 'CANCELLED' }
+      });
+      if (result.count > 0) {
+        this.logger.log(`Active flows cancelled for ${phoneE164} by human interaction.`);
+      }
+    } catch (e) {
+      this.logger.error(`Failed to cancel flows for ${phoneE164}: ${e.message}`);
+    }
+  }
 }
