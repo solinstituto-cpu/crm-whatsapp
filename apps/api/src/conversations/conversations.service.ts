@@ -47,18 +47,19 @@ export class ConversationsService {
       
       if (filters?.hasTags !== undefined) {
         if (filters.hasTags === true) {
-          // Campanhas: tem contato E tem alguma tag que NÃO seja apenas "Golden"
+          // Campanhas: tem contato E tem alguma tag que NÃO seja vazia ou apenas Golden
           if (!where.contact) where.contact = {};
           where.contact = {
             ...where.contact,
             AND: [
               { tags: { not: '[]' } },
               { tags: { not: '' } },
-              { tags: { not: '["Golden"]' } }
+              { tags: { not: '["Golden"]' } },
+              { tags: { not: null } }
             ]
           };
         } else {
-          // Ativas: sem contato OU contato sem tags ou apenas "Golden"
+          // Ativas: sem contato OU contato sem tags OU que contenha a tag Golden
           const noTagsCondition = {
             OR: [
               { contactId: null },
@@ -67,7 +68,8 @@ export class ConversationsService {
                   OR: [
                     { tags: '[]' },
                     { tags: '' },
-                    { tags: '["Golden"]' }
+                    { tags: null },
+                    { tags: { contains: 'Golden' } }
                   ]
                 }
               }
