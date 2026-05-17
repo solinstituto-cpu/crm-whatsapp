@@ -2640,7 +2640,7 @@ export default function InboxPage() {
                     const waitTimeHours = waitTimeMs / (1000 * 60 * 60)
                     
                     if (waitTimeHours > 6) {
-                      bgColorClass = 'bg-gray-200 dark:bg-gray-700' // Cinza
+                      bgColorClass = 'bg-gray-300 dark:bg-gray-700' // Cinza
                       isOver6Hours = true;
                     } else if (waitTimeHours > 4) {
                       bgColorClass = 'bg-red-100 dark:bg-red-900/40' // Vermelho claro
