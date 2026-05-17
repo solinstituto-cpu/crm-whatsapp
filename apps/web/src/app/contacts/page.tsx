@@ -746,8 +746,6 @@ export default function ContactsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">1º CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ÚLT. CONTATO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">TAGS</th>
-
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ATIVO</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">AÇÕES</th>
               </tr>
             </thead>
@@ -827,14 +825,6 @@ export default function ContactsPage() {
                         </span>
                       )}
                     </div>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      contact.optedOut ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {contact.optedOut ? 'Não' : 'Sim'}
-                    </span>
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center space-x-1">

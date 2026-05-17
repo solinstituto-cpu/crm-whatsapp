@@ -23,7 +23,7 @@ model User {
 
   // Relations
   assignedContacts      Contact[]
-  assignedConversations Conversation[] @relation("AssignedConversations")
+  assignedConversations Conversation[]        @relation("AssignedConversations")
   deals                 Deal[]
   activityLogs          ActivityLog[]
   session               UserSession?
@@ -365,17 +365,17 @@ model FlowSession {
 // ==========================================
 
 model KnowledgeBase {
-  id          String  @id @default(cuid())
-  title       String  // Título/Categoria (ex: "Preços", "Horários", "Serviços")
-  content     String  // Conteúdo completo
-  keywords    String? // Keywords para busca (separadas por vírgula)
-  isActive    Boolean @default(true)
-  priority    Int     @default(0) // Maior = mais importante
-  category    String? // Categoria para organização
-  
+  id       String  @id @default(cuid())
+  title    String // Título/Categoria (ex: "Preços", "Horários", "Serviços")
+  content  String // Conteúdo completo
+  keywords String? // Keywords para busca (separadas por vírgula)
+  isActive Boolean @default(true)
+  priority Int     @default(0) // Maior = mais importante
+  category String? // Categoria para organização
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("knowledge_base")
 }
 
@@ -469,9 +469,9 @@ model EmailCampaign {
   name        String
   description String?
 
-  status      String @default("DRAFT") // DRAFT, SCHEDULED, RUNNING, PAUSED, COMPLETED, CANCELLED
-  subject     String
-  preheader   String?
+  status       String  @default("DRAFT") // DRAFT, SCHEDULED, RUNNING, PAUSED, COMPLETED, CANCELLED
+  subject      String
+  preheader    String?
   htmlTemplate String
 
   // Segmentação de contatos
@@ -521,16 +521,16 @@ model EmailCampaignMessage {
   contactEmail String
   contactName  String?
 
-  status      String    @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
-  smtpMessageId String?
-  sentAt      DateTime?
-  deliveredAt DateTime?
-  readAt      DateTime?
-  clickCount  Int      @default(0)
-  firstClickedAt DateTime?
-  lastClickedAt DateTime?
+  status                String    @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
+  smtpMessageId         String?
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  readAt                DateTime?
+  clickCount            Int       @default(0)
+  firstClickedAt        DateTime?
+  lastClickedAt         DateTime?
   automationProcessedAt DateTime?
-  error       String?
+  error                 String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -609,7 +609,7 @@ model UserWhatsAppAccount {
 model IntegrationSetting {
   id        String   @id @default(cuid())
   key       String   @unique // Ex: openai_api_key, google_client_id
-  value     String   // Valor (criptografado para dados sensíveis)
+  value     String // Valor (criptografado para dados sensíveis)
   encrypted Boolean  @default(false) // Se o valor está criptografado
   category  String   @default("general") // general, ai, integrations, etc
   createdAt DateTime @default(now())
@@ -621,15 +621,15 @@ model IntegrationSetting {
 
 // Tokens OAuth para integrações (Google, etc)
 model OAuthToken {
-  id           String   @id @default(cuid())
-  provider     String   // google, microsoft, etc
+  id           String    @id @default(cuid())
+  provider     String // google, microsoft, etc
   accessToken  String
   refreshToken String?
   expiresAt    DateTime?
-  scope        String?  // Escopos autorizados
-  email        String?  // Email da conta conectada
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  scope        String? // Escopos autorizados
+  email        String? // Email da conta conectada
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@unique([provider])
   @@map("oauth_tokens")
