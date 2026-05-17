@@ -36,7 +36,8 @@ import {
   Star,
   StarOff,
   Megaphone,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft
 } from 'lucide-react'
 
 interface MetaTemplate {
@@ -2436,7 +2437,7 @@ export default function InboxPage() {
 
       <div className="flex h-full bg-gray-100 dark:bg-gray-900">
         {/* Sidebar com conversas */}
-        <div className="w-1/3 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col">
+        <div className={`bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col w-full lg:w-1/3 ${selectedConversation ? 'hidden lg:flex' : 'flex'}`}>
           <div className="p-4 border-b dark:border-gray-700">
             <h1 className="text-xl font-semibold flex items-center mb-4 text-gray-900 dark:text-white">
               <MessageSquare className="mr-2 h-6 w-6 text-green-600" />
@@ -2744,12 +2745,18 @@ export default function InboxPage() {
         </div>
 
         {/* Área de mensagens */}
-        <div className="flex-1 flex flex-col">
+        <div className={`flex-1 flex-col ${selectedConversation ? 'flex' : 'hidden lg:flex'}`}>
           {selectedConversation ? (
             <>
               {/* Header da conversa */}
               <div className="bg-white border-b p-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
+                  <button 
+                    onClick={() => setSelectedConversation(null)}
+                    className="lg:hidden p-2 -ml-2 mr-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-green-800">
                       {selectedConversation.contactName.charAt(0)}

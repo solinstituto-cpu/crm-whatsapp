@@ -49,7 +49,7 @@ const navigation = [
 export default function Sidebar() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
   const [companyName, setCompanyName] = useState(cachedCompanyName)
   const [companyLogo, setCompanyLogo] = useState<string | null>(cachedCompanyLogo)
 
