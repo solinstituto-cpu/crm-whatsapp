@@ -2285,10 +2285,9 @@ export default function InboxPage() {
       
       if (response.ok) {
         const users = await response.json()
-        // Filtrar para não mostrar o usuário atual
         const currentUserId = (session?.user as any)?.id
-        const filteredUsers = users.filter((u: any) => u.id !== currentUserId)
-        setAvailableUsers(filteredUsers)
+        // Mostrar todos os usuários, incluindo o atual (para ele poder assumir para si)
+        setAvailableUsers(users)
       }
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
@@ -3870,8 +3869,13 @@ export default function InboxPage() {
                           {user.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium text-gray-900">{user.name}</p>
+                       <div className="flex-1 text-left">
+                        <p className="font-medium text-gray-900">
+                          {user.name}
+                          {user.id === (session?.user as any)?.id && (
+                            <span className="ml-2 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Você</span>
+                          )}
+                        </p>
                         <p className="text-sm text-gray-500">{user.email}</p>
                       </div>
                       {transferring ? (

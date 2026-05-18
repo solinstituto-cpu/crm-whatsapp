@@ -291,7 +291,8 @@ export class ConversationsService {
     }
 
     // Se já tem alguém atribuído e não é o mesmo usuário
-    if (conversation.assignedToId && conversation.assignedToId !== userId) {
+    // Se for uma transferência (transferredBy), permitir a reatribuição
+    if (conversation.assignedToId && conversation.assignedToId !== userId && !transferredBy) {
       return {
         success: false,
         alreadyAssigned: true,
