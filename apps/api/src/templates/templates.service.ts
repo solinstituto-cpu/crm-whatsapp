@@ -60,11 +60,11 @@ export class TemplatesService {
   }
   
   /**
-   * Busca credenciais de uma conta específica ou usa as do .env
+   * Busca credenciais de uma conta específica, da conta padrão no banco, ou usa as do .env
    */
   private async getCredentials(accountId?: string): Promise<{ accessToken: string; wabaId: string }> {
-    if (accountId) {
-      try {
+    try {
+      if (accountId) {
         const account = await this.prisma.whatsAppAccount.findUnique({
           where: { id: accountId },
         });
@@ -74,10 +74,23 @@ export class TemplatesService {
             wabaId: account.businessId,
           };
         }
-      } catch (error) {
-        this.logger.warn(`Conta ${accountId} não encontrada, usando credenciais padrão`);
       }
+      
+      // Tentar buscar a conta padrão do banco de dados
+      const defaultAccount = await this.prisma.whatsAppAccount.findFirst({
+        where: { isDefault: true, isActive: true },
+      });
+      if (defaultAccount) {
+        return {
+          accessToken: defaultAccount.accessToken,
+          wabaId: defaultAccount.businessId,
+        };
+      }
+    } catch (error) {
+      this.logger.warn(`Erro ao buscar conta WhatsApp, usando credenciais do .env: ${error.message}`);
     }
+    
+    // Fallback para variáveis de ambiente
     return {
       accessToken: this.accessToken,
       wabaId: this.wabaId,
