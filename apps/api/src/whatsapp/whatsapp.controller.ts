@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Param, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Param, Res, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
@@ -61,6 +61,7 @@ export class WhatsAppController {
       interactive?: any;
       contacts?: any[];
       context?: { message_id: string };
+      userId?: string;
     },
   ) {
     console.log('📨 send-public received:', JSON.stringify(body, null, 2));
@@ -86,7 +87,7 @@ export class WhatsAppController {
     console.log('📤 Sending to WhatsAppService:', JSON.stringify(sendMessageDto, null, 2));
     
     // Cancelar sessões ativas (IA) já que um humano interagiu
-    await this.whatsappService.cancelActiveFlows(sendMessageDto.to);
+    await this.whatsappService.cancelActiveFlows(sendMessageDto.to, body.userId);
     // Skip 24-hour window check for CRM interface
     return this.whatsappService.sendMessage(sendMessageDto, true);
   }
@@ -96,15 +97,17 @@ export class WhatsAppController {
   @UseGuards(JwtAuthGuard)
   async sendMessage(
     @Body(new ZodValidationPipe(SendMessageSchema)) sendMessageDto: SendMessageDto,
+    @Req() req: any
   ) {
-    await this.whatsappService.cancelActiveFlows(sendMessageDto.to);
+    const userId = req.user?.id;
+    await this.whatsappService.cancelActiveFlows(sendMessageDto.to, userId);
     return this.whatsappService.sendMessage(sendMessageDto);
   }
 
   // Send template (public endpoint for frontend)
   @Post('send-template')
   async sendTemplate(
-    @Body() body: { to: string; templateName: string; language?: string; bodyText?: string; components?: any[] },
+    @Body() body: { to: string; templateName: string; language?: string; bodyText?: string; components?: any[]; userId?: string },
   ) {
     const sendTemplateDto: SendTemplateDto = {
       to: body.to,
@@ -113,7 +116,7 @@ export class WhatsAppController {
       bodyText: body.bodyText,
       components: body.components,
     };
-    await this.whatsappService.cancelActiveFlows(sendTemplateDto.to);
+    await this.whatsappService.cancelActiveFlows(sendTemplateDto.to, body.userId);
     return this.whatsappService.sendTemplate(sendTemplateDto);
   }
 

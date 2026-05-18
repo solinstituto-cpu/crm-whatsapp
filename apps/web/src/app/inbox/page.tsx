@@ -1545,7 +1545,8 @@ export default function InboxPage() {
           text: messageContent,
           type: 'text',
           // Enviar context para o WhatsApp fazer o quote da mensagem
-          context: currentReplyTo?.waMessageId ? { message_id: currentReplyTo.waMessageId } : undefined
+          context: currentReplyTo?.waMessageId ? { message_id: currentReplyTo.waMessageId } : undefined,
+          userId: (session?.user as any)?.id
         })
       })
 

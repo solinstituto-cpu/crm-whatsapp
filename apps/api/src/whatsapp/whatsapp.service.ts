@@ -644,7 +644,7 @@ export class WhatsAppService {
     }
   }
 
-  async cancelActiveFlows(phoneE164: string) {
+  async cancelActiveFlows(phoneE164: string, userId?: string) {
     try {
       const result = await this.prisma.flowSession.updateMany({
         where: { contactId: phoneE164, status: 'ACTIVE' },
@@ -652,6 +652,27 @@ export class WhatsAppService {
       });
       if (result.count > 0) {
         this.logger.log(`Active flows cancelled for ${phoneE164} by human interaction.`);
+      }
+
+      // Force conversation assignment to prevent AI from picking it up again
+      if (userId) {
+        // Encontrar a conversa mais recente desse número
+        const conversation = await this.prisma.conversation.findFirst({
+          where: { phoneE164 },
+          orderBy: { updatedAt: 'desc' }
+        });
+        
+        if (conversation && conversation.assignedToId !== userId) {
+          await this.prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { 
+              assignedToId: userId,
+              assignedAt: new Date(),
+              status: 'OPEN' 
+            }
+          });
+          this.logger.log(`Conversation ${conversation.id} auto-assigned to ${userId} during human takeover.`);
+        }
       }
     } catch (e) {
       this.logger.error(`Failed to cancel flows for ${phoneE164}: ${e.message}`);
