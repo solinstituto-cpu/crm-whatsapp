@@ -135,12 +135,13 @@ export class TemplatesService {
    * Busca um template específico pelo ID
    */
   async getTemplateById(templateId: string): Promise<MetaTemplate> {
+    const { accessToken } = await this.getCredentials();
     try {
       const url = `https://graph.facebook.com/${this.apiVersion}/${templateId}`;
       
       const response = await axios.get(url, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         params: {
           fields: 'id,name,status,category,language,components,quality_score',
@@ -159,8 +160,9 @@ export class TemplatesService {
    * Cria um novo template (será enviado para aprovação do Meta)
    */
   async createTemplate(createTemplateDto: CreateTemplateDto): Promise<any> {
+    const { accessToken, wabaId } = await this.getCredentials();
     try {
-      const url = `https://graph.facebook.com/${this.apiVersion}/${this.wabaId}/message_templates`;
+      const url = `https://graph.facebook.com/${this.apiVersion}/${wabaId}/message_templates`;
       
       const payload = {
         name: createTemplateDto.name,
@@ -171,7 +173,7 @@ export class TemplatesService {
 
       const response = await axios.post(url, payload, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -189,12 +191,13 @@ export class TemplatesService {
    * Atualiza um template existente (apenas alguns campos podem ser editados)
    */
   async updateTemplate(templateId: string, components: TemplateComponent[]): Promise<any> {
+    const { accessToken } = await this.getCredentials();
     try {
       const url = `https://graph.facebook.com/${this.apiVersion}/${templateId}`;
       
       const response = await axios.post(url, { components }, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -212,12 +215,13 @@ export class TemplatesService {
    * Deleta um template pelo nome (deleta todas as versões de idioma)
    */
   async deleteTemplate(templateName: string): Promise<any> {
+    const { accessToken, wabaId } = await this.getCredentials();
     try {
-      const url = `https://graph.facebook.com/${this.apiVersion}/${this.wabaId}/message_templates`;
+      const url = `https://graph.facebook.com/${this.apiVersion}/${wabaId}/message_templates`;
       
       const response = await axios.delete(url, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         params: {
           name: templateName,
