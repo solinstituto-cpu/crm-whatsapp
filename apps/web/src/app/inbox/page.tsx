@@ -818,18 +818,6 @@ export default function InboxPage() {
 
   // Handler para selecionar conversa e buscar mensagens
   const handleSelectConversation = async (conversation: Conversation) => {
-    // Primeiro, tentar atribuir a conversa ao usuário atual
-    const assignResult = await assignConversationToUser(conversation.id)
-    
-    // Se já está atribuída a outra pessoa, mostrar alerta
-    if (assignResult.alreadyAssigned && assignResult.assignedTo) {
-      setShowAssignmentAlert({
-        show: true,
-        assignedTo: assignResult.assignedTo.name
-      })
-      // Ainda permite visualizar, mas mostra o alerta
-    }
-    
     // Encontrar conversa atual com mensagens locais
     const currentConv = conversations.find(c => c.id === conversation.id)
     const localMessages = currentConv?.messages || conversation.messages || []
@@ -849,11 +837,8 @@ export default function InboxPage() {
       ...conversation, 
       messages: localMessages, 
       unreadCount: conversation.unreadCount,
-      assignedTo: getAssignedToWithColor(assignResult.assignedTo || conversation.assignedTo)
+      assignedTo: getAssignedToWithColor(conversation.assignedTo)
     })
-    
-    // Antigamente marcava como lido ao abrir, agora só marca ao responder
-    // markConversationAsRead(conversation.id.toString())
     
     // Buscar detalhes completos da API
     const fullConversation = await fetchConversationDetails(conversation.id.toString())
@@ -863,7 +848,7 @@ export default function InboxPage() {
       const mergedMessages = apiMessages.length > 0 ? apiMessages : localMessages
       
       // Preservar lastMessageTime original da conversa
-      const assignedToWithColor = getAssignedToWithColor(assignResult.assignedTo || fullConversation.assignedTo)
+      const assignedToWithColor = getAssignedToWithColor(fullConversation.assignedTo)
       const updatedConv = { 
         ...fullConversation, 
         messages: mergedMessages, 
@@ -873,7 +858,7 @@ export default function InboxPage() {
       }
       setSelectedConversation(updatedConv)
       
-      // Atualizar na lista - preservar unreadCount, não o horário
+      // Atualizar na lista
       setConversations(prev => prev.map(c => 
         c.id === conversation.id ? { ...c, unreadCount: conversation.unreadCount, assignedTo: assignedToWithColor } : c
       ))
