@@ -2303,7 +2303,7 @@ export default function InboxPage() {
         body: JSON.stringify({
           userId: toUserId,
           userName: toUserName,
-          transferredBy: (session?.user as any)?.name || 'Outro atendente'
+          transferredBy: selectedConversation.assignedTo?.name || (session?.user as any)?.name || 'Outro atendente'
         })
       })
       
