@@ -20,7 +20,7 @@ export const authOptions: AuthOptions = {
           const apiUrl =
             process.env.API_URL ||
             process.env.NEXT_PUBLIC_API_URL ||
-            (process.env.VERCEL ? 'https://crm-drm.onrender.com' : 'http://localhost:4000')
+            (process.env.VERCEL ? 'https://crm-api-laxv.onrender.com' : 'http://localhost:4000')
           // Timeout 90s (Render free tier demora ~50s para "acordar")
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 90000)
