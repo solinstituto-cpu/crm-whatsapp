@@ -27,7 +27,7 @@ export default function WhatsAppTestPage() {
   const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
   const [testResults, setTestResults] = useState<any[]>([])
-  const [phoneNumber, setPhoneNumber] = useState('5511997335755')
+  const [phoneNumber, setPhoneNumber] = useState('5511992964792')
   
   // Configurações manuais
   const [showConfig, setShowConfig] = useState(false)

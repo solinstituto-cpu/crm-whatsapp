@@ -72,7 +72,7 @@ export default function LandingPage() {
     { segment: 'Imobiliárias', q: 'Como organizar leads por imóvel?', a: 'Use tags e campos personalizados. Atribua atendentes por região ou tipo de imóvel. O pipeline mostra cada lead na etapa certa.' },
   ]
 
-  const whatsappNumber = '5511997335755'
+  const whatsappNumber = '5511992964792'
   const contactButtons = [
     { label: 'Quero começar agora', msg: 'Olá! Gostaria de começar a usar o DRM CRM. Pode me ajudar?', style: 'primary' as const },
     { label: 'Solicitar demonstração', msg: 'Olá! Gostaria de agendar uma demonstração do DRM CRM.', style: 'secondary' as const },
