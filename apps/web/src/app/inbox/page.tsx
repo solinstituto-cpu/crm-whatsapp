@@ -2663,9 +2663,16 @@ export default function InboxPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate pr-2">
-                            {conversation.contactName}
-                          </p>
+                          <div className="flex items-center space-x-2 truncate pr-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {conversation.contactName}
+                            </p>
+                            {conversation.lastIncomingMessageAt && (!conversation.contactTags || !conversation.contactTags.some(t => t.toLowerCase() !== 'golden')) && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente e sem tag de classificação">
+                                Novo
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center space-x-2">
                             {/* Bolinha dourada indicando cliente Golden */}
                             {isGolden && (
@@ -2760,6 +2767,11 @@ export default function InboxPage() {
                       <h2 className="text-lg font-medium text-gray-900">
                         {selectedConversation.contactName}
                       </h2>
+                      {selectedConversation.lastIncomingMessageAt && (!selectedConversation.contactTags || !selectedConversation.contactTags.some(t => t.toLowerCase() !== 'golden')) && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente e sem tag de classificação">
+                          Novo
+                        </span>
+                      )}
                       {selectedConversation.assignedTo && (
                         <span 
                           className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
