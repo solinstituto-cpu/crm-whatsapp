@@ -2561,17 +2561,19 @@ export default function InboxPage() {
                 ))}
               </select>
 
-              {/* Filtro por Tag */}
-              <select
-                value={inboxFilters.tag}
-                onChange={(e) => setInboxFilters(prev => ({ ...prev, tag: e.target.value }))}
-                className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 dark:text-white max-w-[150px]"
-              >
-                <option value="">Tag</option>
-                {allTags.map(tag => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
+              {/* Filtro por Tag (não mostrar em Ativas) */}
+              {conversationFilter !== 'active' && (
+                <select
+                  value={inboxFilters.tag}
+                  onChange={(e) => setInboxFilters(prev => ({ ...prev, tag: e.target.value }))}
+                  className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 dark:text-white max-w-[150px]"
+                >
+                  <option value="">Tag</option>
+                  {allTags.map(tag => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+              )}
 
               {/* Toggle Pendentes (não lidos) */}
               <button
