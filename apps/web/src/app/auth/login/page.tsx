@@ -186,7 +186,7 @@ export default function LoginPage() {
                 Se ainda não tem seus dados de acesso para teste, solicite clicando no botão abaixo.
               </p>
               <a
-                href={`https://wa.me/5511992964792?text=${encodeURIComponent('Olá! Gostaria de solicitar os dados de acesso para teste do SOL Instituto.')}`}
+                href={`https://wa.me/5511997335755?text=${encodeURIComponent('Olá! Gostaria de solicitar os dados de acesso para teste do SOL Instituto.')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3 px-4 flex items-center justify-center gap-2 rounded-xl border-2 border-[#2A3A32] text-[#2A3A32] font-bold hover:bg-[#2A3A32] hover:text-[#E8B868] transition-all duration-200"
