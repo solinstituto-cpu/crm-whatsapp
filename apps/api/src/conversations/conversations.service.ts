@@ -47,38 +47,20 @@ export class ConversationsService {
       
       if (filters?.hasTags !== undefined) {
         if (filters.hasTags === true) {
-          // Campanhas: tem contato E tem alguma tag que NÃO seja vazia ou apenas Golden/gold
-          if (!where.contact) where.contact = {};
+          // Campanhas: tem tags que NÃO sejam vazias ou apenas Golden/gold
           where.contact = {
-            ...where.contact,
-            AND: [
-              { tags: { not: '[]' } },
-              { tags: { not: '' } },
-              { tags: { not: '["Golden"]' } },
-              { tags: { not: '["golden"]' } },
-              { tags: { not: '["Gold"]' } },
-              { tags: { not: '["gold"]' } },
-              { tags: { not: null } }
-            ]
+            ...(where.contact || {}),
+            tags: {
+              notIn: ['[]', '', '["Golden"]', '["golden"]', '["Gold"]', '["gold"]'],
+            }
           };
         } else {
           // Ativas: sem contato OU contato sem tags OU que contenha a tag Golden/gold
           const noTagsCondition = {
             OR: [
               { contactId: null },
-              {
-                contact: {
-                  OR: [
-                    { tags: '[]' },
-                    { tags: '' },
-                    { tags: null },
-                    { tags: { contains: 'Golden' } },
-                    { tags: { contains: 'golden' } },
-                    { tags: { contains: 'Gold' } },
-                    { tags: { contains: 'gold' } }
-                  ]
-                }
-              }
+              { contact: { tags: { in: ['[]', ''] } } },
+              { contact: { tags: { contains: 'olden', mode: 'insensitive' as const } } },
             ]
           };
           
