@@ -1224,7 +1224,6 @@ export default function InboxPage() {
         params.append('hasTags', 'true')
       } else {
         params.append('status', 'OPEN')
-        params.append('hasTags', 'false')
       }
       
       const response = await fetch(`${apiUrl}/api/conversations?${params.toString()}`, {
