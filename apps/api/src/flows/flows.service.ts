@@ -1151,7 +1151,7 @@ export class FlowsService {
   /**
    * Busca histórico de mensagens da conversa para contexto
    */
-  async getConversationHistory(phoneE164: string, limit: number = 10): Promise<Array<{role: 'user' | 'assistant', content: string}>> {
+  async getConversationHistory(phoneE164: string, limit: number = 10, supportsVision: boolean = false): Promise<Array<{role: 'user' | 'assistant', content: any}>> {
     try {
       const conversation = await this.prisma.conversation.findFirst({
         where: {
@@ -1173,11 +1173,34 @@ export class FlowsService {
       // Converter mensagens para formato OpenAI (ordem cronológica)
       return conversation.messages
         .reverse()
-        .map(msg => ({
-          role: msg.direction === 'OUT' ? 'assistant' as const : 'user' as const,
-          content: msg.body || ''
-        }))
-        .filter(msg => msg.content.length > 0);
+        .map(msg => {
+          const role = msg.direction === 'OUT' ? 'assistant' as const : 'user' as const;
+          let content: any = msg.body || '';
+          
+          if (supportsVision) {
+            try {
+              if (msg.json) {
+                const parsed = JSON.parse(msg.json);
+                const mediaUrl = parsed.mediaUrl;
+                if (mediaUrl && (parsed.type === 'image' || msg.type === 'image' || mediaUrl.includes('media'))) {
+                  const baseUrl = process.env.API_URL || 'https://crm-api-laxv.onrender.com';
+                  const absoluteMediaUrl = mediaUrl.startsWith('http') ? mediaUrl : `${baseUrl}${mediaUrl}`;
+                  
+                  content = [
+                    { type: "text", text: msg.body || "Imagem recebida do usuário" },
+                    { type: "image_url", image_url: { url: absoluteMediaUrl } }
+                  ];
+                }
+              }
+            } catch (e) {}
+          }
+
+          return { role, content };
+        })
+        .filter(msg => {
+          if (Array.isArray(msg.content)) return true;
+          return msg.content.length > 0;
+        });
     } catch (error) {
       this.logger.error(`Error fetching conversation history: ${error.message}`);
       return [];
@@ -1291,6 +1314,9 @@ export class FlowsService {
     const useHistory = options.useHistory !== false;
     const historyLimit = options.historyLimit || 10;
     const useKnowledge = options.useKnowledge !== false;
+    
+    // Verificar se o modelo suporta visão
+    const supportsVision = ['gpt-4o', 'gpt-4-vision', 'gpt-4-turbo'].some(m => finalModel.toLowerCase().includes(m));
 
     if (!openAIConfig.apiKey) {
       this.logger.warn('OpenAI API key not configured');
@@ -1302,7 +1328,7 @@ export class FlowsService {
 
     try {
       // Construir mensagens com contexto
-      const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [];
+      const messages: Array<{role: 'system' | 'user' | 'assistant', content: any}> = [];
 
       // 1. System prompt base
       let enhancedSystemPrompt = systemPrompt;
@@ -1321,15 +1347,28 @@ export class FlowsService {
       messages.push({ role: 'system', content: enhancedSystemPrompt });
 
       // 3. Adicionar histórico de conversa
+      let historyContainsCurrentMessage = false;
       if (useHistory) {
-        const history = await this.getConversationHistory(phoneE164, historyLimit);
+        const history = await this.getConversationHistory(phoneE164, historyLimit, supportsVision);
         messages.push(...history);
+        if (history.length > 0) {
+          historyContainsCurrentMessage = true;
+        }
       }
 
-      // 4. Adicionar mensagem atual do usuário
-      messages.push({ role: 'user', content: userMessage });
+      // 4. Adicionar mensagem atual do usuário (se não estiver no histórico)
+      // Como o webhook salva a mensagem ANTES de chamar a engine, a currentMessage já deve estar no histórico.
+      if (!historyContainsCurrentMessage && userMessage) {
+        messages.push({ role: 'user', content: userMessage });
+      } else if (historyContainsCurrentMessage && messages.length > 0) {
+        // Garantir que a última mensagem seja 'user' e represente a ação atual (fallback)
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg.role !== 'user') {
+          messages.push({ role: 'user', content: userMessage });
+        }
+      }
 
-      this.logger.log(`🤖 Generating AI response with ${messages.length} messages, model=${finalModel}`);
+      this.logger.log(`🤖 Generating AI response with ${messages.length} messages, model=${finalModel}, vision=${supportsVision}`);
 
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
