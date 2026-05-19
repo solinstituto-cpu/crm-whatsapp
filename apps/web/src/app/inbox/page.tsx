@@ -2903,18 +2903,16 @@ export default function InboxPage() {
                             Sair do Atendimento
                           </button>
                         )}
-                        {selectedConversation.unreadCount > 0 && (
-                          <button
-                            onClick={() => {
-                              setShowContactMenu(false);
-                              markConversationAsRead(selectedConversation.id.toString());
-                            }}
-                            className="flex items-center w-full px-4 py-2 text-sm text-[#2A3A32] hover:bg-[#E8B868]/20 transition-colors font-bold"
-                          >
-                            <CheckCircle2 className="mr-3 h-4 w-4 text-green-600" />
-                            Fim de Interação
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            setShowContactMenu(false);
+                            markConversationAsRead(selectedConversation.id.toString());
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-[#2A3A32] hover:bg-[#E8B868]/20 transition-colors font-bold"
+                        >
+                          <CheckCircle2 className="mr-3 h-4 w-4 text-green-600" />
+                          Fim de Interação
+                        </button>
                         <button
                           onClick={() => handleContactAction('toggle-golden')}
                           className="flex items-center w-full px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-50 transition-colors font-medium"
