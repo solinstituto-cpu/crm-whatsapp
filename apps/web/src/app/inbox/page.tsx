@@ -2907,6 +2907,7 @@ export default function InboxPage() {
                           onClick={() => {
                             setShowContactMenu(false);
                             markConversationAsRead(selectedConversation.id.toString());
+                            setSelectedConversation(null);
                           }}
                           className="flex items-center w-full px-4 py-2 text-sm text-[#2A3A32] hover:bg-[#E8B868]/20 transition-colors font-bold"
                         >
