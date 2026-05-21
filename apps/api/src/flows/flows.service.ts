@@ -1176,7 +1176,22 @@ export class FlowsService {
         .map(msg => {
           const role = msg.direction === 'OUT' ? 'assistant' as const : 'user' as const;
           let content: any = msg.body || '';
-          
+
+          if (msg.type === 'template' && msg.json) {
+            try {
+              const parsed = JSON.parse(msg.json);
+              const bodyComponent = parsed.components?.find((c: any) => c.type === 'body');
+              if (bodyComponent && bodyComponent.parameters) {
+                let hydratedContent = typeof content === 'string' ? content : '';
+                bodyComponent.parameters.forEach((p: any, idx: number) => {
+                  if (p.type === 'text') {
+                    hydratedContent = hydratedContent.replace(`{{${idx + 1}}}`, p.text);
+                  }
+                });
+                content = hydratedContent;
+              }
+            } catch (e) {}
+          }
           if (supportsVision) {
             try {
               if (msg.json) {
