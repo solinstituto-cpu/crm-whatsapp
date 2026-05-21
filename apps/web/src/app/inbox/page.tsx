@@ -111,13 +111,18 @@ const ContactNotesField = ({
   apiUrl: string,
   token: string 
 }) => {
-  const [isOpen, setIsOpen] = useState(false)
   const [notes, setNotes] = useState(initialNotes || '')
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   
-  const handleSave = async () => {
-    if (!contactId) return;
+  useEffect(() => {
+    setNotes(initialNotes || '')
+  }, [initialNotes])
+
+  const handleSave = async (valueToSave: string) => {
+    if (!contactId || valueToSave === (initialNotes || '')) return;
     setSaving(true)
+    setSaved(false)
     try {
       const response = await fetch(`${apiUrl}/api/contacts/${contactId}`, {
         method: 'PATCH',
@@ -125,57 +130,33 @@ const ContactNotesField = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ notes })
+        body: JSON.stringify({ notes: valueToSave })
       })
       if (response.ok) {
-        onSave(notes)
-        setIsOpen(false)
+        onSave(valueToSave)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
       } else {
         alert('Erro ao salvar observação')
       }
     } catch (e) {
-      alert('Erro de conexão')
+      console.error(e)
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="relative inline-block text-left ml-2">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 transition-colors shadow-sm"
-        title={initialNotes ? initialNotes : "Adicionar observação sobre o cliente"}
-      >
-        <Edit3 className="w-3 h-3 mr-1" />
-        {initialNotes ? 'Obs' : 'Add Obs'}
-      </button>
-      
-      {isOpen && (
-        <div className="absolute z-50 mt-2 w-64 right-0 lg:left-0 lg:right-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Observações</span>
-            <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full h-24 p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white resize-none"
-            placeholder="Digite algo importante sobre o cliente..."
-          />
-          <div className="mt-2 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded shadow-sm disabled:opacity-50"
-            >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="relative flex-1 flex mx-4 h-full min-w-[200px]">
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        onBlur={(e) => handleSave(e.target.value)}
+        placeholder="Observações importantes do cliente... (salva ao clicar fora)"
+        className="w-full min-h-[40px] max-h-[80px] text-xs p-2 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700/50 rounded-md focus:outline-none focus:ring-1 focus:ring-yellow-400 text-gray-700 dark:text-gray-300 resize-y"
+      />
+      {saving && <span className="absolute right-2 top-1 text-[10px] text-gray-400">Salvando...</span>}
+      {saved && <span className="absolute right-2 top-1 text-[10px] text-green-500">Salvo!</span>}
     </div>
   )
 }
@@ -2891,19 +2872,6 @@ export default function InboxPage() {
                           )
                         }
                       })()}
-                      
-                      {selectedConversation.contactId && (
-                        <ContactNotesField 
-                          contactId={selectedConversation.contactId}
-                          initialNotes={selectedConversation.contactNotes || null}
-                          apiUrl={process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}
-                          token={session?.user?.token as string}
-                          onSave={(newNotes) => {
-                            setSelectedConversation(prev => prev ? { ...prev, contactNotes: newNotes } : null)
-                            setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, contactNotes: newNotes } : c))
-                          }}
-                        />
-                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-gray-500">{selectedConversation.contactPhone}</p>
@@ -2927,6 +2895,20 @@ export default function InboxPage() {
                     </div>
                   </div>
                 </div>
+                
+                {selectedConversation.contactId && (
+                  <ContactNotesField 
+                    contactId={selectedConversation.contactId}
+                    initialNotes={selectedConversation.contactNotes || null}
+                    apiUrl={process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}
+                    token={session?.user?.token as string}
+                    onSave={(newNotes) => {
+                      setSelectedConversation(prev => prev ? { ...prev, contactNotes: newNotes } : null)
+                      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, contactNotes: newNotes } : c))
+                    }}
+                  />
+                )}
+
                 <div className="flex items-center space-x-1 relative">
                   {selectedConversation.unreadCount > 0 && (
                     <button
