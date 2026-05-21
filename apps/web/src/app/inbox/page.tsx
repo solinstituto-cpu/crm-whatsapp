@@ -37,7 +37,8 @@ import {
   StarOff,
   Megaphone,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  Edit3
 } from 'lucide-react'
 
 interface MetaTemplate {
@@ -93,6 +94,90 @@ interface Conversation {
   assignedAt?: string | null
   contactTags?: string[]
   lastIncomingMessageAt?: string | null // Para janela 24h
+  contactId?: string | null
+  contactNotes?: string | null
+}
+
+const ContactNotesField = ({ 
+  contactId, 
+  initialNotes, 
+  onSave, 
+  apiUrl, 
+  token 
+}: { 
+  contactId: string, 
+  initialNotes: string | null, 
+  onSave: (notes: string) => void,
+  apiUrl: string,
+  token: string 
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [notes, setNotes] = useState(initialNotes || '')
+  const [saving, setSaving] = useState(false)
+  
+  const handleSave = async () => {
+    if (!contactId) return;
+    setSaving(true)
+    try {
+      const response = await fetch(`${apiUrl}/api/contacts/${contactId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ notes })
+      })
+      if (response.ok) {
+        onSave(notes)
+        setIsOpen(false)
+      } else {
+        alert('Erro ao salvar observação')
+      }
+    } catch (e) {
+      alert('Erro de conexão')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="relative inline-block text-left ml-2">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 transition-colors shadow-sm"
+        title={initialNotes ? initialNotes : "Adicionar observação sobre o cliente"}
+      >
+        <Edit3 className="w-3 h-3 mr-1" />
+        {initialNotes ? 'Obs' : 'Add Obs'}
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-64 right-0 lg:left-0 lg:right-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Observações</span>
+            <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full h-24 p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white resize-none"
+            placeholder="Digite algo importante sobre o cliente..."
+          />
+          <div className="mt-2 flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded shadow-sm disabled:opacity-50"
+            >
+              {saving ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function InboxPage() {
@@ -487,7 +572,8 @@ export default function InboxPage() {
         // Mapear para o formato do frontend
         return {
           id: conv.id,
-          contactId: conv.contact?.id,
+          contactId: conv.contact?.id || null,
+          contactNotes: conv.contact?.notes || null,
           contactTags: conv.contact?.tags ? JSON.parse(conv.contact.tags) : [],
           contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
           contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
@@ -1267,6 +1353,8 @@ export default function InboxPage() {
           }
           return {
             id: conv.id,
+            contactId: conv.contact?.id || null,
+            contactNotes: conv.contact?.notes || null,
             contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
             contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
             lastMessage: formatLastMessage(lastMsg),
@@ -2798,11 +2886,24 @@ export default function InboxPage() {
                         } else {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700" title="Janela de 24h expirada - use templates">
-                              🔒 Janela expirada - Use Template
+                              ⚠️ Janela Fechada
                             </span>
                           )
                         }
                       })()}
+                      
+                      {selectedConversation.contactId && (
+                        <ContactNotesField 
+                          contactId={selectedConversation.contactId}
+                          initialNotes={selectedConversation.contactNotes || null}
+                          apiUrl={process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}
+                          token={session?.user?.token as string}
+                          onSave={(newNotes) => {
+                            setSelectedConversation(prev => prev ? { ...prev, contactNotes: newNotes } : null)
+                            setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, contactNotes: newNotes } : c))
+                          }}
+                        />
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-gray-500">{selectedConversation.contactPhone}</p>
