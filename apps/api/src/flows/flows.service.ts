@@ -1185,7 +1185,11 @@ export class FlowsService {
                 let hydratedContent = typeof content === 'string' ? content : '';
                 bodyComponent.parameters.forEach((p: any, idx: number) => {
                   if (p.type === 'text') {
-                    hydratedContent = hydratedContent.replace(`{{${idx + 1}}}`, p.text);
+                    if (hydratedContent.includes(`{{${idx + 1}}}`)) {
+                      hydratedContent = hydratedContent.replace(`{{${idx + 1}}}`, p.text);
+                    } else {
+                      hydratedContent += `\n[Oferta/Campanha: ${p.text}]`;
+                    }
                   }
                 });
                 content = hydratedContent;
