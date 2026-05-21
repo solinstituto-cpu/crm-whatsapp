@@ -1299,12 +1299,13 @@ export default function ContactsPage() {
                         const lines = importData.trim().split('\n');
                         const contacts = lines.map(line => {
                           const parts = line.split(';');
+                          const phone = parts[1]?.trim() || '';
                           return {
-                            name: parts[0]?.trim() || '',
-                            phone: parts[1]?.trim() || '',
+                            name: parts[0]?.trim() || phone,
+                            phone,
                             tags: parts[2]?.trim() || ''
                           };
-                        }).filter(c => c.name && c.phone);
+                        }).filter(c => c.phone);
 
                         if (contacts.length === 0) {
                           alert('Nenhum contato válido encontrado');
