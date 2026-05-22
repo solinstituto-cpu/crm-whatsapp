@@ -654,7 +654,8 @@ export class WhatsAppService {
         this.logger.log(`Active flows cancelled for ${phoneE164} by human interaction.`);
       }
 
-      // Force conversation assignment to prevent AI from picking it up again
+      // Auto-assign conversation ONLY if nobody is currently assigned.
+      // If a consultant is already assigned, don't steal it — even if an admin sends a message.
       if (userId) {
         // Encontrar a conversa mais recente desse número
         const conversation = await this.prisma.conversation.findFirst({
@@ -662,7 +663,7 @@ export class WhatsAppService {
           orderBy: { updatedAt: 'desc' }
         });
         
-        if (conversation && conversation.assignedToId !== userId) {
+        if (conversation && !conversation.assignedToId) {
           await this.prisma.conversation.update({
             where: { id: conversation.id },
             data: { 
@@ -671,7 +672,9 @@ export class WhatsAppService {
               status: 'OPEN' 
             }
           });
-          this.logger.log(`Conversation ${conversation.id} auto-assigned to ${userId} during human takeover.`);
+          this.logger.log(`Conversation ${conversation.id} auto-assigned to ${userId} (was unassigned).`);
+        } else if (conversation && conversation.assignedToId) {
+          this.logger.log(`Conversation ${conversation.id} stays with ${conversation.assignedToId} — admin/other user just sent a message.`);
         }
       }
     } catch (e) {
