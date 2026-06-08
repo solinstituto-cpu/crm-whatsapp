@@ -2556,7 +2556,7 @@ export default function InboxPage() {
             </div>
             
             {/* Seletor de Conta WhatsApp (Multi-números) */}
-            {whatsappAccounts.length > 1 && (
+            {whatsappAccounts.length > 0 && (
               <div className="mb-4 relative">
                 <button
                   onClick={() => setShowAccountFilter(!showAccountFilter)}
