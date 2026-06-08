@@ -987,12 +987,18 @@ export default function InboxPage() {
   const fetchWhatsAppAccounts = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
     const userId = (session?.user as any)?.id
+    const token = (session?.user as any)?.token
     try {
       // Passa userId para filtrar contas que o usuário pode acessar
       const url = userId 
         ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
         : `${apiUrl}/api/whatsapp-accounts`
-      const res = await fetch(url)
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      })
       if (res.ok) {
         const data = await res.json()
         setWhatsappAccounts(data.map((a: any) => ({
