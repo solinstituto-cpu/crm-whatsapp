@@ -27,6 +27,8 @@ services:
         value: v22.0
       - key: WHATSAPP_API_BASE_URL
         value: https://graph.facebook.com
+      - key: WA_VERIFY_TOKEN
+        value: sol123
 
 databases:
   - name: crm-postgres
