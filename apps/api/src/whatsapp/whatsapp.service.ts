@@ -81,6 +81,21 @@ export class WhatsAppService {
     }
   }
 
+  /**
+   * Verifica se o token de validação coincide com algum cadastrado no banco de dados
+   */
+  async verifyDatabaseToken(verifyToken: string): Promise<boolean> {
+    try {
+      const account = await this.prisma.whatsAppAccount.findFirst({
+        where: { webhookVerifyToken: verifyToken, isActive: true },
+      });
+      return !!account;
+    } catch (error) {
+      this.logger.error(`Error verifying database token: ${error.message}`);
+      return false;
+    }
+  }
+
   // Propriedades legadas para compatibilidade (serão removidas no futuro)
   private get phoneNumberId() { return this.defaultPhoneNumberId; }
   private get accessToken() { return this.defaultAccessToken; }
