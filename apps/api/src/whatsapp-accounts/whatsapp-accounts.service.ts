@@ -293,22 +293,36 @@ export class WhatsAppAccountsService {
    * Se o usuário não tem nenhuma conta atribuída, retorna TODAS (admin/compatibilidade)
    */
   async findAllForUser(userId: string) {
+    // Busca o papel (role) do usuário
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    // Administradores sempre têm acesso a todas as contas
+    if (user?.role === 'ADMIN') {
+      return this.findAll();
+    }
+
     // Verifica se o usuário tem contas específicas atribuídas
     const userAccounts = await this.prisma.userWhatsAppAccount.findMany({
       where: { userId },
       select: { accountId: true },
     });
 
-    // Se não tem nenhuma conta específica, retorna todas (para compatibilidade e admins)
+    // Se não tem nenhuma conta específica, retorna todas (para compatibilidade)
     if (userAccounts.length === 0) {
       return this.findAll();
     }
 
-    // Retorna apenas as contas atribuídas ao usuário
+    // Retorna as contas atribuídas ao usuário OU contas que não têm nenhuma atribuição (públicas)
     const accountIds = userAccounts.map(ua => ua.accountId);
     return this.prisma.whatsAppAccount.findMany({
       where: {
-        id: { in: accountIds },
+        OR: [
+          { id: { in: accountIds } },
+          { users: { none: {} } } // Contas sem nenhuma restrição atribuída
+        ],
         isActive: true,
       },
       orderBy: [
