@@ -1012,12 +1012,23 @@ export default function InboxPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setWhatsappAccounts(data.map((a: any) => ({
+        const accounts = data.map((a: any) => ({
           id: a.id,
           name: a.name,
           phoneNumber: a.phoneNumber || '',
           isDefault: a.isDefault
-        })))
+        }))
+        setWhatsappAccounts(accounts)
+        
+        // Define a conta padrão como selecionada inicialmente
+        if (!selectedAccountIdRef.current && accounts.length > 0) {
+          const defaultAcc = accounts.find((a: any) => a.isDefault)
+          if (defaultAcc) {
+            setSelectedAccountId(defaultAcc.id)
+          } else {
+            setSelectedAccountId(accounts[0].id)
+          }
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
