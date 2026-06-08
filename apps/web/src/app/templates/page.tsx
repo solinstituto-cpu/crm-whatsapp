@@ -90,9 +90,11 @@ export default function TemplatesPage() {
       
       console.log('Fetching templates from:', `${apiUrl}/api/templates`)
       
+      const token = (session?.user as any)?.token
       const response = await fetch(`${apiUrl}/api/templates`, {
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         signal: controller.signal,
       })
@@ -168,10 +170,12 @@ export default function TemplatesPage() {
         })
       }
 
+      const token = (session?.user as any)?.token
       const response = await fetch(`${apiUrl}/api/templates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           name: newTemplate.name.toLowerCase().replace(/\s+/g, '_'),
@@ -213,10 +217,12 @@ export default function TemplatesPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const token = (session?.user as any)?.token
       const response = await fetch(`${apiUrl}/api/templates/${templateName}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
       })
 

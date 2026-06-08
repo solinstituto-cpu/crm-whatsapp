@@ -64,15 +64,19 @@ export class TemplatesService {
    */
   private async getCredentials(accountId?: string): Promise<{ accessToken: string; wabaId: string }> {
     try {
-      if (accountId) {
+      console.log(`[getCredentials] Input accountId: "${accountId}"`);
+      if (accountId && accountId !== 'null' && accountId !== 'undefined' && accountId.trim() !== '') {
         const account = await this.prisma.whatsAppAccount.findUnique({
           where: { id: accountId },
         });
         if (account) {
+          console.log(`[getCredentials] Found account by ID: ${account.name}, WABA: ${account.businessId}`);
           return {
             accessToken: account.accessToken,
             wabaId: account.businessId,
           };
+        } else {
+          console.log(`[getCredentials] Account ID "${accountId}" not found in database.`);
         }
       }
       
@@ -81,16 +85,21 @@ export class TemplatesService {
         where: { isDefault: true, isActive: true },
       });
       if (defaultAccount) {
+        console.log(`[getCredentials] Found default account: ${defaultAccount.name}, WABA: ${defaultAccount.businessId}`);
         return {
           accessToken: defaultAccount.accessToken,
           wabaId: defaultAccount.businessId,
         };
+      } else {
+        console.log(`[getCredentials] No default active WhatsApp account found in database.`);
       }
     } catch (error) {
+      console.error(`[getCredentials] Error querying database: ${error.message}`);
       this.logger.warn(`Erro ao buscar conta WhatsApp, usando credenciais do .env: ${error.message}`);
     }
     
     // Fallback para variáveis de ambiente
+    console.log(`[getCredentials] Falling back to .env credentials. WABA: ${this.wabaId}`);
     return {
       accessToken: this.accessToken,
       wabaId: this.wabaId,
