@@ -96,6 +96,7 @@ interface Conversation {
   lastIncomingMessageAt?: string | null // Para janela 24h
   contactId?: string | null
   contactNotes?: string | null
+  whatsappAccountId?: string | null
 }
 
 const ContactNotesField = ({ 
@@ -569,6 +570,7 @@ export default function InboxPage() {
             color: conv.assignedTo.color
           } : undefined,
           lastIncomingMessageAt: conv.lastIncomingMessageAt,
+          whatsappAccountId: conv.whatsappAccountId,
           messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
         }
       }
@@ -584,8 +586,17 @@ export default function InboxPage() {
     setLoadingTemplates(true)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
-      const response = await fetch(`${apiUrl}/api/templates?status=APPROVED`, {
-        headers: { 'Content-Type': 'application/json' }
+      const accountId = selectedConversation?.whatsappAccountId || selectedAccountId || ''
+      const token = (session?.user as any)?.token
+      const url = accountId
+        ? `${apiUrl}/api/templates?status=APPROVED&accountId=${accountId}`
+        : `${apiUrl}/api/templates?status=APPROVED`
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       })
       if (response.ok) {
         const data = await response.json()
@@ -1090,6 +1101,7 @@ export default function InboxPage() {
                 color: conv.assignedTo.color
               } : undefined,
               lastIncomingMessageAt: conv.lastIncomingMessageAt,
+              whatsappAccountId: conv.whatsappAccountId,
               messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
             }
             handleSelectConversation(formattedConv)
@@ -1197,6 +1209,7 @@ export default function InboxPage() {
             assignedToId: conv.assignedToId || null,
             contactTags,
             lastIncomingMessageAt: conv.lastIncomingMessageAt,
+            whatsappAccountId: conv.whatsappAccountId,
             messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
           }
         })
@@ -1357,6 +1370,7 @@ export default function InboxPage() {
             assignedToId: conv.assignedToId || null,
             contactTags,
             lastIncomingMessageAt: conv.lastIncomingMessageAt,
+            whatsappAccountId: conv.whatsappAccountId,
             messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
           }
         })
