@@ -225,7 +225,12 @@ export default function InboxPage() {
   
   // Estado para contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('crm_selectedAccountId') || ''
+    }
+    return ''
+  })
   const [showAccountFilter, setShowAccountFilter] = useState(false)
   
   // Refs para filtros (para usar no polling sem closure stale)
@@ -971,6 +976,10 @@ export default function InboxPage() {
   
   useEffect(() => {
     selectedAccountIdRef.current = selectedAccountId
+    // Persistir no localStorage
+    if (typeof window !== 'undefined' && selectedAccountId) {
+      localStorage.setItem('crm_selectedAccountId', selectedAccountId)
+    }
   }, [selectedAccountId])
 
   useEffect(() => {
@@ -985,6 +994,13 @@ export default function InboxPage() {
     
     return () => clearInterval(interval)
   }, [])
+
+  // Recarregar contas WhatsApp quando a sessão mudar (garante que carrega mesmo na primeira visita)
+  useEffect(() => {
+    if (session?.user) {
+      fetchWhatsAppAccounts()
+    }
+  }, [session])
   
   // Recarregar quando filtros de inbox mudarem (após carga inicial)
   useEffect(() => {
@@ -1022,13 +1038,20 @@ export default function InboxPage() {
         }))
         setWhatsappAccounts(accounts)
         
-        // Define a conta padrão como selecionada inicialmente
+        // Restaurar do localStorage ou usar conta padrão
+        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
         if (!selectedAccountIdRef.current && accounts.length > 0) {
-          const defaultAcc = accounts.find((a: any) => a.isDefault)
-          if (defaultAcc) {
-            setSelectedAccountId(defaultAcc.id)
+          // Verificar se a conta salva ainda existe
+          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
+          if (savedAccount) {
+            setSelectedAccountId(savedAccount.id)
           } else {
-            setSelectedAccountId(accounts[0].id)
+            const defaultAcc = accounts.find((a: any) => a.isDefault)
+            if (defaultAcc) {
+              setSelectedAccountId(defaultAcc.id)
+            } else {
+              setSelectedAccountId(accounts[0].id)
+            }
           }
         }
       }
