@@ -73,6 +73,7 @@ export class WhatsAppController {
       context?: { message_id: string };
       userId?: string;
     },
+    @Res({ passthrough: true }) res: Response,
   ) {
     console.log('📨 send-public received:', JSON.stringify(body, null, 2));
     
@@ -96,10 +97,53 @@ export class WhatsAppController {
     
     console.log('📤 Sending to WhatsAppService:', JSON.stringify(sendMessageDto, null, 2));
     
-    // Cancelar sessões ativas (IA) já que um humano interagiu
-    await this.whatsappService.cancelActiveFlows(sendMessageDto.to, body.userId);
-    // Skip 24-hour window check for CRM interface
-    return this.whatsappService.sendMessage(sendMessageDto, true);
+    try {
+      // Cancelar sessões ativas (IA) já que um humano interagiu
+      await this.whatsappService.cancelActiveFlows(sendMessageDto.to, body.userId);
+      // Skip 24-hour window check for CRM interface
+      const result = await this.whatsappService.sendMessage(sendMessageDto, true);
+      return result;
+    } catch (error: any) {
+      // Extrair mensagem de erro detalhada
+      const axiosData = error?.response?.data;
+      const metaError = axiosData?.error;
+      const statusCode = error?.response?.status || 500;
+      
+      // Montar mensagem de erro legível
+      let errorMessage = error.message || 'Erro desconhecido ao enviar mensagem';
+      
+      if (metaError) {
+        // Erro da API do Meta/WhatsApp
+        errorMessage = metaError.message || errorMessage;
+        if (metaError.error_subcode) {
+          errorMessage += ` (código: ${metaError.error_subcode})`;
+        }
+        // Erros comuns do Meta traduzidos
+        if (metaError.code === 190) {
+          errorMessage = 'Token de acesso do WhatsApp expirado ou inválido. Atualize o token nas Configurações > Contas WhatsApp.';
+        } else if (metaError.code === 131026) {
+          errorMessage = 'Mensagem não foi entregue. O contato pode não ter WhatsApp ou o número é inválido.';
+        } else if (metaError.code === 131047) {
+          errorMessage = 'Janela de 24h expirada. Envie um template ao invés de mensagem livre.';
+        } else if (metaError.code === 131031) {
+          errorMessage = 'A conta WhatsApp Business não está verificada ou está com restrição.';
+        }
+      }
+      
+      console.error('❌ send-public error:', {
+        message: errorMessage,
+        statusCode,
+        metaError: metaError ? JSON.stringify(metaError).slice(0, 500) : undefined,
+        originalError: error.message,
+      });
+      
+      res.status(statusCode >= 400 && statusCode < 600 ? statusCode : 500);
+      return {
+        statusCode: statusCode >= 400 && statusCode < 600 ? statusCode : 500,
+        message: errorMessage,
+        error: 'Falha no envio da mensagem',
+      };
+    }
   }
 
   // Send message (protected with JWT)
@@ -118,6 +162,7 @@ export class WhatsAppController {
   @Post('send-template')
   async sendTemplate(
     @Body() body: { to: string; templateName: string; language?: string; bodyText?: string; components?: any[]; userId?: string },
+    @Res({ passthrough: true }) res: Response,
   ) {
     const sendTemplateDto: SendTemplateDto = {
       to: body.to,
@@ -126,8 +171,39 @@ export class WhatsAppController {
       bodyText: body.bodyText,
       components: body.components,
     };
-    await this.whatsappService.cancelActiveFlows(sendTemplateDto.to, body.userId);
-    return this.whatsappService.sendTemplate(sendTemplateDto);
+    
+    try {
+      await this.whatsappService.cancelActiveFlows(sendTemplateDto.to, body.userId);
+      return await this.whatsappService.sendTemplate(sendTemplateDto);
+    } catch (error: any) {
+      const axiosData = error?.response?.data;
+      const metaError = axiosData?.error;
+      const statusCode = error?.response?.status || 500;
+      
+      let errorMessage = error.message || 'Erro desconhecido ao enviar template';
+      
+      if (metaError) {
+        errorMessage = metaError.message || errorMessage;
+        if (metaError.code === 190) {
+          errorMessage = 'Token de acesso do WhatsApp expirado ou inválido. Atualize o token nas Configurações > Contas WhatsApp.';
+        } else if (metaError.code === 100 && metaError.error_subcode === 33) {
+          errorMessage = `Template "${body.templateName}" não encontrado ou não aprovado pelo Meta.`;
+        }
+      }
+      
+      console.error('❌ send-template error:', {
+        message: errorMessage,
+        statusCode,
+        metaError: metaError ? JSON.stringify(metaError).slice(0, 500) : undefined,
+      });
+      
+      res.status(statusCode >= 400 && statusCode < 600 ? statusCode : 500);
+      return {
+        statusCode: statusCode >= 400 && statusCode < 600 ? statusCode : 500,
+        message: errorMessage,
+        error: 'Falha no envio do template',
+      };
+    }
   }
 
   // Upload media to Meta API
