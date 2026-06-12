@@ -72,6 +72,7 @@ export class WhatsAppController {
       contacts?: any[];
       context?: { message_id: string };
       userId?: string;
+      accountId?: string;
     },
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -101,7 +102,7 @@ export class WhatsAppController {
       // Cancelar sessões ativas (IA) já que um humano interagiu
       await this.whatsappService.cancelActiveFlows(sendMessageDto.to, body.userId);
       // Skip 24-hour window check for CRM interface
-      const result = await this.whatsappService.sendMessage(sendMessageDto, true);
+      const result = await this.whatsappService.sendMessage(sendMessageDto, true, body.accountId);
       return result;
     } catch (error: any) {
       // Extrair mensagem de erro detalhada
@@ -161,7 +162,7 @@ export class WhatsAppController {
   // Send template (public endpoint for frontend)
   @Post('send-template')
   async sendTemplate(
-    @Body() body: { to: string; templateName: string; language?: string; bodyText?: string; components?: any[]; userId?: string },
+    @Body() body: { to: string; templateName: string; language?: string; bodyText?: string; components?: any[]; userId?: string; accountId?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
     const sendTemplateDto: SendTemplateDto = {
@@ -174,7 +175,7 @@ export class WhatsAppController {
     
     try {
       await this.whatsappService.cancelActiveFlows(sendTemplateDto.to, body.userId);
-      return await this.whatsappService.sendTemplate(sendTemplateDto);
+      return await this.whatsappService.sendTemplate(sendTemplateDto, body.accountId);
     } catch (error: any) {
       const axiosData = error?.response?.data;
       const metaError = axiosData?.error;
@@ -253,5 +254,11 @@ export class WhatsAppController {
   @Get('debug/account')
   async debugAccount() {
     return this.whatsappService.getAccountDebug();
+  }
+
+  // Diagnóstico das contas WhatsApp (público para debug rápido)
+  @Get('debug/accounts')
+  async debugAccounts() {
+    return this.whatsappService.getAccountsDiagnostics();
   }
 }

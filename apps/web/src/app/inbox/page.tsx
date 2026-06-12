@@ -722,7 +722,8 @@ export default function InboxPage() {
           templateName: template.name,
           language: template.language || 'pt_BR',
           bodyText: displayText,
-          components
+          components,
+          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
         })
       })
       
@@ -808,7 +809,8 @@ export default function InboxPage() {
           templateName: template.name,
           language: template.language || 'pt_BR',
           bodyText: displayText,
-          components: components.length > 0 ? components : undefined
+          components: components.length > 0 ? components : undefined,
+          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
         })
       })
       
@@ -1631,7 +1633,8 @@ export default function InboxPage() {
           type: 'text',
           // Enviar context para o WhatsApp fazer o quote da mensagem
           context: currentReplyTo?.waMessageId ? { message_id: currentReplyTo.waMessageId } : undefined,
-          userId: (session?.user as any)?.id
+          userId: (session?.user as any)?.id,
+          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
         })
       })
 
@@ -1818,7 +1821,8 @@ export default function InboxPage() {
             id: mediaId,
             caption: file.name,
             filename: file.name
-          }
+          },
+          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
         }
         
         console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2))
@@ -1926,7 +1930,8 @@ export default function InboxPage() {
         body: JSON.stringify({
           to: selectedConversation.contactPhone,
           type: 'contacts',
-          contacts: contactPayload
+          contacts: contactPayload,
+          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
         })
       })
 

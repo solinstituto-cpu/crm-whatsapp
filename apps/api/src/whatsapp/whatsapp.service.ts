@@ -32,11 +32,12 @@ export class WhatsAppService {
 
   /**
    * Obtém as credenciais para uma conta específica ou a conta padrão
-   * Prioridade: accountId > conta padrão do banco > variáveis de ambiente
+   * Prioridade: accountId > conta da conversa (por telefone) > conta padrão do banco > variáveis de ambiente
    */
-  async getCredentials(accountId?: string): Promise<WhatsAppCredentials> {
+  async getCredentials(accountId?: string, phoneNumber?: string): Promise<WhatsAppCredentials & { accountId?: string }> {
     let phoneNumberId = this.defaultPhoneNumberId;
     let accessToken = this.defaultAccessToken;
+    let resolvedAccountId: string | undefined;
 
     try {
       if (accountId) {
@@ -47,15 +48,55 @@ export class WhatsAppService {
         if (account && account.isActive) {
           phoneNumberId = account.phoneNumberId;
           accessToken = account.accessToken;
+          resolvedAccountId = account.id;
+          this.logger.log(`📱 Usando conta específica: ${account.name} (${account.phoneNumber})`);
+        } else {
+          this.logger.warn(`⚠️ Conta ${accountId} não encontrada ou inativa, tentando fallback`);
         }
-      } else {
-        // Busca conta padrão do banco
+      }
+      
+      // Se não resolveu por accountId, tenta pela conversa do contato
+      if (!resolvedAccountId && phoneNumber) {
+        const conversation = await this.prisma.conversation.findFirst({
+          where: { 
+            phoneE164: phoneNumber,
+            whatsappAccountId: { not: null },
+          },
+          orderBy: { updatedAt: 'desc' },
+          include: { whatsappAccount: true },
+        });
+        if (conversation?.whatsappAccount?.isActive) {
+          phoneNumberId = conversation.whatsappAccount.phoneNumberId;
+          accessToken = conversation.whatsappAccount.accessToken;
+          resolvedAccountId = conversation.whatsappAccount.id;
+          this.logger.log(`📱 Conta detectada pela conversa: ${conversation.whatsappAccount.name}`);
+        }
+      }
+      
+      // Fallback: conta padrão do banco
+      if (!resolvedAccountId) {
         const defaultAccount = await this.prisma.whatsAppAccount.findFirst({
           where: { isDefault: true, isActive: true },
         });
         if (defaultAccount) {
           phoneNumberId = defaultAccount.phoneNumberId;
           accessToken = defaultAccount.accessToken;
+          resolvedAccountId = defaultAccount.id;
+          this.logger.log(`📱 Usando conta padrão: ${defaultAccount.name} (${defaultAccount.phoneNumber})`);
+        } else {
+          // Última tentativa: qualquer conta ativa
+          const anyAccount = await this.prisma.whatsAppAccount.findFirst({
+            where: { isActive: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (anyAccount) {
+            phoneNumberId = anyAccount.phoneNumberId;
+            accessToken = anyAccount.accessToken;
+            resolvedAccountId = anyAccount.id;
+            this.logger.warn(`⚠️ Nenhuma conta padrão, usando: ${anyAccount.name}`);
+          } else {
+            this.logger.warn(`⚠️ Nenhuma conta WhatsApp ativa no banco, usando .env`);
+          }
         }
       }
     } catch (error) {
@@ -63,9 +104,13 @@ export class WhatsAppService {
       this.logger.warn(`Usando credenciais do .env (fallback): ${error.message}`);
     }
 
+    if (!phoneNumberId || !accessToken) {
+      throw new Error('Credenciais do WhatsApp não configuradas. Cadastre uma conta em Configurações > Contas WhatsApp.');
+    }
+
     const apiUrl = `https://graph.facebook.com/${this.apiVersion}/${phoneNumberId}/messages`;
 
-    return { phoneNumberId, accessToken, apiUrl };
+    return { phoneNumberId, accessToken, apiUrl, accountId: resolvedAccountId };
   }
 
   /**
@@ -103,8 +148,8 @@ export class WhatsAppService {
 
   async sendMessage(sendMessageDto: SendMessageDto, skipWindowCheck = false, accountId?: string) {
     try {
-      // Obtém credenciais da conta (ou padrão)
-      const credentials = await this.getCredentials(accountId);
+      // Obtém credenciais da conta (ou auto-detecta pela conversa)
+      const credentials = await this.getCredentials(accountId, sendMessageDto.to);
 
       // Check if contact has opted out
       const contact = await this.prisma.contact.findUnique({
@@ -135,10 +180,10 @@ export class WhatsAppService {
       });
       const elapsed = Date.now() - started;
 
-      // Save to database
-      await this.saveOutboundMessage(sendMessageDto, response.data.messages[0].id);
+      // Save to database (passing resolved accountId to link conversation)
+      await this.saveOutboundMessage(sendMessageDto, response.data.messages[0].id, credentials.accountId);
 
-      this.logger.log(`outbound_text_ok to=${sendMessageDto.to} type=${sendMessageDto.type} waId=${response.data?.messages?.[0]?.id} ms=${elapsed}`);
+      this.logger.log(`outbound_text_ok to=${sendMessageDto.to} type=${sendMessageDto.type} waId=${response.data?.messages?.[0]?.id} ms=${elapsed} account=${credentials.accountId || 'env'}`);
       return response.data;
     } catch (error) {
       const data = (error as any)?.response?.data;
@@ -149,8 +194,8 @@ export class WhatsAppService {
 
   async sendTemplate(sendTemplateDto: SendTemplateDto, accountId?: string) {
     try {
-      // Obtém credenciais da conta (ou padrão)
-      const credentials = await this.getCredentials(accountId);
+      // Obtém credenciais da conta (ou auto-detecta)
+      const credentials = await this.getCredentials(accountId, sendTemplateDto.to);
 
       const contact = await this.prisma.contact.findUnique({
         where: { phoneE164: sendTemplateDto.to },
@@ -351,7 +396,7 @@ export class WhatsAppService {
     return timeDiff <= hours24InMs;
   }
 
-  private async saveOutboundMessage(sendMessageDto: SendMessageDto, waMessageId: string) {
+  private async saveOutboundMessage(sendMessageDto: SendMessageDto, waMessageId: string, resolvedAccountId?: string) {
     // Find or create contact
     let contact = await this.prisma.contact.findUnique({
       where: { phoneE164: sendMessageDto.to },
@@ -379,7 +424,14 @@ export class WhatsAppService {
           contactId: contact.id,
           phoneE164: sendMessageDto.to,
           status: 'OPEN',
+          whatsappAccountId: resolvedAccountId || undefined,
         },
+      });
+    } else if (!conversation.whatsappAccountId && resolvedAccountId) {
+      // Vincular conta à conversa existente que não tem conta
+      await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { whatsappAccountId: resolvedAccountId },
       });
     }
 
@@ -556,6 +608,75 @@ export class WhatsAppService {
         phoneNumberId: this.phoneNumberId,
         error: (e as any)?.message,
         details: (e as any)?.response?.data,
+      };
+    }
+  }
+
+  /**
+   * Diagnóstico completo de todas as contas WhatsApp cadastradas
+   * Verifica se existem, qual é a padrão e se os tokens são válidos
+   */
+  async getAccountsDiagnostics() {
+    try {
+      const accounts = await this.prisma.whatsAppAccount.findMany({
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+        include: {
+          _count: { select: { conversations: true } },
+        },
+      });
+
+      const results = [];
+      for (const account of accounts) {
+        let tokenValid = false;
+        let tokenError = '';
+        let phoneDisplay = '';
+
+        try {
+          const url = `https://graph.facebook.com/${this.apiVersion}/${account.phoneNumberId}`;
+          const resp = await axios.get(url, {
+            headers: { Authorization: `Bearer ${account.accessToken}` },
+            params: { fields: 'id,display_phone_number,verified_name' },
+            timeout: 5000,
+          });
+          tokenValid = true;
+          phoneDisplay = resp.data?.display_phone_number || '';
+        } catch (e: any) {
+          tokenError = e?.response?.data?.error?.message || e.message || 'Erro desconhecido';
+        }
+
+        results.push({
+          id: account.id,
+          name: account.name,
+          phoneNumber: account.phoneNumber,
+          phoneNumberId: account.phoneNumberId,
+          isDefault: account.isDefault,
+          isActive: account.isActive,
+          tokenValid,
+          tokenError: tokenError || undefined,
+          phoneDisplay: phoneDisplay || undefined,
+          conversationCount: account._count.conversations,
+          tokenPreview: account.accessToken ? `${account.accessToken.substring(0, 20)}...` : 'VAZIO',
+        });
+      }
+
+      const envConfig = {
+        WHATSAPP_BUSINESS_PHONE_ID: this.defaultPhoneNumberId ? 'configurado' : 'NÃO configurado',
+        WHATSAPP_ACCESS_TOKEN: this.defaultAccessToken ? 'configurado' : 'NÃO configurado',
+        WHATSAPP_API_VERSION: this.apiVersion,
+      };
+
+      return {
+        totalAccounts: accounts.length,
+        defaultAccount: accounts.find(a => a.isDefault)?.name || 'NENHUMA',
+        activeAccounts: accounts.filter(a => a.isActive).length,
+        accounts: results,
+        envFallback: envConfig,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      return {
+        error: error.message,
+        hint: 'Tabela whatsapp_accounts pode não existir. Execute prisma db push.',
       };
     }
   }
