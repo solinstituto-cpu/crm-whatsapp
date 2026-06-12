@@ -19,7 +19,8 @@ import {
   ExternalLink,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Phone
 } from 'lucide-react'
 
 interface MetaTemplate {
@@ -67,6 +68,15 @@ export default function TemplatesPage() {
   })
   const [creating, setCreating] = useState(false)
 
+  // Estado para contas WhatsApp (multi-números)
+  const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('crm_selectedAccountId') || ''
+    }
+    return ''
+  })
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       redirect('/auth/login')
@@ -75,9 +85,63 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      fetchTemplates()
+      fetchWhatsAppAccounts()
     }
   }, [status])
+
+  useEffect(() => {
+    if (status === 'authenticated' && selectedAccountId) {
+      fetchTemplates()
+    }
+  }, [status, selectedAccountId])
+
+  // Persistir conta selecionada
+  useEffect(() => {
+    if (typeof window !== 'undefined' && selectedAccountId) {
+      localStorage.setItem('crm_selectedAccountId', selectedAccountId)
+    }
+  }, [selectedAccountId])
+
+  const fetchWhatsAppAccounts = async () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+    const userId = (session?.user as any)?.id
+    const token = (session?.user as any)?.token
+    try {
+      const url = userId 
+        ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
+        : `${apiUrl}/api/whatsapp-accounts`
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const accounts = data.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          phoneNumber: a.phoneNumber || '',
+          isDefault: a.isDefault
+        }))
+        setWhatsappAccounts(accounts)
+        
+        // Restaurar do localStorage ou usar conta padrão
+        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
+        if (!selectedAccountId && accounts.length > 0) {
+          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
+          if (savedAccount) {
+            setSelectedAccountId(savedAccount.id)
+          } else {
+            const defaultAcc = accounts.find((a: any) => a.isDefault)
+            setSelectedAccountId(defaultAcc?.id || accounts[0].id)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contas WhatsApp:', error)
+    }
+  }
 
   const fetchTemplates = async () => {
     try {
@@ -88,10 +152,11 @@ export default function TemplatesPage() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 15000)
       
-      console.log('Fetching templates from:', `${apiUrl}/api/templates`)
+      const accountIdParam = selectedAccountId ? `&accountId=${selectedAccountId}` : ''
+      console.log('Fetching templates from:', `${apiUrl}/api/templates?limit=100${accountIdParam}`)
       
       const token = (session?.user as any)?.token
-      const response = await fetch(`${apiUrl}/api/templates`, {
+      const response = await fetch(`${apiUrl}/api/templates${accountIdParam ? '?' + accountIdParam.substring(1) : ''}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -345,6 +410,23 @@ export default function TemplatesPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Seletor de Conta WhatsApp */}
+              {whatsappAccounts.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-green-600" />
+                  <select
+                    value={selectedAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    className="px-3 py-2 border border-green-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-green-50"
+                  >
+                    {whatsappAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} ({account.phoneNumber})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
