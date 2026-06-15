@@ -16,11 +16,10 @@ export const authOptions: AuthOptions = {
 
         try {
           // Chamar API do backend para validar credenciais
-          // API_URL no server; fallback para produção quando na Vercel
-          const apiUrl =
-            process.env.API_URL ||
-            process.env.NEXT_PUBLIC_API_URL ||
-            (process.env.VERCEL ? 'https://crm-api-laxv.onrender.com' : 'http://localhost:4000')
+          // On Vercel: always use correct Render API (crm-api-laxv)
+          const apiUrl = process.env.VERCEL
+            ? 'https://crm-api-laxv.onrender.com'
+            : (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')
           // Timeout 90s (Render free tier demora ~50s para "acordar")
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 90000)
