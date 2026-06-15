@@ -991,6 +991,8 @@ export default function InboxPage() {
   }, [selectedAccountId])
 
   useEffect(() => {
+    if (status !== 'authenticated' || initialLoadDone) return
+    
     fetchConversations(1, false, true) // Carga inicial: isInitialLoad=true
     fetchInboxFiltersData()
     fetchWhatsAppAccounts()
@@ -1001,7 +1003,7 @@ export default function InboxPage() {
     }, 5000)
     
     return () => clearInterval(interval)
-  }, [])
+  }, [status, initialLoadDone])
 
   // Recarregar contas WhatsApp quando a sessão mudar (garante que carrega mesmo na primeira visita)
   useEffect(() => {

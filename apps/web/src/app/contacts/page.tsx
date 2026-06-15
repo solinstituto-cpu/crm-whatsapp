@@ -203,6 +203,7 @@ export default function ContactsPage() {
   }, [status])
 
   useEffect(() => {
+    if (status !== 'authenticated' || initialLoadDone) return
     const initialize = async () => {
       await fetchWhatsAppAccounts()
       fetchFieldOptions()
@@ -211,7 +212,7 @@ export default function ContactsPage() {
       setInitialLoadDone(true)
     }
     initialize()
-  }, [])
+  }, [status, initialLoadDone])
   
   // Recarregar quando filtros, busca ou conta selecionada mudar (com debounce)
   useEffect(() => {
