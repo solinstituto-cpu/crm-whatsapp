@@ -228,6 +228,50 @@ export default function ContactsPage() {
     }
   }, [selectedAccountId])
   
+  // Sincronizar conta selecionada quando voltar à página ou mudar em outra aba
+  useEffect(() => {
+    const syncAccountFromStorage = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('crm_selectedAccountId')
+        if (stored && stored !== selectedAccountId) {
+          setSelectedAccountId(stored)
+        }
+      }
+    }
+    
+    // Quando outra aba altera localStorage
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'crm_selectedAccountId' && e.newValue && e.newValue !== selectedAccountId) {
+        setSelectedAccountId(e.newValue)
+      }
+    }
+    
+    // Quando a página fica visível novamente (navegação SPA)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncAccountFromStorage()
+      }
+    }
+    
+    // Quando a janela recebe foco (voltou de outra aba/página)
+    const handleFocus = () => {
+      syncAccountFromStorage()
+    }
+    
+    window.addEventListener('storage', handleStorage)
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', handleFocus)
+    
+    // Sincronizar imediatamente ao montar (caso tenha mudado no inbox antes de navegar)
+    syncAccountFromStorage()
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [selectedAccountId])
+  
   // Buscar usuários/atendentes
   const fetchUsers = async () => {
     try {
@@ -267,13 +311,13 @@ export default function ContactsPage() {
         }))
         setWhatsappAccounts(accounts)
         
-        // Restaurar do localStorage ou usar conta padrão
+        // Restaurar do localStorage (sempre sincronizar com inbox)
         const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
-        if (!selectedAccountId && accounts.length > 0) {
+        if (accounts.length > 0) {
           const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
           if (savedAccount) {
             setSelectedAccountId(savedAccount.id)
-          } else {
+          } else if (!selectedAccountId) {
             const defaultAcc = accounts.find((a: any) => a.isDefault)
             setSelectedAccountId(defaultAcc?.id || accounts[0].id)
           }
