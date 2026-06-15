@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
+import { getApiUrl } from '@/lib/api-config'
 import { 
   BookOpen,
   Plus,

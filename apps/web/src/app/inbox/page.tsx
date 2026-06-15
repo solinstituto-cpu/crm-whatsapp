@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
+import { getApiUrl } from '@/lib/api-config'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   MessageSquare,

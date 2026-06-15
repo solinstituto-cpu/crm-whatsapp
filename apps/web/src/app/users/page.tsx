@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
+import { getApiUrl } from '@/lib/api-config'
 import { useRequirePermission } from '@/hooks/use-require-permission'
 import { apiFetch } from '@/lib/api'
 import { 

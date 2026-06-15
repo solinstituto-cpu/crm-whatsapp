@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { useRequirePermission } from '@/hooks/use-require-permission'
+import { getApiUrl } from '@/lib/api-config'
 import { apiFetch } from '@/lib/api'
 import { Megaphone, Mail, RefreshCw, Send, Search, Tag, Play, Pause } from 'lucide-react'
 

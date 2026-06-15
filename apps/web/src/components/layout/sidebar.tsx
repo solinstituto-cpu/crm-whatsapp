@@ -25,6 +25,7 @@ import {
   BookOpen
 } from 'lucide-react'
 import { canAccess } from '@/lib/permissions'
+import { getApiUrl } from '@/lib/api-config'
 
 // Cache do logo para evitar flash do ícone ao navegar entre telas (Sidebar remonta)
 let cachedCompanyLogo: string | null = null
