@@ -75,7 +75,7 @@ export default function KnowledgePage() {
 
   const fetchItems = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/knowledge`)
       if (response.ok) {
         const data = await response.json()
@@ -90,7 +90,7 @@ export default function KnowledgePage() {
 
   const fetchCategories = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/knowledge/categories`)
       if (response.ok) {
         const data = await response.json()
@@ -109,7 +109,7 @@ export default function KnowledgePage() {
 
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const url = editingItem 
         ? `${apiUrl}/api/knowledge/${editingItem.id}`
         : `${apiUrl}/api/knowledge`
@@ -137,7 +137,7 @@ export default function KnowledgePage() {
     if (!confirm('Tem certeza que deseja excluir este item?')) return
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/knowledge/${id}`, {
         method: 'DELETE'
       })
@@ -152,7 +152,7 @@ export default function KnowledgePage() {
 
   const handleToggle = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/knowledge/${id}/toggle`, {
         method: 'PUT'
       })

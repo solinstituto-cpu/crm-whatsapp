@@ -400,7 +400,7 @@ function IntegrationsSettings() {
     configured: false,
   })
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+  const apiUrl = getApiUrl()
 
   useEffect(() => {
     loadConfigs()
@@ -927,7 +927,7 @@ function WhatsAppAccountsSettings() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [savingUsers, setSavingUsers] = useState(false)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+  const apiUrl = getApiUrl()
 
   const fetchAccounts = async () => {
     try {
@@ -1529,7 +1529,7 @@ function QuickRepliesSettings() {
 
   const fetchCategories = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await apiFetch(`${apiUrl}/api/quick-replies/categories`)
       if (response.ok) {
         setCategories(await response.json())
@@ -1544,7 +1544,7 @@ function QuickRepliesSettings() {
   const handleSaveCategory = async () => {
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const method = editingCategory ? 'PUT' : 'POST'
       const url = editingCategory 
         ? `${apiUrl}/api/quick-replies/categories/${editingCategory.id}`
@@ -1572,7 +1572,7 @@ function QuickRepliesSettings() {
     if (!confirm('Tem certeza que deseja excluir esta categoria?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       await apiFetch(`${apiUrl}/api/quick-replies/categories/${id}`, {
         method: 'DELETE'
       })
@@ -1585,7 +1585,7 @@ function QuickRepliesSettings() {
   const handleSaveReply = async () => {
     setSaving(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const method = editingReply ? 'PUT' : 'POST'
       const url = editingReply 
         ? `${apiUrl}/api/quick-replies/${editingReply.id}`
@@ -1613,7 +1613,7 @@ function QuickRepliesSettings() {
     if (!confirm('Tem certeza que deseja excluir esta resposta rápida?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       await apiFetch(`${apiUrl}/api/quick-replies/${id}`, {
         method: 'DELETE'
       })
@@ -2018,7 +2018,7 @@ export default function SettingsPage() {
     // Carregar configurações da empresa do banco (API)
     const loadBusinessFromAPI = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+        const apiUrl = getApiUrl()
         const res = await apiFetch(`${apiUrl}/api/settings/system`)
         if (res.ok) {
           const data = await res.json()
@@ -2046,7 +2046,7 @@ export default function SettingsPage() {
 
   const fetchCustomFieldOptions = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await apiFetch(`${apiUrl}/api/settings/field-options`)
       if (res.ok) {
         const data = await res.json()
@@ -2085,7 +2085,7 @@ export default function SettingsPage() {
   const handleSaveOption = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const url = editingOption
         ? `${apiUrl}/api/settings/field-options/${editingOption.id}`
         : `${apiUrl}/api/settings/field-options`
@@ -2109,7 +2109,7 @@ export default function SettingsPage() {
     if (!confirm('Tem certeza que deseja excluir esta opção?')) return
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await apiFetch(`${apiUrl}/api/settings/field-options/${id}`, {
         method: 'DELETE'
       })
@@ -2131,7 +2131,7 @@ export default function SettingsPage() {
       localStorage.setItem('notification_config', JSON.stringify(notificationConfig))
       
       // Salvar configurações da empresa no banco (API)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await apiFetch(`${apiUrl}/api/settings/system`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2333,7 +2333,7 @@ export default function SettingsPage() {
                                     return
                                   }
                                   try {
-                                    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+                                    const apiUrl = getApiUrl()
                                     const formData = new FormData()
                                     formData.append('file', file)
                                     const res = await apiFetch(`${apiUrl}/api/settings/upload-logo`, {

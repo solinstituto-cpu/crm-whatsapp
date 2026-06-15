@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
+import { getApiUrl } from '@/lib/api-config'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   Users, 
@@ -275,7 +276,7 @@ export default function ContactsPage() {
   // Buscar usuários/atendentes
   const fetchUsers = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/users`)
       if (response.ok) {
         const data = await response.json()
@@ -288,7 +289,7 @@ export default function ContactsPage() {
 
   // Buscar contas WhatsApp
   const fetchWhatsAppAccounts = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+    const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
     const token = (session?.user as any)?.token
     try {
@@ -338,7 +339,7 @@ export default function ContactsPage() {
         setLoadingSearch(true) // Busca/filtro: mantém a página visível
       }
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       
       // Construir query string com filtros
       const params = new URLSearchParams()
@@ -399,7 +400,7 @@ export default function ContactsPage() {
   // Buscar todas as tags únicas (endpoint leve, sem carregar 5000 contatos)
   const fetchAllTags = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/contacts/tags`)
       if (response.ok) {
         const tags = await response.json()
@@ -419,7 +420,7 @@ export default function ContactsPage() {
 
   const fetchFieldOptions = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/settings/field-options`)
       
       if (response.ok) {
@@ -547,7 +548,7 @@ export default function ContactsPage() {
     e.preventDefault()
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       
       let phone = formData.phoneE164.trim()
       if (!phone.startsWith('+')) {
@@ -625,7 +626,7 @@ export default function ContactsPage() {
     if (!confirm('Tem certeza que deseja excluir este contato?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       await fetch(`${apiUrl}/api/contacts/${id}`, { method: 'DELETE' })
       fetchContacts()
     } catch (error) {
@@ -636,7 +637,7 @@ export default function ContactsPage() {
   const handleOpenChat = async (contact: Contact) => {
     try {
       // Criar ou buscar conversa existente
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/conversations/find-or-create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1439,7 +1440,7 @@ export default function ContactsPage() {
                           return;
                         }
 
-                        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+                        const apiUrl = getApiUrl();
                         const response = await fetch(`${apiUrl}/api/contacts/import`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },

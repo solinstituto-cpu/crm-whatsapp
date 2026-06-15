@@ -103,7 +103,7 @@ export default function TemplatesPage() {
   }, [selectedAccountId])
 
   const fetchWhatsAppAccounts = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+    const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
     const token = (session?.user as any)?.token
     try {
@@ -146,7 +146,7 @@ export default function TemplatesPage() {
   const fetchTemplates = async () => {
     try {
       setError(null)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       
       // Adicionar timeout de 15 segundos
       const controller = new AbortController()
@@ -210,7 +210,7 @@ export default function TemplatesPage() {
 
     setCreating(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       
       // Build components array
       const components: any[] = []
@@ -281,7 +281,7 @@ export default function TemplatesPage() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const token = (session?.user as any)?.token
       const response = await fetch(`${apiUrl}/api/templates/${templateName}`, {
         method: 'DELETE',

@@ -169,7 +169,7 @@ export default function PipelinePage() {
   const fetchPipeline = async () => {
     try {
       setLoading(true)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       
       const [stagesRes, statsRes] = await Promise.all([
         fetch(`${apiUrl}/api/pipeline/stages`),
@@ -203,7 +203,7 @@ export default function PipelinePage() {
 
   const fetchContacts = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await fetch(`${apiUrl}/api/contacts?limit=100`)
       if (res.ok) {
         const data = await res.json()
@@ -246,7 +246,7 @@ export default function PipelinePage() {
   const handleSaveDeal = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const url = editingDeal 
         ? `${apiUrl}/api/pipeline/deals/${editingDeal.id}`
         : `${apiUrl}/api/pipeline/deals`
@@ -278,7 +278,7 @@ export default function PipelinePage() {
     if (!confirm('Tem certeza que deseja excluir este deal?')) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await fetch(`${apiUrl}/api/pipeline/deals/${dealId}`, {
         method: 'DELETE'
       })
@@ -294,7 +294,7 @@ export default function PipelinePage() {
 
   const handleMoveDeal = async (dealId: string, newStageId: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await fetch(`${apiUrl}/api/pipeline/deals/${dealId}/move`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -331,7 +331,7 @@ export default function PipelinePage() {
   const handleSaveStage = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const url = editingStage 
         ? `${apiUrl}/api/pipeline/stages/${editingStage.id}`
         : `${apiUrl}/api/pipeline/stages`
@@ -357,7 +357,7 @@ export default function PipelinePage() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await fetch(`${apiUrl}/api/pipeline/stages/${stageId}`, {
         method: 'DELETE'
       })
@@ -380,7 +380,7 @@ export default function PipelinePage() {
     if (newOrder < 1 || newOrder > stages.length) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const res = await fetch(`${apiUrl}/api/pipeline/stages/${stageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -812,7 +812,7 @@ export default function PipelinePage() {
                   <p>Nenhum estágio configurado</p>
                   <button
                     onClick={async () => {
-                      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+                      const apiUrl = getApiUrl()
                       await fetch(`${apiUrl}/api/pipeline/seed`, { method: 'POST' })
                       fetchPipeline()
                     }}

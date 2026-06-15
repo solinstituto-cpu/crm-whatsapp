@@ -57,7 +57,7 @@ export default function Sidebar() {
   useEffect(() => {
     const loadBusinessConfig = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+        const apiUrl = getApiUrl()
         const token = (session as any)?.user?.token || (session as any)?.accessToken
         const response = await fetch(`${apiUrl}/api/settings/system`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -100,7 +100,7 @@ export default function Sidebar() {
     if (!session?.user?.id) return
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       await fetch(`${apiUrl}/api/users/heartbeat`, {
         method: 'POST',
         headers: {
@@ -128,7 +128,7 @@ export default function Sidebar() {
   const handleSignOut = async () => {
     if (session?.user?.id) {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+        const apiUrl = getApiUrl()
         await fetch(`${apiUrl}/api/users/logout`, {
           method: 'POST',
           headers: {
