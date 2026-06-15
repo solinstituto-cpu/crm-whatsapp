@@ -21,6 +21,7 @@ async function bootstrap() {
     'http://192.168.1.131:3001',
     'https://whatsapp-crm-eight.vercel.app',
     'https://whatsapp-crmsol.vercel.app',
+    'https://sol-crm-eight.vercel.app',
     'https://crm-drm-nuyq.vercel.app',
     'https://crm.drmschool.com.br',
     'https://crm.dmschool.com.br',

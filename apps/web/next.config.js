@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+
+// URL do backend correto no Render
+const RENDER_API_URL = 'https://crm-api-laxv.onrender.com'
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -14,21 +18,18 @@ const nextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "your-nextauth-secret-key-here-change-in-production",
-    // When NEXT_PUBLIC_API_URL is not set (e.g. on Vercel), default to empty string
-    // so API calls use relative paths that go through the rewrite proxy
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "",
+    // On Vercel: frontend calls the Render API directly (bypasses proxy)
+    // Locally: use env var or empty string (relative paths to localhost)
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (process.env.VERCEL ? RENDER_API_URL : ''),
   },
   async rewrites() {
-    // Backend URL for server-side proxy
-    // On Vercel: always use the correct Render API service (crm-api-laxv)
-    // Locally: use API_URL env var or localhost
+    // Rewrite proxy for local development and fallback
     const backendUrl = process.env.VERCEL
-      ? 'https://crm-api-laxv.onrender.com'
+      ? RENDER_API_URL
       : (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')
-    console.log('[next.config] Rewrite proxy -> ', backendUrl)
     return {
       // NextAuth API routes are handled by Next.js (takes priority over rewrites)
-      // All other /api/* calls are proxied to the Render backend
+      // All other /api/* calls are proxied to the backend
       fallback: [
         {
           source: '/api/:path*',
