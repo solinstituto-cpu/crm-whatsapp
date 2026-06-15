@@ -56,7 +56,7 @@ export class FlowEngineService {
   async processIncomingMessage(phoneE164: string, messageBody: string): Promise<FlowExecutionResult> {
     try {
       // Buscar contato para substituição de variáveis
-      const contact = await this.prisma.contact.findUnique({
+      const contact = await this.prisma.contact.findFirst({
         where: { phoneE164 },
       });
 
@@ -213,7 +213,7 @@ export class FlowEngineService {
         } else {
           // Tentar buscar contato pelo phoneE164 da sessão
           try {
-            const sessionContact = await this.prisma.contact.findUnique({
+            const sessionContact = await this.prisma.contact.findFirst({
               where: { phoneE164: session.contactId },
             });
             if (sessionContact) {
@@ -500,7 +500,7 @@ export class FlowEngineService {
         return;
       }
       
-      const contact = await this.prisma.contact.findUnique({
+      const contact = await this.prisma.contact.findFirst({
         where: { phoneE164 },
       });
 

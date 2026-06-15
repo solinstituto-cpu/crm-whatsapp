@@ -49,7 +49,7 @@ model UserSession {
 model Contact {
   id        String  @id @default(cuid())
   name      String
-  phoneE164 String  @unique
+  phoneE164 String
   email     String?
   company   String?
   role      String? // Cargo/função
@@ -85,9 +85,13 @@ model Contact {
   assignedToId String?
   assignedTo   User?   @relation(fields: [assignedToId], references: [id])
 
+  whatsappAccountId String?
+  whatsappAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: SetNull)
+
   conversations Conversation[]
   deals         Deal[]
 
+  @@unique([phoneE164, whatsappAccountId])
   @@map("contacts")
 }
 
@@ -583,6 +587,7 @@ model WhatsAppAccount {
   conversations Conversation[]
   campaigns     Campaign[]
   users         UserWhatsAppAccount[] // Usuários que podem acessar esta conta
+  contacts      Contact[]
 
   @@map("whatsapp_accounts")
 }

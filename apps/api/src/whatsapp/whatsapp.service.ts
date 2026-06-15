@@ -152,8 +152,11 @@ export class WhatsAppService {
       const credentials = await this.getCredentials(accountId, sendMessageDto.to);
 
       // Check if contact has opted out
-      const contact = await this.prisma.contact.findUnique({
-        where: { phoneE164: sendMessageDto.to },
+      const contact = await this.prisma.contact.findFirst({
+        where: { 
+          phoneE164: sendMessageDto.to,
+          whatsappAccountId: credentials.accountId || null,
+        },
       });
 
       if (contact?.optedOut) {
@@ -197,8 +200,11 @@ export class WhatsAppService {
       // Obtém credenciais da conta (ou auto-detecta)
       const credentials = await this.getCredentials(accountId, sendTemplateDto.to);
 
-      const contact = await this.prisma.contact.findUnique({
-        where: { phoneE164: sendTemplateDto.to },
+      const contact = await this.prisma.contact.findFirst({
+        where: { 
+          phoneE164: sendTemplateDto.to,
+          whatsappAccountId: credentials.accountId || null,
+        },
       });
 
       if (contact?.optedOut) {
@@ -228,7 +234,7 @@ export class WhatsAppService {
       const elapsed = Date.now() - started;
 
       // Save to database
-      await this.saveOutboundTemplate(sendTemplateDto, response.data.messages[0].id);
+      await this.saveOutboundTemplate(sendTemplateDto, response.data.messages[0].id, credentials.accountId);
 
       this.logger.log(`outbound_template_ok to=${sendTemplateDto.to} template=${sendTemplateDto.templateName} waId=${response.data?.messages?.[0]?.id} ms=${elapsed}`);
       return response.data;
@@ -362,9 +368,12 @@ export class WhatsAppService {
     }
   }
 
-  private async isWithin24HourWindow(phoneNumber: string): Promise<boolean> {
-    const contact = await this.prisma.contact.findUnique({
-      where: { phoneE164: phoneNumber },
+  private async isWithin24HourWindow(phoneNumber: string, whatsappAccountId?: string): Promise<boolean> {
+    const contact = await this.prisma.contact.findFirst({
+      where: { 
+        phoneE164: phoneNumber,
+        whatsappAccountId: whatsappAccountId || null,
+      },
       include: {
         conversations: {
           include: {
@@ -398,8 +407,11 @@ export class WhatsAppService {
 
   private async saveOutboundMessage(sendMessageDto: SendMessageDto, waMessageId: string, resolvedAccountId?: string) {
     // Find or create contact
-    let contact = await this.prisma.contact.findUnique({
-      where: { phoneE164: sendMessageDto.to },
+    let contact = await this.prisma.contact.findFirst({
+      where: { 
+        phoneE164: sendMessageDto.to,
+        whatsappAccountId: resolvedAccountId || null,
+      },
     });
 
     if (!contact) {
@@ -407,6 +419,7 @@ export class WhatsAppService {
         data: {
           name: sendMessageDto.to,
           phoneE164: sendMessageDto.to,
+          whatsappAccountId: resolvedAccountId || null,
           tags: JSON.stringify([]),
         },
       });
@@ -495,10 +508,13 @@ export class WhatsAppService {
     });
   }
 
-  private async saveOutboundTemplate(sendTemplateDto: SendTemplateDto, waMessageId: string) {
+  private async saveOutboundTemplate(sendTemplateDto: SendTemplateDto, waMessageId: string, resolvedAccountId?: string) {
     // Similar to saveOutboundMessage but for templates
-    let contact = await this.prisma.contact.findUnique({
-      where: { phoneE164: sendTemplateDto.to },
+    let contact = await this.prisma.contact.findFirst({
+      where: { 
+        phoneE164: sendTemplateDto.to,
+        whatsappAccountId: resolvedAccountId || null,
+      },
     });
 
     if (!contact) {
@@ -506,6 +522,7 @@ export class WhatsAppService {
         data: {
           name: sendTemplateDto.to,
           phoneE164: sendTemplateDto.to,
+          whatsappAccountId: resolvedAccountId || null,
           tags: JSON.stringify([]),
         },
       });
@@ -571,9 +588,12 @@ export class WhatsAppService {
     });
   }
 
-  async processOptOut(phoneNumber: string) {
-    const contact = await this.prisma.contact.findUnique({
-      where: { phoneE164: phoneNumber },
+  async processOptOut(phoneNumber: string, whatsappAccountId?: string) {
+    const contact = await this.prisma.contact.findFirst({
+      where: { 
+        phoneE164: phoneNumber,
+        whatsappAccountId: whatsappAccountId || null,
+      },
     });
 
     if (contact) {

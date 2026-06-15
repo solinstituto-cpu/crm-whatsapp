@@ -81,7 +81,12 @@ export class WebhookService {
 
     // Find or create contact
     let contact = await this.prisma.contact.findUnique({
-      where: { phoneE164: phoneNumber },
+      where: {
+        phoneE164_whatsappAccountId: {
+          phoneE164: phoneNumber,
+          whatsappAccountId: whatsappAccountId || null,
+        }
+      },
     });
 
     if (!contact) {
@@ -92,6 +97,7 @@ export class WebhookService {
         data: {
           name: contactName,
           phoneE164: phoneNumber,
+          whatsappAccountId: whatsappAccountId || null,
           tags: JSON.stringify([]),
           lastMessageAt: new Date(),
           firstContactAt: new Date(), // Primeira vez que o contato enviou mensagem

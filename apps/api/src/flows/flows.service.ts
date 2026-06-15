@@ -859,7 +859,7 @@ export class FlowsService {
             this.logger.log(`[COLLECT_DATA] Saved to contact customFields: ${config.saveAs} = "${userMessage}"`);
           } else {
             // Buscar contato pelo telefone da sessão
-            const sessionContact = await this.prisma.contact.findUnique({
+            const sessionContact = await this.prisma.contact.findFirst({
               where: { phoneE164: session.contactId },
             });
             if (sessionContact) {
@@ -1072,7 +1072,7 @@ export class FlowsService {
         
         if (!contact && session.contactId) {
           // Buscar contato se não foi passado
-          contact = await this.prisma.contact.findUnique({
+          contact = await this.prisma.contact.findFirst({
             where: { phoneE164: session.contactId },
           });
         }

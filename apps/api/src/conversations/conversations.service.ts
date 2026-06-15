@@ -186,7 +186,7 @@ export class ConversationsService {
     this.logger.log(`Finding or creating conversation for ${phoneE164}`);
 
     // Primeiro, verificar se existe um contato com esse telefone
-    let contact = await this.prisma.contact.findUnique({
+    let contact = await this.prisma.contact.findFirst({
       where: { phoneE164 },
     });
 

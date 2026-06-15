@@ -32,15 +32,17 @@ export class ContactsService {
       tags: createContactDto.tags ? JSON.stringify(createContactDto.tags) : '[]',
       // Responsável
       assignedToId: createContactDto.assignedToId || null,
+      whatsappAccountId: createContactDto.whatsappAccountId || null,
     };
     
     const contact = await this.prisma.contact.create({ data });
     
-    // Vincular conversas órfãs com o mesmo número
+    // Vincular conversas órfãs com o mesmo número e conta
     await this.prisma.conversation.updateMany({
       where: {
         phoneE164: createContactDto.phoneE164,
         contactId: null,
+        whatsappAccountId: createContactDto.whatsappAccountId || null,
       },
       data: {
         contactId: contact.id,
@@ -64,6 +66,7 @@ export class ContactsService {
       state?: string;
       interest?: string;
       assignedToId?: string;
+      whatsappAccountId?: string;
     }
   ) {
     try {
@@ -111,17 +114,25 @@ export class ContactsService {
       if (filters?.assignedToId) {
         conditions.push({ assignedToId: filters.assignedToId });
       }
+      if (filters?.whatsappAccountId) {
+        conditions.push({ whatsappAccountId: filters.whatsappAccountId });
+      }
       
       const where = conditions.length > 0 ? { AND: conditions } : {};
 
-      // Contar total geral (sem filtros) para estatísticas
-      const totalGeral = await this.prisma.contact.count();
-      const ativos = await this.prisma.contact.count({ where: { optedOut: false } });
+      // Contar total geral (sem filtros) para estatísticas da conta específica
+      const statsWhere: any = {};
+      if (filters?.whatsappAccountId) {
+        statsWhere.whatsappAccountId = filters.whatsappAccountId;
+      }
+      const totalGeral = await this.prisma.contact.count({ where: statsWhere });
+      const ativos = await this.prisma.contact.count({ where: { optedOut: false, ...statsWhere } });
       const novos7d = await this.prisma.contact.count({
         where: {
           createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
+          },
+          ...statsWhere
         }
       });
 
@@ -196,10 +207,15 @@ export class ContactsService {
     return Array.from(tagSet).filter(Boolean).sort();
   }
 
-  // Buscar contato pelo telefone
-  async findByPhone(phoneE164: string) {
+  // Buscar contato pelo telefone e conta do WhatsApp
+  async findByPhone(phoneE164: string, whatsappAccountId?: string) {
     return this.prisma.contact.findUnique({
-      where: { phoneE164 },
+      where: { 
+        phoneE164_whatsappAccountId: {
+          phoneE164,
+          whatsappAccountId: whatsappAccountId || null,
+        }
+      },
     });
   }
 

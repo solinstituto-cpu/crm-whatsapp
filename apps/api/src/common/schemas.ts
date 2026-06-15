@@ -36,6 +36,7 @@ export const CreateContactSchema = z.object({
   tags: z.array(z.string()).default([]),
   assignedToId: z.string().optional(),
   optedOut: z.boolean().optional(),
+  whatsappAccountId: z.string().optional().nullable(),
   // Campos personalizados (coletados via automação)
   customFields: z.union([z.string(), z.record(z.string())]).optional().nullable(),
 });

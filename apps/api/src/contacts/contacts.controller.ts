@@ -49,8 +49,9 @@ export class ContactsController {
     @Query('state') state?: string,
     @Query('interest') interest?: string,
     @Query('assignedToId') assignedToId?: string,
+    @Query('whatsappAccountId') whatsappAccountId?: string,
   ) {
-    const filters = { customerStatus, source, tag, city, state, interest, assignedToId };
+    const filters = { customerStatus, source, tag, city, state, interest, assignedToId, whatsappAccountId };
     return this.contactsService.findAll(page, limit, search, filters);
   }
 
@@ -86,8 +87,8 @@ export class ContactsController {
   // IMPORTAÇÃO DE CONTATOS VIA CSV
   // ==========================================
   @Post('import')
-  async importContacts(@Body() body: { contacts: Array<{ name: string; phone: string; tags?: string }> }) {
-    this.logger.log(`Importando ${body.contacts?.length || 0} contatos`);
+  async importContacts(@Body() body: { whatsappAccountId?: string; contacts: Array<{ name: string; phone: string; tags?: string }> }) {
+    this.logger.log(`Importando ${body.contacts?.length || 0} contatos para conta: ${body.whatsappAccountId || 'global/nenhuma'}`);
     
     if (!body.contacts || !Array.isArray(body.contacts)) {
       throw new BadRequestException('Lista de contatos inválida');
@@ -128,8 +129,8 @@ export class ContactsController {
           tags.push(...tagList);
         }
 
-        // Verificar se contato já existe
-        const existing = await this.contactsService.findByPhone(phoneE164);
+        // Verificar se contato já existe para a conta de WhatsApp específica
+        const existing = await this.contactsService.findByPhone(phoneE164, body.whatsappAccountId);
         
         if (existing) {
           // Atualizar tags do contato existente se houver novas tags
@@ -139,16 +140,17 @@ export class ContactsController {
             await this.contactsService.update(existing.id, { tags: newTags });
           }
           results.success++;
-          this.logger.log(`Contato atualizado: ${phoneE164}`);
+          this.logger.log(`Contato atualizado: ${phoneE164} na conta ${body.whatsappAccountId || 'global'}`);
         } else {
           // Criar novo contato
           await this.contactsService.create({
             name: contact.name,
             phoneE164,
             tags,
+            whatsappAccountId: body.whatsappAccountId || null,
           });
           results.success++;
-          this.logger.log(`Contato criado: ${phoneE164}`);
+          this.logger.log(`Contato criado: ${phoneE164} na conta ${body.whatsappAccountId || 'global'}`);
         }
       } catch (error) {
         results.failed++;
