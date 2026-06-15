@@ -247,8 +247,8 @@ export class WhatsAppController {
       status: 'ok', 
       service: 'whatsapp',
       timestamp: new Date().toISOString(),
-      version: '2.1.0-multi-account',
-      build: '20260612',
+      version: '2.2.0-contacts-per-account',
+      build: '20260615',
     };
   }
 
