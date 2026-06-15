@@ -246,6 +246,13 @@ export default function InboxPage() {
       localStorage.setItem('inboxFilters', JSON.stringify(inboxFilters))
     }
   }, [inboxFilters])
+  
+  // Persistir conta selecionada no localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('crm_selectedAccountId', selectedAccountId)
+    }
+  }, [selectedAccountId])
   const [campaigns, setCampaigns] = useState<{id: string, name: string}[]>([])
   const [allTags, setAllTags] = useState<string[]>([])
   const [users, setUsers] = useState<{id: string, name: string, color?: string}[]>([])

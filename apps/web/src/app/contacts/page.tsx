@@ -202,11 +202,14 @@ export default function ContactsPage() {
   }, [status])
 
   useEffect(() => {
-    fetchContacts(1, false, true) // true = carga inicial
-    fetchFieldOptions()
-    fetchAllTags()
-    fetchUsers()
-    fetchWhatsAppAccounts()
+    const initialize = async () => {
+      await fetchWhatsAppAccounts()
+      fetchFieldOptions()
+      fetchAllTags()
+      fetchUsers()
+      setInitialLoadDone(true)
+    }
+    initialize()
   }, [])
   
   // Recarregar quando filtros, busca ou conta selecionada mudar (com debounce)
