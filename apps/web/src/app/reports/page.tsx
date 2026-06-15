@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
+import { getApiUrl } from '@/lib/api-config'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   BarChart3,
@@ -55,11 +56,12 @@ interface ActivityRow {
 }
 
 // Garantir que API_URL sempre tenha /api no final
-const getApiUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`
+const getReportsApiUrl = () => {
+  const url = getApiUrl()
+  if (!url) return '/api'
+  return url.endsWith('/api') ? url : `${url}/api`
 }
-const API_URL = getApiUrl()
+const API_URL = getReportsApiUrl()
 
 export default function ReportsPage() {
   const { data: session, status } = useSession()

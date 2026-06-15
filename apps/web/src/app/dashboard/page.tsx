@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
+import { getApiUrl } from '@/lib/api-config'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   Users, 
@@ -68,7 +69,7 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/reports/dashboard`)
       
       if (response.ok) {
@@ -108,7 +109,7 @@ export default function DashboardPage() {
 
   const fetchOnlineUsers = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/users/online`, {
         headers: {
           'Authorization': `Bearer ${session?.user?.token}`,
