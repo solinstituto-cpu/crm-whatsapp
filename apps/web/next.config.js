@@ -18,9 +18,9 @@ const nextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "your-nextauth-secret-key-here-change-in-production",
-    // On Vercel: frontend calls the Render API directly (bypasses proxy)
-    // Locally: use env var or empty string (relative paths to localhost)
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (process.env.VERCEL ? RENDER_API_URL : ''),
+    // On Vercel: FORCE correct Render API URL (ignoring env var which is set to wrong service)
+    // Locally: use env var or empty string for relative paths
+    NEXT_PUBLIC_API_URL: process.env.VERCEL ? RENDER_API_URL : (process.env.NEXT_PUBLIC_API_URL || ''),
   },
   async rewrites() {
     // Rewrite proxy for local development and fallback
