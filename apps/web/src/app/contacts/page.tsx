@@ -285,7 +285,7 @@ export default function ContactsPage() {
   const fetchWhatsAppAccounts = async () => {
     const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
-    const token = (session?.user as any)?.token
+    const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
     try {
       const url = userId 
         ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`

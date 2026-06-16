@@ -111,7 +111,7 @@ export default function TemplatesPage() {
   const fetchWhatsAppAccounts = async () => {
     const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
-    const token = (session?.user as any)?.token
+    const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
     try {
       const url = userId 
         ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
@@ -161,7 +161,7 @@ export default function TemplatesPage() {
       const accountIdParam = selectedAccountId ? `&accountId=${selectedAccountId}` : ''
       console.log('Fetching templates from:', `${apiUrl}/api/templates?limit=100${accountIdParam}`)
       
-      const token = (session?.user as any)?.token
+      const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
       const response = await fetch(`${apiUrl}/api/templates${accountIdParam ? '?' + accountIdParam.substring(1) : ''}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ export default function TemplatesPage() {
         })
       }
 
-      const token = (session?.user as any)?.token
+      const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
       const response = await fetch(`${apiUrl}/api/templates`, {
         method: 'POST',
         headers: {
@@ -288,7 +288,7 @@ export default function TemplatesPage() {
 
     try {
       const apiUrl = getApiUrl()
-      const token = (session?.user as any)?.token
+      const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
       const response = await fetch(`${apiUrl}/api/templates/${templateName}`, {
         method: 'DELETE',
         headers: {

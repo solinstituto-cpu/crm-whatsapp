@@ -251,6 +251,7 @@ export default function CampaignsPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchCampaigns()
+      fetchStats()
     }
   }, [filterAccountId, filterStatus])
   
@@ -259,7 +260,7 @@ export default function CampaignsPage() {
     try {
       const apiUrl = getApiUrl()
       const userId = (session?.user as any)?.id
-      const token = (session?.user as any)?.token
+      const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
       const url = userId 
         ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
         : `${apiUrl}/api/whatsapp-accounts`
@@ -463,7 +464,10 @@ export default function CampaignsPage() {
   const fetchStats = async () => {
     try {
       const apiUrl = getApiUrl()
-      const response = await fetch(`${apiUrl}/api/campaigns/stats`)
+      const url = filterAccountId 
+        ? `${apiUrl}/api/campaigns/stats?accountId=${filterAccountId}`
+        : `${apiUrl}/api/campaigns/stats`
+      const response = await fetch(url)
       if (response.ok) {
         setStats(await response.json())
       }

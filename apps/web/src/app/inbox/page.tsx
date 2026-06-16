@@ -603,7 +603,7 @@ export default function InboxPage() {
     try {
       const apiUrl = getApiUrl()
       const accountId = selectedConversation?.whatsappAccountId || selectedAccountId || ''
-      const token = (session?.user as any)?.token
+      const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
       const url = accountId
         ? `${apiUrl}/api/templates?status=APPROVED&accountId=${accountId}`
         : `${apiUrl}/api/templates?status=APPROVED`
@@ -1034,7 +1034,7 @@ export default function InboxPage() {
   const fetchWhatsAppAccounts = async () => {
     const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
-    const token = (session?.user as any)?.token
+    const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
     try {
       // Passa userId para filtrar contas que o usuário pode acessar
       const url = userId 

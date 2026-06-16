@@ -655,19 +655,21 @@ export class CampaignsService {
   // ESTATÍSTICAS
   // ==========================================
 
-  async getStats() {
+  async getStats(accountId?: string) {
+    const whereClause = accountId ? { whatsappAccountId: accountId } : {};
     const [total, draft, scheduled, running, completed, cancelled] = await Promise.all([
-      this.prisma.campaign.count(),
-      this.prisma.campaign.count({ where: { status: 'DRAFT' } }),
-      this.prisma.campaign.count({ where: { status: 'SCHEDULED' } }),
-      this.prisma.campaign.count({ where: { status: 'RUNNING' } }),
-      this.prisma.campaign.count({ where: { status: 'COMPLETED' } }),
-      this.prisma.campaign.count({ where: { status: 'CANCELLED' } }),
+      this.prisma.campaign.count({ where: whereClause }),
+      this.prisma.campaign.count({ where: { ...whereClause, status: 'DRAFT' } }),
+      this.prisma.campaign.count({ where: { ...whereClause, status: 'SCHEDULED' } }),
+      this.prisma.campaign.count({ where: { ...whereClause, status: 'RUNNING' } }),
+      this.prisma.campaign.count({ where: { ...whereClause, status: 'COMPLETED' } }),
+      this.prisma.campaign.count({ where: { ...whereClause, status: 'CANCELLED' } }),
     ]);
 
     // Totais de mensagens
     const messageStats = await this.prisma.campaignMessage.groupBy({
       by: ['status'],
+      where: accountId ? { campaign: { whatsappAccountId: accountId } } : undefined,
       _count: { status: true },
     });
 

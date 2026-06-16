@@ -37,8 +37,8 @@ export class CampaignsController {
   }
 
   @Get('stats')
-  async getStats() {
-    return this.campaignsService.getStats();
+  async getStats(@Query('accountId') accountId?: string) {
+    return this.campaignsService.getStats(accountId);
   }
 
   @Get(':id')
