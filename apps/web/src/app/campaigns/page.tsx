@@ -475,6 +475,12 @@ export default function CampaignsPage() {
   const fetchPreviewContacts = async () => {
     try {
       const apiUrl = getApiUrl()
+      let finalAccountId = selectedAccountId
+      if (!finalAccountId && whatsappAccounts.length > 0) {
+        const defaultAcc = whatsappAccounts.find((a: any) => a.isDefault) || whatsappAccounts[0]
+        finalAccountId = defaultAcc.id
+      }
+
       const response = await fetch(`${apiUrl}/api/campaigns/preview-contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -482,7 +488,7 @@ export default function CampaignsPage() {
           filterTags: formFilterTags.length > 0 ? formFilterTags : undefined,
           filterStatus: formFilterStatus || undefined,
           excludeOptOut: formExcludeOptOut,
-          whatsappAccountId: selectedAccountId || undefined,
+          whatsappAccountId: finalAccountId || undefined,
         }),
       })
       if (response.ok) {
@@ -548,6 +554,12 @@ export default function CampaignsPage() {
     setSaving(true)
     try {
       const apiUrl = getApiUrl()
+      let finalAccountId = selectedAccountId
+      if (!finalAccountId && whatsappAccounts.length > 0) {
+        const defaultAcc = whatsappAccounts.find((a: any) => a.isDefault) || whatsappAccounts[0]
+        finalAccountId = defaultAcc.id
+      }
+
       const response = await fetch(`${apiUrl}/api/campaigns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -566,7 +578,7 @@ export default function CampaignsPage() {
           sendStartHour: formSendStartHour,
           sendEndHour: formSendEndHour,
           sendDays: formSendDays.length > 0 ? formSendDays.join(',') : undefined,
-          whatsappAccountId: selectedAccountId || undefined, // Conta WhatsApp selecionada
+          whatsappAccountId: finalAccountId || undefined, // Conta WhatsApp selecionada
         }),
       })
 

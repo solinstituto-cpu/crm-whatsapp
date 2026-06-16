@@ -1958,7 +1958,7 @@ export default function SettingsPage() {
   const [whatsappConfig, setWhatsappConfig] = useState({
     accessToken: process.env.NEXT_PUBLIC_WHATSAPP_ACCESS_TOKEN || '',
     phoneNumberId: process.env.NEXT_PUBLIC_WHATSAPP_PHONE_NUMBER_ID || '',
-    webhookUrl: getApiUrl() ? `${getApiUrl()}/api/wa/webhook` : 'https://crm-api-laxv.onrender.com/api/wa/webhook',
+    webhookUrl: 'https://crm-api-laxv.onrender.com/api/wa/webhook', // Default estático seguro
     verifyToken: 'sol_instituto_verify_2025',
     businessId: process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_ID || '119555137908268'
   })
@@ -2006,6 +2006,12 @@ export default function SettingsPage() {
       } catch (e) {
         console.log('Erro ao carregar config WhatsApp')
       }
+    } else {
+      const apiUrl = getApiUrl()
+      setWhatsappConfig(prev => ({
+        ...prev,
+        webhookUrl: apiUrl ? `${apiUrl}/api/wa/webhook` : 'https://crm-api-laxv.onrender.com/api/wa/webhook'
+      }))
     }
     
     if (savedNotifications) {
