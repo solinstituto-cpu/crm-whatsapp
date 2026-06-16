@@ -26,11 +26,13 @@ export class CampaignsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: string,
+    @Query('accountId') accountId?: string,
   ) {
     return this.campaignsService.findAll(
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,
       status,
+      accountId,
     );
   }
 

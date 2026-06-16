@@ -557,9 +557,24 @@ export class WhatsAppService {
     // Se não veio bodyText do frontend, buscar template original do Meta
     if (!sendTemplateDto.bodyText) {
       try {
-        const templatesUrl = `https://graph.facebook.com/${this.apiVersion}/${this.configService.get('WHATSAPP_BUSINESS_ACCOUNT_ID')}/message_templates?name=${sendTemplateDto.templateName}`;
+        // Usar credenciais da conta específica se disponível
+        let wabaId = this.configService.get('WHATSAPP_BUSINESS_ACCOUNT_ID');
+        let token = this.defaultAccessToken;
+        
+        if (resolvedAccountId) {
+          const account = await this.prisma.whatsAppAccount.findUnique({
+            where: { id: resolvedAccountId },
+            select: { businessId: true, accessToken: true },
+          });
+          if (account) {
+            wabaId = account.businessId || wabaId;
+            token = account.accessToken || token;
+          }
+        }
+        
+        const templatesUrl = `https://graph.facebook.com/${this.apiVersion}/${wabaId}/message_templates?name=${sendTemplateDto.templateName}`;
         const response = await axios.get(templatesUrl, {
-          headers: { 'Authorization': `Bearer ${this.accessToken}` },
+          headers: { 'Authorization': `Bearer ${token}` },
         });
         const template = response.data?.data?.[0];
         if (template) {

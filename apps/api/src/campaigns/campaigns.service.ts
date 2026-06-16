@@ -16,12 +16,14 @@ export class CampaignsService {
   // CRUD DE CAMPANHAS
   // ==========================================
 
-  async findAll(page = 1, limit = 10, status?: string) {
+  async findAll(page = 1, limit = 10, status?: string, accountId?: string) {
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
     
-    const where = status ? { status } : {};
+    const where: any = {};
+    if (status) where.status = status;
+    if (accountId) where.whatsappAccountId = accountId;
 
     const [campaigns, total] = await Promise.all([
       this.prisma.campaign.findMany({
@@ -32,7 +34,10 @@ export class CampaignsService {
         include: {
           _count: {
             select: { messages: true }
-          }
+          },
+          whatsappAccount: {
+            select: { id: true, name: true, phoneNumber: true },
+          },
         }
       }),
       this.prisma.campaign.count({ where }),

@@ -55,6 +55,8 @@ interface Campaign {
   failedCount: number
   sendRatePerMinute: number
   createdAt: string
+  whatsappAccountId?: string
+  whatsappAccount?: { id: string; name: string; phoneNumber: string }
 }
 
 interface Template {
@@ -166,6 +168,13 @@ export default function CampaignsPage() {
       fetchWhatsAppAccounts()
     }
   }, [status])
+
+  // Re-fetch quando muda o filtro de conta ou status
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchCampaigns()
+    }
+  }, [filterAccountId, filterStatus])
   
   // Buscar contas WhatsApp (multi-números)
   const fetchWhatsAppAccounts = async () => {
@@ -241,6 +250,7 @@ export default function CampaignsPage() {
       const apiUrl = getApiUrl()
       const params = new URLSearchParams({ limit: '100' })
       if (filterStatus) params.append('status', filterStatus)
+      if (filterAccountId) params.append('accountId', filterAccountId)
       
       const response = await fetch(`${apiUrl}/api/campaigns?${params}`)
       if (response.ok) {
@@ -574,14 +584,11 @@ export default function CampaignsPage() {
   }
 
   const filteredCampaigns = campaigns.filter(c => {
-    // Filtro por texto
+    // Filtro por texto (filtragem por conta já é server-side)
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.templateName.toLowerCase().includes(searchTerm.toLowerCase())
     
-    // Filtro por conta WhatsApp
-    const matchesAccount = !filterAccountId || (c as any).whatsappAccountId === filterAccountId
-    
-    return matchesSearch && matchesAccount
+    return matchesSearch
   })
 
   if (status === 'loading' || loading) {
