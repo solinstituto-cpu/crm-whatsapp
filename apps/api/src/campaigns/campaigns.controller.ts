@@ -126,6 +126,7 @@ export class CampaignsController {
     filterStatus?: string;
     filterSource?: string;
     excludeOptOut?: boolean;
+    whatsappAccountId?: string;
   }) {
     return this.campaignsService.previewContacts(body);
   }

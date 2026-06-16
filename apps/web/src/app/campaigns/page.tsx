@@ -152,8 +152,86 @@ export default function CampaignsPage() {
   
   // Contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
-  const [filterAccountId, setFilterAccountId] = useState<string>('')
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('crm_selectedAccountId') || ''
+    }
+    return ''
+  })
+  const [filterAccountId, setFilterAccountId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('crm_selectedAccountId') || ''
+    }
+    return ''
+  })
+
+  // Persistir conta selecionada no localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && selectedAccountId) {
+      localStorage.setItem('crm_selectedAccountId', selectedAccountId)
+    }
+  }, [selectedAccountId])
+
+  // Persistir filtro de conta no localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && filterAccountId) {
+      localStorage.setItem('crm_selectedAccountId', filterAccountId)
+    }
+  }, [filterAccountId])
+
+  // Sincronizar conta selecionada quando voltar à página ou mudar em outra aba
+  useEffect(() => {
+    const syncAccountFromStorage = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('crm_selectedAccountId')
+        if (stored) {
+          if (stored !== selectedAccountId) {
+            setSelectedAccountId(stored)
+          }
+          if (stored !== filterAccountId) {
+            setFilterAccountId(stored)
+          }
+        }
+      }
+    }
+    
+    // Quando outra aba altera localStorage
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'crm_selectedAccountId' && e.newValue) {
+        if (e.newValue !== selectedAccountId) {
+          setSelectedAccountId(e.newValue)
+        }
+        if (e.newValue !== filterAccountId) {
+          setFilterAccountId(e.newValue)
+        }
+      }
+    }
+    
+    // Quando a página fica visível novamente (navegação SPA)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncAccountFromStorage()
+      }
+    }
+    
+    // Quando a janela recebe foco
+    const handleFocus = () => {
+      syncAccountFromStorage()
+    }
+    
+    window.addEventListener('storage', handleStorage)
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', handleFocus)
+    
+    // Sincronizar imediatamente ao montar
+    syncAccountFromStorage()
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [selectedAccountId, filterAccountId])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -161,7 +239,6 @@ export default function CampaignsPage() {
     }
     if (status === 'authenticated') {
       fetchCampaigns()
-      fetchTemplates()
       fetchStats()
       fetchCustomFields()
       fetchAvailableTags()
@@ -193,16 +270,29 @@ export default function CampaignsPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setWhatsappAccounts(data.map((a: any) => ({
+        const accounts = data.map((a: any) => ({
           id: a.id,
           name: a.name,
           phoneNumber: a.phoneNumber || '',
           isDefault: a.isDefault
-        })))
-        // Selecionar conta padrão automaticamente
-        const defaultAccount = data.find((a: any) => a.isDefault)
-        if (defaultAccount && !selectedAccountId) {
-          setSelectedAccountId(defaultAccount.id)
+        }))
+        setWhatsappAccounts(accounts)
+        
+        // Restaurar do localStorage (sincronizar)
+        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
+        if (accounts.length > 0) {
+          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
+          if (savedAccount) {
+            setSelectedAccountId(savedAccount.id)
+            setFilterAccountId(savedAccount.id)
+            fetchTemplates(savedAccount.id)
+          } else {
+            const defaultAcc = accounts.find((a: any) => a.isDefault)
+            const activeId = defaultAcc?.id || accounts[0].id
+            setSelectedAccountId(activeId)
+            setFilterAccountId(activeId)
+            fetchTemplates(activeId)
+          }
         }
       }
     } catch (error) {
@@ -336,7 +426,11 @@ export default function CampaignsPage() {
       const formData = new FormData()
       formData.append('file', file)
       
-      const response = await fetch(`${apiUrl}/api/wa/upload-media`, {
+      const url = selectedAccountId 
+        ? `${apiUrl}/api/wa/upload-media?accountId=${selectedAccountId}`
+        : `${apiUrl}/api/wa/upload-media`
+      
+      const response = await fetch(url, {
         method: 'POST',
         body: formData,
       })
@@ -387,6 +481,7 @@ export default function CampaignsPage() {
           filterTags: formFilterTags.length > 0 ? formFilterTags : undefined,
           filterStatus: formFilterStatus || undefined,
           excludeOptOut: formExcludeOptOut,
+          whatsappAccountId: selectedAccountId || undefined,
         }),
       })
       if (response.ok) {

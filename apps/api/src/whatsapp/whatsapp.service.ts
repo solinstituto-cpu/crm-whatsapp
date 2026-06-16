@@ -727,7 +727,7 @@ export class WhatsAppService {
    * Upload de mídia para a API do Meta
    * Retorna o media_id que pode ser usado nos templates
    */
-  async uploadMedia(file: Buffer, mimeType: string, filename: string): Promise<{ mediaId: string }> {
+  async uploadMedia(file: Buffer, mimeType: string, filename: string, accountId?: string): Promise<{ mediaId: string }> {
     try {
       const FormData = require('form-data');
       const form = new FormData();
@@ -735,16 +735,18 @@ export class WhatsAppService {
       form.append('messaging_product', 'whatsapp');
       form.append('type', mimeType);
 
-      const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/media`;
+      const credentials = await this.getCredentials(accountId);
+
+      const url = `https://graph.facebook.com/${this.apiVersion}/${credentials.phoneNumberId}/media`;
       
       const response = await axios.post(url, form, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${credentials.accessToken}`,
           ...form.getHeaders(),
         },
       });
 
-      this.logger.log(`Media uploaded successfully: ${response.data.id}`);
+      this.logger.log(`Media uploaded successfully: ${response.data.id} (account: ${credentials.accountId || 'default'})`);
       return { mediaId: response.data.id };
     } catch (error) {
       const data = (error as any)?.response?.data;
@@ -757,18 +759,19 @@ export class WhatsAppService {
    * Buscar URL de mídia do WhatsApp pelo media_id
    * Retorna a URL temporária para download (válida por alguns minutos)
    */
-  async getMediaUrl(mediaId: string): Promise<string | null> {
+  async getMediaUrl(mediaId: string, accountId?: string): Promise<string | null> {
     try {
+      const credentials = await this.getCredentials(accountId);
       const url = `https://graph.facebook.com/${this.apiVersion}/${mediaId}`;
       
       const response = await axios.get(url, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${credentials.accessToken}`,
         },
       });
 
       if (response.data?.url) {
-        this.logger.log(`Media URL retrieved for ${mediaId}`);
+        this.logger.log(`Media URL retrieved for ${mediaId} (account: ${credentials.accountId || 'default'})`);
         return response.data.url;
       }
       
@@ -783,14 +786,16 @@ export class WhatsAppService {
    * Baixar mídia do WhatsApp e retornar como Buffer
    * Usa a URL temporária que requer autenticação
    */
-  async downloadMedia(mediaId: string): Promise<{ buffer: Buffer; mimeType: string; } | null> {
+  async downloadMedia(mediaId: string, accountId?: string): Promise<{ buffer: Buffer; mimeType: string; } | null> {
     try {
+      const credentials = await this.getCredentials(accountId);
+      
       // Primeiro, obter a URL temporária
       const mediaInfoUrl = `https://graph.facebook.com/${this.apiVersion}/${mediaId}`;
       
       const infoResponse = await axios.get(mediaInfoUrl, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${credentials.accessToken}`,
         },
       });
 
@@ -805,12 +810,12 @@ export class WhatsAppService {
       // Baixar o arquivo binário
       const downloadResponse = await axios.get(downloadUrl, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${credentials.accessToken}`,
         },
         responseType: 'arraybuffer',
       });
 
-      this.logger.log(`✅ Media downloaded: ${mediaId} (${mimeType}, ${downloadResponse.data.length} bytes)`);
+      this.logger.log(`✅ Media downloaded: ${mediaId} (${mimeType}, ${downloadResponse.data.length} bytes, account: ${credentials.accountId || 'default'})`);
       
       return {
         buffer: Buffer.from(downloadResponse.data),

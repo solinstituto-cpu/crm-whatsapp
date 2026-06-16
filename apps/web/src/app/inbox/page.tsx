@@ -652,7 +652,12 @@ export default function InboxPage() {
       const formData = new FormData()
       formData.append('file', file)
       
-      const response = await fetch(`${apiUrl}/api/wa/upload-media`, {
+      const accountId = selectedConversation?.whatsappAccountId || selectedAccountId || ''
+      const url = accountId
+        ? `${apiUrl}/api/wa/upload-media?accountId=${accountId}`
+        : `${apiUrl}/api/wa/upload-media`
+      
+      const response = await fetch(url, {
         method: 'POST',
         body: formData,
       })

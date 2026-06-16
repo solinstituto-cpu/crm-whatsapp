@@ -173,9 +173,16 @@ export class CampaignsService {
     filterSource?: string;
     filterCustomFields?: Record<string, string>; // { fieldName: value }
     excludeOptOut?: boolean;
+    whatsappAccountId?: string;
   }) {
-    // Buscar todos os contatos e filtrar no código para evitar problemas com Prisma
+    const where: any = {};
+    if (filters.whatsappAccountId) {
+      where.whatsappAccountId = filters.whatsappAccountId;
+    }
+
+    // Buscar todos os contatos da conta e filtrar no código para evitar problemas com Prisma
     let allContacts = await this.prisma.contact.findMany({
+      where,
       select: {
         id: true,
         name: true,

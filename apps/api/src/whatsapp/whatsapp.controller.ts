@@ -210,19 +210,26 @@ export class WhatsAppController {
   // Upload media to Meta API
   @Post('upload-media')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadMedia(@UploadedFile() file: any) {
+  async uploadMedia(
+    @UploadedFile() file: any,
+    @Query('accountId') accountId?: string,
+  ) {
     if (!file) {
       throw new Error('No file uploaded');
     }
-    return this.whatsappService.uploadMedia(file.buffer, file.mimetype, file.originalname);
+    return this.whatsappService.uploadMedia(file.buffer, file.mimetype, file.originalname, accountId);
   }
   
   // Proxy para servir mídias do WhatsApp (áudios, imagens, vídeos, documentos)
   // Baixa a mídia do WhatsApp usando autenticação e retorna para o frontend
   @Get('media/:mediaId')
-  async getMedia(@Param('mediaId') mediaId: string, @Res() res: Response) {
+  async getMedia(
+    @Param('mediaId') mediaId: string,
+    @Res() res: Response,
+    @Query('accountId') accountId?: string,
+  ) {
     try {
-      const media = await this.whatsappService.downloadMedia(mediaId);
+      const media = await this.whatsappService.downloadMedia(mediaId, accountId);
       
       if (!media) {
         return res.status(404).json({ error: 'Media not found or expired' });
