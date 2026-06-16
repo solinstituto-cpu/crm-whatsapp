@@ -106,6 +106,16 @@ export class ConversationsController {
     return this.conversationsService.populateLastIncomingMessageAt();
   }
 
+  /**
+   * Corrigir conversas órfãs sem whatsappAccountId
+   * Copia o whatsappAccountId do contato vinculado para a conversa
+   * POST /api/conversations/fix-accounts
+   */
+  @Post('fix-accounts')
+  fixOrphanedAccounts() {
+    return this.conversationsService.fixOrphanedConversationAccounts();
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.conversationsService.remove(id);

@@ -539,7 +539,14 @@ export class WhatsAppService {
           contactId: contact.id,
           phoneE164: sendTemplateDto.to,
           status: 'OPEN',
+          whatsappAccountId: resolvedAccountId || undefined,
         },
+      });
+    } else if (!conversation.whatsappAccountId && resolvedAccountId) {
+      // Vincular conta à conversa existente que não tem conta (backfill)
+      await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { whatsappAccountId: resolvedAccountId },
       });
     }
 

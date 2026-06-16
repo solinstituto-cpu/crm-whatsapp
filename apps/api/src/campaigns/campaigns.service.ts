@@ -86,8 +86,9 @@ export class CampaignsService {
     sendStartHour?: number;
     sendEndHour?: number;
     sendDays?: string; // "0,1,2,3,4,5,6" (0=Dom, 1=Seg...6=Sab)
+    whatsappAccountId?: string;
   }) {
-    this.logger.log(`Criando campanha: ${data.name}`);
+    this.logger.log(`Criando campanha: ${data.name} (conta: ${data.whatsappAccountId || 'padrão'})`);
     this.logger.log(`templateVariables recebido: ${JSON.stringify(data.templateVariables)?.slice(0, 500)}`);
     
     const campaign = await this.prisma.campaign.create({
@@ -107,11 +108,12 @@ export class CampaignsService {
         sendStartHour: data.sendStartHour,
         sendEndHour: data.sendEndHour,
         sendDays: data.sendDays,
+        whatsappAccountId: data.whatsappAccountId || undefined,
         status: data.scheduledAt ? 'SCHEDULED' : 'DRAFT',
       },
     });
 
-    this.logger.log(`Campanha criada: ${campaign.name} (${campaign.id})`);
+    this.logger.log(`Campanha criada: ${campaign.name} (${campaign.id}) - conta: ${campaign.whatsappAccountId || 'padrão'}`);
     return campaign;
   }
 
@@ -303,6 +305,7 @@ export class CampaignsService {
         filterSource: campaign.filterSource,
         filterCustomFields: campaign.filterCustomFields ? JSON.parse(campaign.filterCustomFields) : undefined,
         excludeOptOut: campaign.excludeOptOut,
+        whatsappAccountId: campaign.whatsappAccountId || undefined,
       };
 
       this.logger.log(`Filtros da campanha: ${JSON.stringify(filters)}`);
@@ -516,7 +519,7 @@ export class CampaignsService {
           templateName: campaign.templateName,
           language: campaign.templateLanguage,
           components: finalComponents,
-        });
+        }, campaign.whatsappAccountId || undefined);
 
         // O WhatsApp retorna o ID em result.messages[0].id
         const waMessageId = result?.messages?.[0]?.id;
@@ -563,8 +566,14 @@ export class CampaignsService {
   }
 
   private async getFilteredContacts(filters: any) {
-    // Buscar todos os contatos e filtrar no código para evitar problemas com Prisma
+    // Buscar contatos filtrados por conta WhatsApp quando disponível
+    const where: any = {};
+    if (filters.whatsappAccountId) {
+      where.whatsappAccountId = filters.whatsappAccountId;
+    }
+
     let allContacts = await this.prisma.contact.findMany({
+      where,
       select: {
         id: true,
         name: true,

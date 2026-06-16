@@ -465,4 +465,52 @@ export class ConversationsService {
       message: `${updated} conversas atualizadas com lastIncomingMessageAt`,
     };
   }
+
+  /**
+   * Corrigir conversas órfãs sem whatsappAccountId
+   * Para cada conversa sem conta, copia o whatsappAccountId do contato vinculado
+   * Isso corrige conversas criadas por campanhas que tinham o bug de não salvar a conta
+   */
+  async fixOrphanedConversationAccounts() {
+    this.logger.log('Corrigindo conversas órfãs sem whatsappAccountId...');
+
+    // Buscar conversas sem whatsappAccountId que têm contato com conta
+    const orphanedConversations = await this.prisma.conversation.findMany({
+      where: {
+        whatsappAccountId: null,
+      },
+      include: {
+        contact: {
+          select: { id: true, name: true, whatsappAccountId: true },
+        },
+      },
+    });
+
+    this.logger.log(`Encontradas ${orphanedConversations.length} conversas sem whatsappAccountId`);
+
+    let fixed = 0;
+    let skipped = 0;
+
+    for (const conv of orphanedConversations) {
+      if (conv.contact?.whatsappAccountId) {
+        await this.prisma.conversation.update({
+          where: { id: conv.id },
+          data: { whatsappAccountId: conv.contact.whatsappAccountId },
+        });
+        fixed++;
+        this.logger.log(`✅ Conversa ${conv.id} (${conv.contact?.name}) → conta ${conv.contact.whatsappAccountId}`);
+      } else {
+        skipped++;
+      }
+    }
+
+    this.logger.log(`Migração concluída: ${fixed} corrigidas, ${skipped} sem conta no contato`);
+
+    return {
+      total: orphanedConversations.length,
+      fixed,
+      skipped,
+      message: `${fixed} conversas vinculadas à conta WhatsApp correta. ${skipped} conversas sem conta no contato (ignoradas).`,
+    };
+  }
 }

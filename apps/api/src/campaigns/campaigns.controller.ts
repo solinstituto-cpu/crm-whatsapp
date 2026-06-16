@@ -76,8 +76,9 @@ export class CampaignsController {
     sendStartHour?: number;
     sendEndHour?: number;
     sendDays?: string; // "0,1,2,3,4,5,6" (0=Dom...6=Sab)
+    whatsappAccountId?: string;
   }) {
-    this.logger.log(`Criando campanha: ${body.name}`);
+    this.logger.log(`Criando campanha: ${body.name} (conta: ${body.whatsappAccountId || 'padrão'})`);
     return this.campaignsService.create({
       ...body,
       scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
@@ -99,6 +100,7 @@ export class CampaignsController {
       excludeOptOut?: boolean;
       scheduledAt?: string;
       sendRatePerMinute?: number;
+      whatsappAccountId?: string;
     },
   ) {
     return this.campaignsService.update(id, {
