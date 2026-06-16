@@ -289,11 +289,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setConfig((prev) => ({ ...prev, sidebarCollapsed }))
   }
 
-  // Evitar flash de tema errado
-  if (!mounted) {
-    return null
-  }
-
   return (
     <ThemeContext.Provider
       value={{

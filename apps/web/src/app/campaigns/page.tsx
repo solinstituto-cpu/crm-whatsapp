@@ -152,18 +152,19 @@ export default function CampaignsPage() {
   
   // Contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
+  const [filterAccountId, setFilterAccountId] = useState<string>('')
+
+  // Carregar conta selecionada no mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_selectedAccountId') || ''
+      const stored = localStorage.getItem('crm_selectedAccountId')
+      if (stored) {
+        setSelectedAccountId(stored)
+        setFilterAccountId(stored)
+      }
     }
-    return ''
-  })
-  const [filterAccountId, setFilterAccountId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_selectedAccountId') || ''
-    }
-    return ''
-  })
+  }, [])
 
   // Persistir conta selecionada no localStorage
   useEffect(() => {

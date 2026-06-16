@@ -214,24 +214,27 @@ export default function InboxPage() {
   
   // Filtros avançados do inbox - persistir no localStorage
   const [showInboxFilters, setShowInboxFilters] = useState(false)
-  const [inboxFilters, setInboxFilters] = useState<{assignedToId: string, campaignId: string, tag: string, unreadOnly: boolean}>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('inboxFilters')
-      if (saved) {
-        try { return JSON.parse(saved) } catch { }
-      }
-    }
-    return { assignedToId: '', campaignId: '', tag: '', unreadOnly: false }
-  })
+  const [inboxFilters, setInboxFilters] = useState<{assignedToId: string, campaignId: string, tag: string, unreadOnly: boolean}>({ assignedToId: '', campaignId: '', tag: '', unreadOnly: false })
   
   // Estado para contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
+
+  // Carregar filtros e conta selecionada no mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_selectedAccountId') || ''
+      const saved = localStorage.getItem('inboxFilters')
+      if (saved) {
+        try {
+          setInboxFilters(JSON.parse(saved))
+        } catch {}
+      }
+      const storedAccountId = localStorage.getItem('crm_selectedAccountId')
+      if (storedAccountId) {
+        setSelectedAccountId(storedAccountId)
+      }
     }
-    return ''
-  })
+  }, [])
   const [showAccountFilter, setShowAccountFilter] = useState(false)
   
   // Refs para filtros (para usar no polling sem closure stale)

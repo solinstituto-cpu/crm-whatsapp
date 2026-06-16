@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { useRequirePermission } from '@/hooks/use-require-permission'
 import { apiFetch } from '@/lib/api'
+import { getApiUrl } from '@/lib/api-config'
 import { useTheme, colorMap } from '@/lib/theme-context'
 import { 
   Settings,

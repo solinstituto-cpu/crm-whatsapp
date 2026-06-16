@@ -120,27 +120,8 @@ export default function ContactsPage() {
   ]
   
   // Filtros - inicializar do localStorage se disponível
-  const [filters, setFilters] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('contactsFilters')
-      if (saved) {
-        try { return JSON.parse(saved) } catch { }
-      }
-    }
-    return { customerStatus: '', source: '', interest: '', tag: '', assignedToId: '' }
-  })
-  const [showFilters, setShowFilters] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('contactsFilters')
-      if (saved) {
-        try {
-          const f = JSON.parse(saved)
-          return !!(f.customerStatus || f.source || f.interest || f.tag || f.assignedToId)
-        } catch { }
-      }
-    }
-    return false
-  })
+  const [filters, setFilters] = useState({ customerStatus: '', source: '', interest: '', tag: '', assignedToId: '' })
+  const [showFilters, setShowFilters] = useState(false)
   
   // Persistir filtros no localStorage quando mudam
   useEffect(() => {
@@ -150,12 +131,7 @@ export default function ContactsPage() {
   }, [filters])
   
   // Busca - também persistir
-  const [searchTerm, setSearchTerm] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('contactsSearch') || ''
-    }
-    return ''
-  })
+  const [searchTerm, setSearchTerm] = useState('')
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -180,12 +156,29 @@ export default function ContactsPage() {
   
   // Estado para contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
+
+  // Carregar dados salvos no mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_selectedAccountId') || ''
+      const savedFilters = localStorage.getItem('contactsFilters')
+      if (savedFilters) {
+        try {
+          const parsed = JSON.parse(savedFilters)
+          setFilters(parsed)
+          setShowFilters(!!(parsed.customerStatus || parsed.source || parsed.interest || parsed.tag || parsed.assignedToId))
+        } catch {}
+      }
+      const savedSearch = localStorage.getItem('contactsSearch')
+      if (savedSearch) {
+        setSearchTerm(savedSearch)
+      }
+      const storedAccountId = localStorage.getItem('crm_selectedAccountId')
+      if (storedAccountId) {
+        setSelectedAccountId(storedAccountId)
+      }
     }
-    return ''
-  })
+  }, [])
   
   // Paginação
   const [contactPage, setContactPage] = useState(1)
