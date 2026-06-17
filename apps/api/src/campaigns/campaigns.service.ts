@@ -459,6 +459,9 @@ export class CampaignsService {
 
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
+      include: {
+        whatsappAccount: { select: { id: true, name: true, phoneNumber: true } },
+      },
     });
 
     if (!campaign) return;
@@ -466,6 +469,7 @@ export class CampaignsService {
     const delayMs = Math.floor(60000 / campaign.sendRatePerMinute); // Delay entre mensagens
 
     this.logger.log(`Processando campanha ${campaign.name} - ${campaign.sendRatePerMinute} msgs/min`);
+    this.logger.log(`📱 Conta WhatsApp: ${campaign.whatsappAccount?.name || 'NÃO DEFINIDA'} (${campaign.whatsappAccountId || 'NULL'}) | Tel: ${campaign.whatsappAccount?.phoneNumber || 'N/A'}`);
     if (campaign.sendStartHour !== null && campaign.sendEndHour !== null) {
       this.logger.log(`Horário de envio: ${campaign.sendStartHour}:00 - ${campaign.sendEndHour}:00 (horário de Brasília)`);
     }

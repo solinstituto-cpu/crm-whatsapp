@@ -475,6 +475,20 @@ export default function CampaignsPage() {
       return
     }
 
+    // VALIDAÇÃO OBRIGATÓRIA: garantir que uma conta WhatsApp está selecionada
+    let finalAccountId = selectedAccountId
+    if (!finalAccountId && whatsappAccounts.length > 0) {
+      const defaultAcc = whatsappAccounts.find((a: any) => a.isDefault) || whatsappAccounts[0]
+      finalAccountId = defaultAcc.id
+    }
+    if (!finalAccountId) {
+      alert('Erro: Nenhuma conta WhatsApp selecionada. Configure uma conta em Configurações.')
+      return
+    }
+
+    const selectedAccName = whatsappAccounts.find(a => a.id === finalAccountId)?.name || finalAccountId
+    console.log(`🚀 Criando campanha "${formName}" com conta: ${selectedAccName} (${finalAccountId})`)
+
     // Montar variáveis do template
     const templateVariables: any = {
       header: Object.entries(headerVariables).map(([key, val]) => ({
@@ -516,32 +530,31 @@ export default function CampaignsPage() {
     setSaving(true)
     try {
       const apiUrl = getApiUrl()
-      let finalAccountId = selectedAccountId
-      if (!finalAccountId && whatsappAccounts.length > 0) {
-        const defaultAcc = whatsappAccounts.find((a: any) => a.isDefault) || whatsappAccounts[0]
-        finalAccountId = defaultAcc.id
+
+      const campaignPayload = {
+        name: formName,
+        description: formDescription,
+        templateName: formTemplate,
+        templateLanguage: formTemplateLanguage,
+        templateVariables,
+        filterTags: formFilterTags.length > 0 ? formFilterTags : undefined,
+        filterStatus: formFilterStatus || undefined,
+        filterCustomFields: Object.keys(formFilterCustomFields).length > 0 ? formFilterCustomFields : undefined,
+        excludeOptOut: formExcludeOptOut,
+        scheduledAt: scheduledAtISO,
+        sendRatePerMinute: formSendRate,
+        sendStartHour: formSendStartHour,
+        sendEndHour: formSendEndHour,
+        sendDays: formSendDays.length > 0 ? formSendDays.join(',') : undefined,
+        whatsappAccountId: finalAccountId, // SEMPRE enviar o accountId
       }
+
+      console.log('📤 Payload da campanha:', JSON.stringify({ ...campaignPayload, templateVariables: '...' }))
 
       const response = await fetch(`${apiUrl}/api/campaigns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formName,
-          description: formDescription,
-          templateName: formTemplate,
-          templateLanguage: formTemplateLanguage,
-          templateVariables,
-          filterTags: formFilterTags.length > 0 ? formFilterTags : undefined,
-          filterStatus: formFilterStatus || undefined,
-          filterCustomFields: Object.keys(formFilterCustomFields).length > 0 ? formFilterCustomFields : undefined,
-          excludeOptOut: formExcludeOptOut,
-          scheduledAt: scheduledAtISO,
-          sendRatePerMinute: formSendRate,
-          sendStartHour: formSendStartHour,
-          sendEndHour: formSendEndHour,
-          sendDays: formSendDays.length > 0 ? formSendDays.join(',') : undefined,
-          whatsappAccountId: finalAccountId || undefined, // Conta WhatsApp selecionada
-        }),
+        body: JSON.stringify(campaignPayload),
       })
 
       if (response.ok) {
