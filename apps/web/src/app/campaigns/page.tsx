@@ -154,8 +154,9 @@ export default function CampaignsPage() {
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [filterAccountId, setFilterAccountId] = useState<string>('')
+  const [accountsLoaded, setAccountsLoaded] = useState(false)
 
-  // Carregar conta selecionada no mount
+  // Carregar conta selecionada do localStorage no mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('crm_selectedAccountId')
@@ -166,73 +167,29 @@ export default function CampaignsPage() {
     }
   }, [])
 
-  // Persistir conta selecionada no localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && selectedAccountId) {
-      localStorage.setItem('crm_selectedAccountId', selectedAccountId)
+  // Quando o filterAccountId muda (seletor de filtro), salvar no localStorage e sincronizar selectedAccountId
+  const handleFilterAccountChange = (newAccountId: string) => {
+    setFilterAccountId(newAccountId)
+    setSelectedAccountId(newAccountId)
+    if (typeof window !== 'undefined' && newAccountId) {
+      localStorage.setItem('crm_selectedAccountId', newAccountId)
     }
-  }, [selectedAccountId])
+    // Recarregar templates da nova conta
+    fetchTemplates(newAccountId)
+  }
 
-  // Persistir filtro de conta no localStorage
+  // Sincronizar quando outra aba altera localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined' && filterAccountId) {
-      localStorage.setItem('crm_selectedAccountId', filterAccountId)
-    }
-  }, [filterAccountId])
-
-  // Sincronizar conta selecionada quando voltar à página ou mudar em outra aba
-  useEffect(() => {
-    const syncAccountFromStorage = () => {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('crm_selectedAccountId')
-        if (stored) {
-          if (stored !== selectedAccountId) {
-            setSelectedAccountId(stored)
-          }
-          if (stored !== filterAccountId) {
-            setFilterAccountId(stored)
-          }
-        }
-      }
-    }
-    
-    // Quando outra aba altera localStorage
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'crm_selectedAccountId' && e.newValue) {
-        if (e.newValue !== selectedAccountId) {
-          setSelectedAccountId(e.newValue)
-        }
-        if (e.newValue !== filterAccountId) {
-          setFilterAccountId(e.newValue)
-        }
+        setSelectedAccountId(e.newValue)
+        setFilterAccountId(e.newValue)
       }
-    }
-    
-    // Quando a página fica visível novamente (navegação SPA)
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        syncAccountFromStorage()
-      }
-    }
-    
-    // Quando a janela recebe foco
-    const handleFocus = () => {
-      syncAccountFromStorage()
     }
     
     window.addEventListener('storage', handleStorage)
-    document.addEventListener('visibilitychange', handleVisibility)
-    window.addEventListener('focus', handleFocus)
-    
-    // Sincronizar imediatamente ao montar
-    syncAccountFromStorage()
-    
-    return () => {
-      window.removeEventListener('storage', handleStorage)
-      document.removeEventListener('visibilitychange', handleVisibility)
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [selectedAccountId, filterAccountId])
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -249,7 +206,7 @@ export default function CampaignsPage() {
 
   // Re-fetch quando muda o filtro de conta ou status
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && accountsLoaded) {
       fetchCampaigns()
       fetchStats()
     }
@@ -296,6 +253,7 @@ export default function CampaignsPage() {
             fetchTemplates(activeId)
           }
         }
+        setAccountsLoaded(true)
       }
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
@@ -831,13 +789,12 @@ export default function CampaignsPage() {
             {whatsappAccounts.length > 1 && (
               <select
                 value={filterAccountId}
-                onChange={(e) => setFilterAccountId(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                onChange={(e) => handleFilterAccountChange(e.target.value)}
+                className="px-4 py-2 border border-green-400 rounded-lg focus:ring-2 focus:ring-green-500 bg-green-50 font-medium"
               >
-                <option value="">Todas as contas</option>
                 {whatsappAccounts.map((account) => (
                   <option key={account.id} value={account.id}>
-                    📱 {account.name}
+                    📱 {account.name} {account.phoneNumber ? `(${account.phoneNumber})` : ''}
                   </option>
                 ))}
               </select>
@@ -893,7 +850,14 @@ export default function CampaignsPage() {
                         {campaign.description && (
                           <p className="text-sm text-gray-500 mt-1">{campaign.description}</p>
                         )}
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
+                          {/* Indicador de qual número WhatsApp */}
+                          {campaign.whatsappAccount && (
+                            <span className="flex items-center text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-medium border border-emerald-200">
+                              <Phone className="h-3 w-3 mr-1" />
+                              {campaign.whatsappAccount.phoneNumber || campaign.whatsappAccount.name}
+                            </span>
+                          )}
                           <span className="flex items-center">
                             <MessageSquare className="h-4 w-4 mr-1" />
                             {campaign.templateName}
@@ -1059,12 +1023,16 @@ export default function CampaignsPage() {
                     <select
                       value={selectedAccountId}
                       onChange={(e) => {
-                        setSelectedAccountId(e.target.value)
+                        const newId = e.target.value
+                        setSelectedAccountId(newId)
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('crm_selectedAccountId', newId)
+                        }
                         // Limpar template selecionado quando mudar de conta (templates podem ser diferentes)
                         setFormTemplate('')
                         setSelectedTemplateData(null)
                         // Recarregar templates da nova conta
-                        fetchTemplates(e.target.value)
+                        fetchTemplates(newId)
                       }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     >

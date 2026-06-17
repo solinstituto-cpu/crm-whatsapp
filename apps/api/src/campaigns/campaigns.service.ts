@@ -96,6 +96,18 @@ export class CampaignsService {
     this.logger.log(`Criando campanha: ${data.name} (conta: ${data.whatsappAccountId || 'padrão'})`);
     this.logger.log(`templateVariables recebido: ${JSON.stringify(data.templateVariables)?.slice(0, 500)}`);
     
+    // Garantir que sempre tenha uma conta WhatsApp associada
+    let accountId = data.whatsappAccountId;
+    if (!accountId) {
+      const defaultAccount = await this.prisma.whatsAppAccount.findFirst({
+        where: { isDefault: true },
+      });
+      if (defaultAccount) {
+        accountId = defaultAccount.id;
+        this.logger.log(`Usando conta padrão: ${defaultAccount.name} (${defaultAccount.id})`);
+      }
+    }
+
     const campaign = await this.prisma.campaign.create({
       data: {
         name: data.name,
@@ -113,12 +125,13 @@ export class CampaignsService {
         sendStartHour: data.sendStartHour,
         sendEndHour: data.sendEndHour,
         sendDays: data.sendDays,
-        whatsappAccountId: data.whatsappAccountId || undefined,
+        whatsappAccountId: accountId || undefined,
         status: data.scheduledAt ? 'SCHEDULED' : 'DRAFT',
       },
     });
 
     this.logger.log(`Campanha criada: ${campaign.name} (${campaign.id}) - conta: ${campaign.whatsappAccountId || 'padrão'}`);
+
     return campaign;
   }
 
