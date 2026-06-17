@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 // URL do backend correto no Render
-const RENDER_API_URL = 'https://crm-api-laxv.onrender.com'
+const RENDER_API_URL = 'https://crm-drm.onrender.com'
 
 const nextConfig = {
   eslint: {
