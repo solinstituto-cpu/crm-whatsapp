@@ -28,6 +28,7 @@ export class CampaignsController {
     @Query('status') status?: string,
     @Query('accountId') accountId?: string,
   ) {
+    this.logger.log(`📋 findAll chamado - page=${page} limit=${limit} status=${status} accountId=${accountId}`);
     return this.campaignsService.findAll(
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,

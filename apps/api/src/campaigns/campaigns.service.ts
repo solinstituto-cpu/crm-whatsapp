@@ -24,6 +24,8 @@ export class CampaignsService {
     const where: any = {};
     if (status) where.status = status;
     if (accountId) where.whatsappAccountId = accountId;
+    
+    this.logger.log(`📋 findAll - accountId recebido: "${accountId}" | where: ${JSON.stringify(where)}`);
 
     const [campaigns, total] = await Promise.all([
       this.prisma.campaign.findMany({
