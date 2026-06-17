@@ -57,3 +57,6 @@ Thumbs.db
 
 # Prisma
 prisma/migrations/dev.db*
+
+# TypeScript build cache
+*.tsbuildinfo
