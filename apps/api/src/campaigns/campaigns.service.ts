@@ -134,6 +134,7 @@ export class CampaignsService {
     excludeOptOut: boolean;
     scheduledAt: Date;
     sendRatePerMinute: number;
+    whatsappAccountId: string;
   }>) {
     const campaign = await this.findOne(id);
     

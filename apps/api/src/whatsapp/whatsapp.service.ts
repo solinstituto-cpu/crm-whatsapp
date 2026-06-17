@@ -70,6 +70,21 @@ export class WhatsAppService {
           accessToken = conversation.whatsappAccount.accessToken;
           resolvedAccountId = conversation.whatsappAccount.id;
           this.logger.log(`📱 Conta detectada pela conversa: ${conversation.whatsappAccount.name}`);
+        } else {
+          // Busca o contato para ver a qual conta ele pertence
+          const contact = await this.prisma.contact.findFirst({
+            where: { 
+              phoneE164: phoneNumber,
+              whatsappAccountId: { not: null }
+            },
+            include: { whatsappAccount: true },
+          });
+          if (contact?.whatsappAccount?.isActive) {
+            phoneNumberId = contact.whatsappAccount.phoneNumberId;
+            accessToken = contact.whatsappAccount.accessToken;
+            resolvedAccountId = contact.whatsappAccount.id;
+            this.logger.log(`📱 Conta detectada pelo contato: ${contact.whatsappAccount.name}`);
+          }
         }
       }
       
