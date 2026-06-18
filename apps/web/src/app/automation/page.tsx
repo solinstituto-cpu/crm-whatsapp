@@ -1710,7 +1710,11 @@ function NodeEditor({ node, allNodes, onSave, onClose, saving, contactFieldOptio
     setLoadingTemplates(true)
     try {
       const apiUrl = getApiUrl()
-      const response = await fetch(`${apiUrl}/api/templates`)
+      const accountId = typeof window !== 'undefined'
+        ? localStorage.getItem('crm_selectedAccountId')
+        : null
+      const query = accountId ? `?accountId=${accountId}` : ''
+      const response = await fetch(`${apiUrl}/api/templates${query}`)
       if (response.ok) {
         const data = await response.json()
         // Filtrar apenas templates aprovados

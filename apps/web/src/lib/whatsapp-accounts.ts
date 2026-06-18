@@ -41,3 +41,16 @@ export function resolveDefaultAccountId(
   const defaultAcc = accounts.find((a) => a.isDefault)
   return defaultAcc?.id || accounts[0].id
 }
+
+/** Com uma única conta liberada, força o filtro nela (sem "Todas as Contas"). */
+export function getAccountFilterId(
+  accounts: WhatsAppAccountOption[],
+  selectedAccountId: string
+): string {
+  if (accounts.length === 1) return accounts[0].id
+  return selectedAccountId
+}
+
+export function canSelectAllAccounts(accounts: WhatsAppAccountOption[]): boolean {
+  return accounts.length > 1
+}

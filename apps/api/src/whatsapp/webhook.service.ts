@@ -238,10 +238,11 @@ export class WebhookService {
     }
 
     try {
+      const flowAccountId = conversation.whatsappAccountId || whatsappAccountId || undefined;
       const flowResult = await this.flowEngineService.processIncomingMessage(phoneNumber, messageBody);
       
       if (flowResult.handled) {
-        this.logger.log(`🤖 Flow processed for ${phoneNumber} - Session: ${flowResult.sessionId}`);
+        this.logger.log(`🤖 Flow processed for ${phoneNumber} - Session: ${flowResult.sessionId} - Account: ${flowAccountId || 'default'}`);
         
         // Enviar mensagens geradas pelo fluxo
         if (flowResult.messages && flowResult.messages.length > 0) {
@@ -256,13 +257,13 @@ export class WebhookService {
                   to: phoneNumber,
                   type: 'text',
                   text: msg.content,
-                });
+                }, false, flowAccountId);
                 this.logger.log(`📤 Flow sent text to ${phoneNumber}: "${msg.content.substring(0, 50)}..."`);
               } else if (msg.type === 'template' && msg.templateName) {
                 // Buscar informações do template (incluindo idioma correto)
                 let templateLanguage = 'pt_BR'; // fallback
                 try {
-                  const templates = await this.templatesService.getTemplates();
+                  const templates = await this.templatesService.getTemplates(undefined, flowAccountId);
                   const template = templates.find((t: any) => t.name === msg.templateName);
                   if (template) {
                     templateLanguage = template.language;
@@ -317,7 +318,7 @@ export class WebhookService {
                   templateName: msg.templateName,
                   language: templateLanguage,
                   components: components.length > 0 ? components : undefined,
-                });
+                }, flowAccountId);
                 this.logger.log(`✅ Flow sent template "${msg.templateName}" to ${phoneNumber}`);
               } else if (msg.type === 'image' && (msg.mediaId || msg.mediaUrl)) {
                 await this.whatsappService.sendMessage({
@@ -327,7 +328,7 @@ export class WebhookService {
                     ...(msg.mediaId ? { id: msg.mediaId } : { link: msg.mediaUrl }),
                     caption: msg.content || undefined,
                   },
-                });
+                }, false, flowAccountId);
                 this.logger.log(`📤 Flow sent image to ${phoneNumber}`);
               } else if (msg.type === 'interactive') {
                 // Mensagem interativa com botões ou lista
@@ -390,7 +391,7 @@ export class WebhookService {
                   };
                 }
                 
-                await this.whatsappService.sendMessage(interactivePayload);
+                await this.whatsappService.sendMessage(interactivePayload, false, flowAccountId);
                 this.logger.log(`📤 Flow sent interactive (${msg.interactiveType}) to ${phoneNumber}`);
               } else if (msg.type === 'text' && !msg.content) {
                 this.logger.warn(`⚠️ Text message has empty content, skipping`);

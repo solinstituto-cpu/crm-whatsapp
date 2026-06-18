@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { getApiUrl } from '@/lib/api-config'
-import { fetchUserWhatsAppAccounts, resolveDefaultAccountId } from '@/lib/whatsapp-accounts'
+import { fetchUserWhatsAppAccounts, resolveDefaultAccountId, getAccountFilterId } from '@/lib/whatsapp-accounts'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   MessageSquare,
@@ -244,6 +244,7 @@ export default function InboxPage() {
   const conversationFilterRef = useRef(conversationFilter)
   const searchTermRef = useRef(searchTerm)
   const selectedAccountIdRef = useRef(selectedAccountId)
+  const whatsappAccountsRef = useRef(whatsappAccounts)
   
   // Persistir filtros do inbox
   useEffect(() => {
@@ -603,7 +604,7 @@ export default function InboxPage() {
     setLoadingTemplates(true)
     try {
       const apiUrl = getApiUrl()
-      const accountId = selectedConversation?.whatsappAccountId || selectedAccountId || ''
+      const accountId = selectedConversation?.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || ''
       const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
       const url = accountId
         ? `${apiUrl}/api/templates?status=APPROVED&accountId=${accountId}`
@@ -656,7 +657,7 @@ export default function InboxPage() {
       const formData = new FormData()
       formData.append('file', file)
       
-      const accountId = selectedConversation?.whatsappAccountId || selectedAccountId || ''
+      const accountId = selectedConversation?.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || ''
       const url = accountId
         ? `${apiUrl}/api/wa/upload-media?accountId=${accountId}`
         : `${apiUrl}/api/wa/upload-media`
@@ -745,7 +746,7 @@ export default function InboxPage() {
           language: template.language || 'pt_BR',
           bodyText: displayText,
           components,
-          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
+          accountId: selectedConversation.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || undefined
         })
       })
       
@@ -832,7 +833,7 @@ export default function InboxPage() {
           language: template.language || 'pt_BR',
           bodyText: displayText,
           components: components.length > 0 ? components : undefined,
-          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
+          accountId: selectedConversation.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || undefined
         })
       })
       
@@ -992,21 +993,25 @@ export default function InboxPage() {
   }, [searchTerm])
   
   useEffect(() => {
-    selectedAccountIdRef.current = selectedAccountId
-    // Persistir no localStorage
-    if (typeof window !== 'undefined' && selectedAccountId) {
-      localStorage.setItem('crm_selectedAccountId', selectedAccountId)
+    const filterId = getAccountFilterId(whatsappAccounts, selectedAccountId)
+    selectedAccountIdRef.current = filterId
+    whatsappAccountsRef.current = whatsappAccounts
+    if (typeof window !== 'undefined' && filterId) {
+      localStorage.setItem('crm_selectedAccountId', filterId)
     }
-  }, [selectedAccountId])
+  }, [selectedAccountId, whatsappAccounts])
 
   useEffect(() => {
     if (status !== 'authenticated' || initialLoadDone) return
+
+    const initInbox = async () => {
+      await fetchWhatsAppAccounts()
+      fetchConversations(1, false, true)
+      fetchInboxFiltersData()
+    }
+
+    initInbox()
     
-    fetchConversations(1, false, true) // Carga inicial: isInitialLoad=true
-    fetchInboxFiltersData()
-    fetchWhatsAppAccounts()
-    
-    // Polling: atualizar conversas a cada 5 segundos
     const interval = setInterval(() => {
       fetchConversationsBackground()
     }, 5000)
@@ -1037,16 +1042,29 @@ export default function InboxPage() {
     try {
       const accounts = await fetchUserWhatsAppAccounts(userId)
       setWhatsappAccounts(accounts)
+      whatsappAccountsRef.current = accounts
 
       const savedAccountId = typeof window !== 'undefined'
         ? localStorage.getItem('crm_selectedAccountId')
         : null
-      if (!selectedAccountIdRef.current && accounts.length > 0) {
-        const accountId = resolveDefaultAccountId(accounts, savedAccountId)
+
+      let accountId = selectedAccountIdRef.current
+      if (accounts.length === 1) {
+        accountId = accounts[0].id
         setSelectedAccountId(accountId)
+      } else if (accounts.length > 1) {
+        const validCurrent = accountId && accounts.some((a) => a.id === accountId)
+        if (!validCurrent) {
+          accountId = resolveDefaultAccountId(accounts, savedAccountId)
+          setSelectedAccountId(accountId)
+        }
       }
+
+      selectedAccountIdRef.current = getAccountFilterId(accounts, accountId)
+      return accounts
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
+      return []
     }
   }
   
@@ -1167,8 +1185,6 @@ export default function InboxPage() {
       const currentConversationFilter = conversationFilterRef.current
       const currentSearchTerm = searchTermRef.current
       const currentAccountId = selectedAccountIdRef.current
-      
-      // Usar os mesmos filtros da busca principal
       const params = new URLSearchParams({
         page: '1',
         limit: String(CONVERSATIONS_PER_PAGE)
@@ -1315,8 +1331,12 @@ export default function InboxPage() {
         page: String(page),
         limit: String(CONVERSATIONS_PER_PAGE)
       })
-      if (selectedAccountId) {
-        params.append('accountId', selectedAccountId)
+      const filterAccountId = getAccountFilterId(
+        whatsappAccountsRef.current,
+        selectedAccountIdRef.current
+      )
+      if (filterAccountId) {
+        params.append('accountId', filterAccountId)
       }
       // Adicionar filtros de inbox (busca no backend)
       if (inboxFilters.unreadOnly) {
@@ -1647,7 +1667,7 @@ export default function InboxPage() {
           // Enviar context para o WhatsApp fazer o quote da mensagem
           context: currentReplyTo?.waMessageId ? { message_id: currentReplyTo.waMessageId } : undefined,
           userId: (session?.user as any)?.id,
-          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
+          accountId: selectedConversation.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || undefined
         })
       })
 
@@ -1835,7 +1855,7 @@ export default function InboxPage() {
             caption: file.name,
             filename: file.name
           },
-          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
+          accountId: selectedConversation.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || undefined
         }
         
         console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2))
@@ -1944,7 +1964,7 @@ export default function InboxPage() {
           to: selectedConversation.contactPhone,
           type: 'contacts',
           contacts: contactPayload,
-          accountId: selectedConversation.whatsappAccountId || selectedAccountId || undefined
+          accountId: selectedConversation.whatsappAccountId || getAccountFilterId(whatsappAccounts, selectedAccountId) || undefined
         })
       })
 
@@ -2584,8 +2604,8 @@ export default function InboxPage() {
               </button>
             </div>
             
-            {/* Seletor de Conta WhatsApp (Multi-números) */}
-            {whatsappAccounts.length > 0 && (
+            {/* Seletor de Conta WhatsApp — só exibe com 2+ contas liberadas */}
+            {whatsappAccounts.length > 1 && (
               <div className="mb-4 relative">
                 <button
                   onClick={() => setShowAccountFilter(!showAccountFilter)}
