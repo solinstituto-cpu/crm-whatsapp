@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { getApiUrl } from '@/lib/api-config'
+import { fetchUserWhatsAppAccounts, resolveDefaultAccountId } from '@/lib/whatsapp-accounts'
 import { useRequirePermission } from '@/hooks/use-require-permission'
 import {
   Megaphone,
@@ -195,14 +196,14 @@ export default function CampaignsPage() {
     if (status === 'unauthenticated') {
       redirect('/auth/login')
     }
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && session) {
       fetchCampaigns()
       fetchStats()
       fetchCustomFields()
       fetchAvailableTags()
       fetchWhatsAppAccounts()
     }
-  }, [status])
+  }, [status, session])
 
   // Re-fetch quando muda o filtro de conta ou status
   useEffect(() => {
@@ -215,48 +216,23 @@ export default function CampaignsPage() {
   // Buscar contas WhatsApp (multi-números)
   const fetchWhatsAppAccounts = async () => {
     try {
-      const apiUrl = getApiUrl()
       const userId = (session?.user as any)?.id
-      const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
-      const url = userId 
-        ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
-        : `${apiUrl}/api/whatsapp-accounts`
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const accounts = data.map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          phoneNumber: a.phoneNumber || '',
-          isDefault: a.isDefault
-        }))
-        setWhatsappAccounts(accounts)
-        
-        // Restaurar do localStorage (sincronizar)
-        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
-        if (accounts.length > 0) {
-          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
-          if (savedAccount) {
-            setSelectedAccountId(savedAccount.id)
-            setFilterAccountId(savedAccount.id)
-            fetchTemplates(savedAccount.id)
-          } else {
-            const defaultAcc = accounts.find((a: any) => a.isDefault)
-            const activeId = defaultAcc?.id || accounts[0].id
-            setSelectedAccountId(activeId)
-            setFilterAccountId(activeId)
-            fetchTemplates(activeId)
-          }
-        }
-        setAccountsLoaded(true)
+      const accounts = await fetchUserWhatsAppAccounts(userId)
+      setWhatsappAccounts(accounts)
+
+      const savedAccountId = typeof window !== 'undefined'
+        ? localStorage.getItem('crm_selectedAccountId')
+        : null
+      if (accounts.length > 0) {
+        const activeId = resolveDefaultAccountId(accounts, savedAccountId)
+        setSelectedAccountId(activeId)
+        setFilterAccountId(activeId)
+        fetchTemplates(activeId)
       }
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
+    } finally {
+      setAccountsLoaded(true)
     }
   }
 
@@ -799,7 +775,7 @@ export default function CampaignsPage() {
               <option value="CANCELLED">Cancelada</option>
             </select>
             {/* Filtro por Conta WhatsApp */}
-            {whatsappAccounts.length > 1 && (
+            {whatsappAccounts.length > 0 && (
               <select
                 value={filterAccountId}
                 onChange={(e) => handleFilterAccountChange(e.target.value)}

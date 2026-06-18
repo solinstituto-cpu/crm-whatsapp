@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { getApiUrl } from '@/lib/api-config'
+import { fetchUserWhatsAppAccounts, resolveDefaultAccountId } from '@/lib/whatsapp-accounts'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   Users, 
@@ -283,39 +284,18 @@ export default function ContactsPage() {
 
   // Buscar contas WhatsApp
   const fetchWhatsAppAccounts = async () => {
-    const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
-    const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
     try {
-      const url = userId 
-        ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
-        : `${apiUrl}/api/whatsapp-accounts`
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const accounts = data.map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          phoneNumber: a.phoneNumber || '',
-          isDefault: a.isDefault
-        }))
-        setWhatsappAccounts(accounts)
-        
-        // Restaurar do localStorage (sempre sincronizar com inbox)
-        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
-        if (accounts.length > 0) {
-          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
-          if (savedAccount) {
-            setSelectedAccountId(savedAccount.id)
-          } else if (!selectedAccountId) {
-            const defaultAcc = accounts.find((a: any) => a.isDefault)
-            setSelectedAccountId(defaultAcc?.id || accounts[0].id)
-          }
+      const accounts = await fetchUserWhatsAppAccounts(userId)
+      setWhatsappAccounts(accounts)
+
+      const savedAccountId = typeof window !== 'undefined'
+        ? localStorage.getItem('crm_selectedAccountId')
+        : null
+      if (accounts.length > 0) {
+        const activeId = resolveDefaultAccountId(accounts, savedAccountId)
+        if (!selectedAccountId || !accounts.find((a) => a.id === selectedAccountId)) {
+          setSelectedAccountId(activeId)
         }
       }
     } catch (error) {
@@ -679,7 +659,7 @@ export default function ContactsPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Seletor de Conta WhatsApp */}
-            {whatsappAccounts.length > 1 && (
+            {whatsappAccounts.length > 0 && (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-green-600" />
                 <select

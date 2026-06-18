@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { getApiUrl } from '@/lib/api-config'
+import { fetchUserWhatsAppAccounts, resolveDefaultAccountId } from '@/lib/whatsapp-accounts'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
   MessageSquare,
@@ -1013,9 +1014,9 @@ export default function InboxPage() {
     return () => clearInterval(interval)
   }, [status, initialLoadDone])
 
-  // Recarregar contas WhatsApp quando a sessão mudar (garante que carrega mesmo na primeira visita)
+  // Recarregar contas WhatsApp quando a sessão estiver pronta com token
   useEffect(() => {
-    if (session?.user) {
+    if ((session?.user as any)?.token) {
       fetchWhatsAppAccounts()
     }
   }, [session])
@@ -1032,46 +1033,17 @@ export default function InboxPage() {
   
   // Buscar contas WhatsApp (multi-números) - filtradas pelo usuário logado
   const fetchWhatsAppAccounts = async () => {
-    const apiUrl = getApiUrl()
     const userId = (session?.user as any)?.id
-    const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
     try {
-      // Passa userId para filtrar contas que o usuário pode acessar
-      const url = userId 
-        ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
-        : `${apiUrl}/api/whatsapp-accounts`
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const accounts = data.map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          phoneNumber: a.phoneNumber || '',
-          isDefault: a.isDefault
-        }))
-        setWhatsappAccounts(accounts)
-        
-        // Restaurar do localStorage ou usar conta padrão
-        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
-        if (!selectedAccountIdRef.current && accounts.length > 0) {
-          // Verificar se a conta salva ainda existe
-          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
-          if (savedAccount) {
-            setSelectedAccountId(savedAccount.id)
-          } else {
-            const defaultAcc = accounts.find((a: any) => a.isDefault)
-            if (defaultAcc) {
-              setSelectedAccountId(defaultAcc.id)
-            } else {
-              setSelectedAccountId(accounts[0].id)
-            }
-          }
-        }
+      const accounts = await fetchUserWhatsAppAccounts(userId)
+      setWhatsappAccounts(accounts)
+
+      const savedAccountId = typeof window !== 'undefined'
+        ? localStorage.getItem('crm_selectedAccountId')
+        : null
+      if (!selectedAccountIdRef.current && accounts.length > 0) {
+        const accountId = resolveDefaultAccountId(accounts, savedAccountId)
+        setSelectedAccountId(accountId)
       }
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)

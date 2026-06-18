@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { getApiUrl } from '@/lib/api-config'
+import { fetchUserWhatsAppAccounts, resolveDefaultAccountId } from '@/lib/whatsapp-accounts'
 import { 
   FileText,
   Plus,
@@ -90,16 +91,28 @@ export default function TemplatesPage() {
   }, [status])
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchWhatsAppAccounts()
-    }
-  }, [status])
+    if (status !== 'authenticated' || !session) return
 
-  useEffect(() => {
-    if (status === 'authenticated' && selectedAccountId) {
-      fetchTemplates()
+    const loadAccountsAndTemplates = async () => {
+      const userId = (session.user as any)?.id
+      const accounts = await fetchUserWhatsAppAccounts(userId)
+      setWhatsappAccounts(accounts)
+
+      const savedAccountId = typeof window !== 'undefined'
+        ? localStorage.getItem('crm_selectedAccountId')
+        : null
+      const accountId = selectedAccountId || resolveDefaultAccountId(accounts, savedAccountId)
+
+      if (accountId) {
+        setSelectedAccountId(accountId)
+        await fetchTemplates(accountId)
+      } else {
+        await fetchTemplates()
+      }
     }
-  }, [status, selectedAccountId])
+
+    loadAccountsAndTemplates()
+  }, [status, session])
 
   // Persistir conta selecionada
   useEffect(() => {
@@ -108,61 +121,21 @@ export default function TemplatesPage() {
     }
   }, [selectedAccountId])
 
-  const fetchWhatsAppAccounts = async () => {
-    const apiUrl = getApiUrl()
-    const userId = (session?.user as any)?.id
-    const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
-    try {
-      const url = userId 
-        ? `${apiUrl}/api/whatsapp-accounts?userId=${userId}`
-        : `${apiUrl}/api/whatsapp-accounts`
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const accounts = data.map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          phoneNumber: a.phoneNumber || '',
-          isDefault: a.isDefault
-        }))
-        setWhatsappAccounts(accounts)
-        
-        // Restaurar do localStorage ou usar conta padrão
-        const savedAccountId = typeof window !== 'undefined' ? localStorage.getItem('crm_selectedAccountId') : null
-        if (!selectedAccountId && accounts.length > 0) {
-          const savedAccount = savedAccountId ? accounts.find((a: any) => a.id === savedAccountId) : null
-          if (savedAccount) {
-            setSelectedAccountId(savedAccount.id)
-          } else {
-            const defaultAcc = accounts.find((a: any) => a.isDefault)
-            setSelectedAccountId(defaultAcc?.id || accounts[0].id)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao buscar contas WhatsApp:', error)
-    }
-  }
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = async (accountId?: string) => {
     try {
       setError(null)
       const apiUrl = getApiUrl()
+      const activeAccountId = accountId ?? selectedAccountId
       
       // Adicionar timeout de 15 segundos
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 15000)
       
-      const accountIdParam = selectedAccountId ? `&accountId=${selectedAccountId}` : ''
-      console.log('Fetching templates from:', `${apiUrl}/api/templates?limit=100${accountIdParam}`)
+      const query = activeAccountId ? `?accountId=${activeAccountId}` : ''
+      console.log('Fetching templates from:', `${apiUrl}/api/templates${query}`)
       
       const token = (session?.user as any)?.token || (session as any)?.accessToken || (session as any)?.user?.accessToken
-      const response = await fetch(`${apiUrl}/api/templates${accountIdParam ? '?' + accountIdParam.substring(1) : ''}`, {
+      const response = await fetch(`${apiUrl}/api/templates${query}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -417,12 +390,16 @@ export default function TemplatesPage() {
             </div>
             <div className="flex items-center gap-3">
               {/* Seletor de Conta WhatsApp */}
-              {whatsappAccounts.length > 1 && (
+              {whatsappAccounts.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-green-600" />
                   <select
                     value={selectedAccountId}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    onChange={(e) => {
+                      const newId = e.target.value
+                      setSelectedAccountId(newId)
+                      fetchTemplates(newId)
+                    }}
                     className="px-3 py-2 border border-green-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-green-50"
                   >
                     {whatsappAccounts.map((account) => (
