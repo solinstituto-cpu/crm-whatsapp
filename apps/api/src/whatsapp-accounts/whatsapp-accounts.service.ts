@@ -299,8 +299,8 @@ export class WhatsAppAccountsService {
       select: { role: true },
     });
 
-    // Administradores sempre têm acesso a todas as contas
-    if (user?.role === 'ADMIN') {
+    // Administradores e Supervisores sempre têm acesso a todas as contas
+    if (user?.role === 'ADMIN' || user?.role === 'SUPERVISOR') {
       return this.findAll();
     }
 
