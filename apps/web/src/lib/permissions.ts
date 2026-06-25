@@ -14,16 +14,16 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 /** Quem pode ACESSAR cada módulo (ver no menu e entrar na página) */
 export const CAN_ACCESS: Record<string, UserRole[]> = {
-  dashboard: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
+  dashboard: ['ADMIN'],
   inbox: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
   contacts: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
-  pipeline: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
+  pipeline: ['ADMIN'],
   templates: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
   knowledge: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
-  automation: ['ADMIN', 'SUPERVISOR'],
+  automation: ['ADMIN'],
   campaigns: ['ADMIN', 'SUPERVISOR'],
   reports: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
-  users: ['ADMIN', 'SUPERVISOR'],
+  users: ['ADMIN'],
   settings: ['ADMIN'],
   whatsappTest: ['ADMIN'],
   help: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
