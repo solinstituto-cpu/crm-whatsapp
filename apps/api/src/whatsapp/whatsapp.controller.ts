@@ -270,4 +270,29 @@ export class WhatsAppController {
   async debugAccounts() {
     return this.whatsappService.getAccountsDiagnostics();
   }
+
+  // Debug: verificar associações de usuário-conta WhatsApp
+  @Get('debug/user-accounts')
+  async debugUserAccounts() {
+    const prisma = (this.whatsappService as any).prisma;
+    const allAssignments = await prisma.userWhatsAppAccount.findMany({
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+        account: { select: { id: true, name: true, phoneNumber: true, isActive: true } },
+      },
+    });
+    const allAccounts = await prisma.whatsAppAccount.findMany({
+      select: { id: true, name: true, phoneNumber: true, isActive: true, isDefault: true },
+    });
+    const allUsers = await prisma.user.findMany({
+      select: { id: true, name: true, role: true },
+    });
+    return {
+      totalAssignments: allAssignments.length,
+      assignments: allAssignments,
+      accounts: allAccounts,
+      users: allUsers,
+      explanation: 'Se um usuario tem QUALQUER entrada em assignments, ele só vê as contas atribuidas. Se NAO tem nenhuma, vê todas.',
+    };
+  }
 }

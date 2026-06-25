@@ -62,6 +62,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }: any) {
       if (user) {
+        token.userId = user.id  // Salvar ID do banco explicitamente
         token.accessToken = user.accessToken
         token.role = user.role
       }
@@ -69,7 +70,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }: any) {
       if (token && session.user) {
-        session.user.id = token.sub
+        session.user.id = token.userId || token.sub  // Preferir userId explícito, fallback para sub
         session.user.role = token.role
         session.user.token = token.accessToken
         session.accessToken = token.accessToken

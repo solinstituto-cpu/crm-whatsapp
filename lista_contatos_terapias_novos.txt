@@ -1,0 +1,11 @@
+Nome;Telefone;Data de Entrada;Mensagem de Solicitação
+Ana Paula;+5513988465668;02/06/2026;Interesse na grade de Terapias Holísticas
+Beatriz;+5519998738237;14/06/2026;Interesse na Jornada em Terapias Holísticas
+Caroline;+5511999716482;02/06/2026;Pós-graduação em Terapias Holísticas FDS
+Graça Soares;+5511967404984;21/05/2026;Interesse na grade de Terapias Holísticas
+Katia Kemos;+5511948632533;27/05/2026;Pós-graduação em Terapias Holísticas Presencial
+LUCAS;+5517992325276;21/05/2026;Pós-graduação em Terapias Holísticas FDS
+Marilia Rijo;+558199934044;25/05/2026;Pós-graduação em Terapias Holísticas FDS
+Rose;+5511998007760;20/05/2026;Pós-graduação em Terapias Holísticas Presencial
+Thuane Motta;+5521986740090;10/06/2026;Pós-graduação em Terapias Holísticas Presencial
+Zezinho (Valdemir);+5518991641395;01/06/2026;Apresentação da Jornada em Terapias Holísticas
