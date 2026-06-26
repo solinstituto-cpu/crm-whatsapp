@@ -355,18 +355,20 @@ export default function CampaignsPage() {
   }
 
   // Upload de mídia para o servidor
+  // Envia direto para o Render (bypass do proxy Vercel que tem limite de 4.5MB)
   const handleMediaUpload = async (file: File) => {
     setUploadingMedia(true)
     try {
-      const apiUrl = getApiUrl()
+      // Upload direto para o backend Render (sem proxy Vercel)
+      const directApiUrl = 'https://crm-api-laxv.onrender.com'
       const formData = new FormData()
       formData.append('file', file)
       
       const url = selectedAccountId 
-        ? `${apiUrl}/api/wa/upload-media?accountId=${selectedAccountId}`
-        : `${apiUrl}/api/wa/upload-media`
+        ? `${directApiUrl}/api/wa/upload-media?accountId=${selectedAccountId}`
+        : `${directApiUrl}/api/wa/upload-media`
       
-      // Usar apiFetch para incluir token de autenticação
+      // Incluir token de autenticação
       const session = await import('next-auth/react').then(m => m.getSession())
       const token = (session as any)?.user?.token || (session as any)?.accessToken
       
@@ -374,7 +376,6 @@ export default function CampaignsPage() {
         method: 'POST',
         body: formData,
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
       })
       
       if (response.ok) {
