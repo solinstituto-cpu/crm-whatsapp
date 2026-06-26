@@ -14,7 +14,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 /** Quem pode ACESSAR cada módulo (ver no menu e entrar na página) */
 export const CAN_ACCESS: Record<string, UserRole[]> = {
-  dashboard: ['ADMIN'],
+  dashboard: ['ADMIN', 'SUPERVISOR'],
   inbox: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
   contacts: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
   pipeline: ['ADMIN'],

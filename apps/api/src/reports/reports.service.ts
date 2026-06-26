@@ -663,4 +663,139 @@ export class ReportsService {
       rowCount: data.length,
     };
   }
+
+  // ==========================================
+  // DASHBOARD POR CONTA WHATSAPP
+  // ==========================================
+  async getDashboardByAccount(accountId?: string, startDate?: string, endDate?: string) {
+    this.logger.log(`Gerando dashboard por conta: ${accountId || 'TODAS'}`);
+
+    // Definir período
+    const now = new Date();
+    const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const start = startDate ? new Date(startDate + 'T00:00:00.000Z') : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Filtro base por conta
+    const accountFilter = accountId ? { whatsappAccountId: accountId } : {};
+
+    // ============================================
+    // 1. ATENDIMENTOS NOVOS POR OPERADOR
+    // Conversas criadas no período onde a primeira mensagem é INBOUND (cliente iniciou)
+    // ============================================
+    const newConversations = await this.prisma.conversation.findMany({
+      where: {
+        ...accountFilter,
+        createdAt: { gte: start, lte: end },
+      },
+      include: {
+        assignedTo: { select: { id: true, name: true, color: true } },
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+          select: { direction: true, type: true },
+        },
+      },
+    });
+
+    // Filtrar apenas as que começaram com mensagem inbound (cliente)
+    const newByOperatorMap: Record<string, { operatorId: string; operatorName: string; operatorColor: string; count: number }> = {};
+    const reengagementByOperatorMap: Record<string, { operatorId: string; operatorName: string; operatorColor: string; count: number }> = {};
+
+    newConversations.forEach(conv => {
+      const firstMsg = conv.messages[0];
+      const operatorId = conv.assignedToId || 'unassigned';
+      const operatorName = conv.assignedTo?.name || 'Sem Atendente';
+      const operatorColor = conv.assignedTo?.color || '#9CA3AF';
+
+      if (firstMsg) {
+        if (firstMsg.direction === 'IN' || firstMsg.direction === 'INBOUND') {
+          // Atendimento novo (cliente iniciou)
+          if (!newByOperatorMap[operatorId]) {
+            newByOperatorMap[operatorId] = { operatorId, operatorName, operatorColor, count: 0 };
+          }
+          newByOperatorMap[operatorId].count++;
+        } else if (firstMsg.type === 'template') {
+          // Reengajamento (template enviado pelo operador)
+          if (!reengagementByOperatorMap[operatorId]) {
+            reengagementByOperatorMap[operatorId] = { operatorId, operatorName, operatorColor, count: 0 };
+          }
+          reengagementByOperatorMap[operatorId].count++;
+        }
+      }
+    });
+
+    // Merge: criar lista unificada de operadores com ambas contagens
+    const allOperatorIds = new Set([...Object.keys(newByOperatorMap), ...Object.keys(reengagementByOperatorMap)]);
+    const operatorStats = Array.from(allOperatorIds).map(id => ({
+      operatorId: id,
+      operatorName: newByOperatorMap[id]?.operatorName || reengagementByOperatorMap[id]?.operatorName || 'Sem Atendente',
+      operatorColor: newByOperatorMap[id]?.operatorColor || reengagementByOperatorMap[id]?.operatorColor || '#9CA3AF',
+      newCount: newByOperatorMap[id]?.count || 0,
+      reengagementCount: reengagementByOperatorMap[id]?.count || 0,
+      total: (newByOperatorMap[id]?.count || 0) + (reengagementByOperatorMap[id]?.count || 0),
+    })).sort((a, b) => b.total - a.total);
+
+    // ============================================
+    // 2. CLIENTES ESPERANDO ATENDIMENTO
+    // Conversas com status OPEN onde a última mensagem é do cliente (IN/INBOUND)
+    // ============================================
+    const waitingConversations = await this.prisma.conversation.findMany({
+      where: {
+        ...accountFilter,
+        status: 'OPEN',
+      },
+      include: {
+        contact: { select: { name: true, phoneE164: true } },
+        assignedTo: { select: { name: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { direction: true, createdAt: true },
+        },
+      },
+    });
+
+    // Filtrar: apenas conversas onde última mensagem é do cliente
+    const nowMs = now.getTime();
+    const waitingClients = waitingConversations
+      .filter(conv => {
+        const lastMsg = conv.messages[0];
+        return lastMsg && (lastMsg.direction === 'IN' || lastMsg.direction === 'INBOUND');
+      })
+      .map(conv => {
+        const lastMsg = conv.messages[0];
+        const waitingSinceMs = nowMs - new Date(lastMsg.createdAt).getTime();
+        const waitingMinutes = Math.floor(waitingSinceMs / (1000 * 60));
+        return {
+          conversationId: conv.id,
+          contactName: conv.contact?.name || 'Desconhecido',
+          phone: conv.contact?.phoneE164 || conv.phoneE164 || '',
+          operatorName: conv.assignedTo?.name || 'Sem Atendente',
+          waitingSince: lastMsg.createdAt,
+          waitingMinutes,
+        };
+      })
+      .sort((a, b) => b.waitingMinutes - a.waitingMinutes);
+
+    // ============================================
+    // 3. TOTAIS RESUMIDOS
+    // ============================================
+    const totalNew = operatorStats.reduce((acc, op) => acc + op.newCount, 0);
+    const totalReengagement = operatorStats.reduce((acc, op) => acc + op.reengagementCount, 0);
+
+    return {
+      summary: {
+        totalNew,
+        totalReengagement,
+        totalWaiting: waitingClients.length,
+      },
+      operatorStats,
+      waitingClients,
+      period: {
+        start: start.toISOString(),
+        end: end.toISOString(),
+      },
+      generatedAt: new Date(),
+    };
+  }
 }

@@ -89,4 +89,18 @@ export class ReportsController {
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.send('\uFEFF' + result.csv); // BOM for Excel UTF-8 compatibility
   }
+
+  /**
+   * GET /api/reports/dashboard-accounts
+   * Dashboard por conta WhatsApp com filtros de data
+   */
+  @Get('dashboard-accounts')
+  async getDashboardByAccount(
+    @Query('accountId') accountId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    this.logger.log(`GET /reports/dashboard-accounts - accountId: ${accountId}`);
+    return this.reportsService.getDashboardByAccount(accountId, startDate, endDate);
+  }
 }
