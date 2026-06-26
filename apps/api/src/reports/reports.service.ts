@@ -737,41 +737,34 @@ export class ReportsService {
 
     // ============================================
     // 2. CLIENTES ESPERANDO ATENDIMENTO
-    // Conversas com status OPEN onde a última mensagem é do cliente (IN/INBOUND)
+    // Conversas OPEN com mensagens não lidas (unreadCount > 0)
+    // Igual ao filtro "Pendentes" da inbox
     // ============================================
     const waitingConversations = await this.prisma.conversation.findMany({
       where: {
         ...accountFilter,
         status: 'OPEN',
+        unreadCount: { gt: 0 },
       },
       include: {
         contact: { select: { name: true, phoneE164: true } },
         assignedTo: { select: { name: true } },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { direction: true, createdAt: true },
-        },
       },
     });
 
-    // Filtrar: apenas conversas onde última mensagem é do cliente
+    // Mapear com tempo de espera
     const nowMs = now.getTime();
     const waitingClients = waitingConversations
-      .filter(conv => {
-        const lastMsg = conv.messages[0];
-        return lastMsg && (lastMsg.direction === 'IN' || lastMsg.direction === 'INBOUND');
-      })
       .map(conv => {
-        const lastMsg = conv.messages[0];
-        const waitingSinceMs = nowMs - new Date(lastMsg.createdAt).getTime();
+        const waitingSinceDate = conv.lastIncomingMessageAt || conv.updatedAt;
+        const waitingSinceMs = nowMs - new Date(waitingSinceDate).getTime();
         const waitingMinutes = Math.floor(waitingSinceMs / (1000 * 60));
         return {
           conversationId: conv.id,
           contactName: conv.contact?.name || 'Desconhecido',
           phone: conv.contact?.phoneE164 || conv.phoneE164 || '',
           operatorName: conv.assignedTo?.name || 'Sem Atendente',
-          waitingSince: lastMsg.createdAt,
+          waitingSince: waitingSinceDate,
           waitingMinutes,
         };
       })

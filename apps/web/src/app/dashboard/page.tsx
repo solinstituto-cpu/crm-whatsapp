@@ -398,11 +398,21 @@ export default function DashboardPage() {
 
         {/* ===== TABELA DE OPERADORES ===== */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Users className="h-5 w-5 text-green-600" />
               Atendimentos por Operador
             </h2>
+            {dashboardData?.period && (
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {new Date(dashboardData.period.start).toLocaleDateString('pt-BR')}
+                  {' — '}
+                  {new Date(dashboardData.period.end).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            )}
           </div>
           
           {operatorStats.length === 0 ? (
@@ -505,10 +515,20 @@ export default function DashboardPage() {
                   {waitingClients.map((client) => (
                     <tr key={client.conversationId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-5 py-3">
-                        <span className="font-medium text-gray-900 dark:text-white">{client.contactName}</span>
+                        <a
+                          href={`/inbox?conversationId=${client.conversationId}`}
+                          className="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        >
+                          {client.contactName}
+                        </a>
                       </td>
-                      <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">
-                        {client.phone}
+                      <td className="px-5 py-3 text-sm">
+                        <a
+                          href={`/inbox?conversationId=${client.conversationId}`}
+                          className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        >
+                          {client.phone}
+                        </a>
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">
                         {client.operatorName}
