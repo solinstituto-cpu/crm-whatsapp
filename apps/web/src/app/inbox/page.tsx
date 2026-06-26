@@ -2607,7 +2607,7 @@ export default function InboxPage() {
                 }`}
               >
                 <Megaphone className="inline h-4 w-4 mr-1" />
-                Campanhas
+                Reengaja
               </button>
               <button
                 onClick={() => setConversationFilter('archived')}
