@@ -1100,7 +1100,7 @@ export default function CampaignsPage() {
                                 </p>
                                 <p className="text-xs text-gray-400">
                                   {headerMediaType === 'IMAGE' && 'JPG, PNG até 5MB'}
-                                  {headerMediaType === 'VIDEO' && 'MP4 até 16MB'}
+                                  {headerMediaType === 'VIDEO' && 'MP4 até 50MB'}
                                   {headerMediaType === 'DOCUMENT' && 'PDF até 100MB'}
                                 </p>
                               </div>
