@@ -1129,6 +1129,13 @@ export default function InboxPage() {
         fetch(`${apiUrl}/api/conversations/${conversationId}`)
           .then(res => res.json())
           .then(conv => {
+            // Trocar para a conta WhatsApp correta da conversa
+            if (conv.whatsappAccountId) {
+              setSelectedAccountId(conv.whatsappAccountId)
+            }
+            // Limpar filtro de pendentes para garantir que a conversa apareça
+            setConversationFilter('all')
+            
             const lastMsg = conv.messages?.[conv.messages.length - 1]
             const formattedConv = {
               id: conv.id,
@@ -1136,7 +1143,7 @@ export default function InboxPage() {
               contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
               lastMessage: formatLastMessage(lastMsg),
               lastMessageTime: lastMsg?.createdAt ? formatMessageDate(lastMsg.createdAt) : '',
-              unreadCount: 0,
+              unreadCount: conv.unreadCount || 0,
               status: conv.status?.toLowerCase() || 'active',
               assignedTo: conv.assignedTo ? {
                 id: conv.assignedTo.id,
