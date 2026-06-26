@@ -366,9 +366,15 @@ export default function CampaignsPage() {
         ? `${apiUrl}/api/wa/upload-media?accountId=${selectedAccountId}`
         : `${apiUrl}/api/wa/upload-media`
       
+      // Usar apiFetch para incluir token de autenticação
+      const session = await import('next-auth/react').then(m => m.getSession())
+      const token = (session as any)?.user?.token || (session as any)?.accessToken
+      
       const response = await fetch(url, {
         method: 'POST',
         body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       
       if (response.ok) {
@@ -384,8 +390,14 @@ export default function CampaignsPage() {
           alert('Erro: ID da mídia não retornado pelo servidor')
         }
       } else {
-        const error = await response.json()
-        alert(error.message || 'Erro ao fazer upload')
+        let errorMsg = 'Erro ao fazer upload'
+        try {
+          const error = await response.json()
+          errorMsg = error.message || errorMsg
+        } catch (e) {
+          errorMsg = `Erro ${response.status}: ${response.statusText}`
+        }
+        alert(errorMsg)
       }
     } catch (error) {
       console.error('Erro no upload:', error)

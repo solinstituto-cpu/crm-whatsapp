@@ -9,9 +9,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Aumentar limite de upload para 10MB (para logos em base64)
-  app.use(bodyParser.json({ limit: '10mb' }));
-  app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+  // Aumentar limite de upload para 50MB (para vídeos em templates de campanhas)
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
   // Enable CORS - permite domínios fixos + previews Vercel (*.vercel.app)
   const allowedOrigins = [
