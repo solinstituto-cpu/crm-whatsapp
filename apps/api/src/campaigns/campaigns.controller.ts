@@ -155,4 +155,10 @@ export class CampaignsController {
     this.logger.log(`Limpando conversas da campanha: ${id}`);
     return this.campaignsService.cleanupCampaignConversations(id);
   }
+
+  @Post('cleanup-account-conversations')
+  async cleanupAccountConversations(@Body() body: { phoneNumber: string }) {
+    this.logger.log(`Limpando TODAS conversas do número: ${body.phoneNumber}`);
+    return this.campaignsService.cleanupAllAccountConversations(body.phoneNumber);
+  }
 }

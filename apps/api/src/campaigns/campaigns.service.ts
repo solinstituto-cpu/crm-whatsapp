@@ -794,6 +794,46 @@ export class CampaignsService {
     };
   }
 
+  async cleanupAllAccountConversations(phoneNumber: string) {
+    // Encontrar a conta WhatsApp pelo número
+    const account = await this.prisma.whatsAppAccount.findFirst({
+      where: { phoneNumber: { contains: phoneNumber } },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Conta WhatsApp com número ${phoneNumber} não encontrada`);
+    }
+
+    this.logger.log(`🗑️ Deletando TODAS conversas da conta: ${account.name} (${account.phoneNumber})`);
+
+    // Contar conversas antes
+    const totalConversations = await this.prisma.conversation.count({
+      where: { whatsappAccountId: account.id },
+    });
+
+    // Deletar todas as mensagens das conversas desta conta
+    const deletedMessages = await this.prisma.message.deleteMany({
+      where: {
+        conversation: { whatsappAccountId: account.id },
+      },
+    });
+
+    // Deletar todas as conversas desta conta
+    const deletedConversations = await this.prisma.conversation.deleteMany({
+      where: { whatsappAccountId: account.id },
+    });
+
+    this.logger.log(`✅ Deletadas ${deletedConversations.count} conversas e ${deletedMessages.count} mensagens da conta ${account.name}`);
+
+    return {
+      success: true,
+      account: account.name,
+      phoneNumber: account.phoneNumber,
+      deletedConversations: deletedConversations.count,
+      deletedMessages: deletedMessages.count,
+    };
+  }
+
   // ==========================================
   // CONVERSÃO DE VARIÁVEIS DO TEMPLATE
   // ==========================================
