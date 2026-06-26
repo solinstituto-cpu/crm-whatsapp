@@ -149,4 +149,10 @@ export class CampaignsController {
     this.logger.log(`Cancelando campanha: ${id}`);
     return this.campaignsService.cancel(id);
   }
+
+  @Post(':id/cleanup-conversations')
+  async cleanupConversations(@Param('id') id: string) {
+    this.logger.log(`Limpando conversas da campanha: ${id}`);
+    return this.campaignsService.cleanupCampaignConversations(id);
+  }
 }

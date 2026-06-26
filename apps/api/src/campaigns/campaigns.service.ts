@@ -737,6 +737,64 @@ export class CampaignsService {
   }
 
   // ==========================================
+  // LIMPEZA DE CONVERSAS DE CAMPANHAS COM FALHA
+  // ==========================================
+
+  async cleanupCampaignConversations(campaignId: string) {
+    const campaign = await this.findOne(campaignId);
+    
+    // Buscar mensagens SENT da campanha (as que criaram conversas)
+    const sentMessages = await this.prisma.campaignMessage.findMany({
+      where: { campaignId, status: 'SENT' },
+      select: { contactPhone: true, waMessageId: true },
+    });
+
+    this.logger.log(`Campanha ${campaign.name}: ${sentMessages.length} mensagens enviadas para limpar`);
+
+    let deletedCount = 0;
+    let archivedCount = 0;
+
+    for (const msg of sentMessages) {
+      // Buscar conversas do contato nesta conta
+      const conversations = await this.prisma.conversation.findMany({
+        where: {
+          phoneE164: msg.contactPhone,
+          whatsappAccountId: campaign.whatsappAccountId || undefined,
+        },
+        include: {
+          messages: { select: { id: true } },
+        },
+      });
+
+      for (const conv of conversations) {
+        if (conv.messages.length <= 1) {
+          // Conversa com 0 ou 1 mensagem (só o template) → deletar
+          await this.prisma.message.deleteMany({ where: { conversationId: conv.id } });
+          await this.prisma.conversation.delete({ where: { id: conv.id } });
+          deletedCount++;
+          this.logger.log(`🗑️ Conversa deletada: ${conv.phoneE164} (${conv.id})`);
+        } else {
+          // Conversa com mais mensagens → arquivar
+          await this.prisma.conversation.update({
+            where: { id: conv.id },
+            data: { status: 'ARCHIVED' },
+          });
+          archivedCount++;
+          this.logger.log(`📦 Conversa arquivada: ${conv.phoneE164} (${conv.id})`);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      campaign: campaign.name,
+      sentMessages: sentMessages.length,
+      deletedConversations: deletedCount,
+      archivedConversations: archivedCount,
+    };
+  }
+
+  // ==========================================
   // CONVERSÃO DE VARIÁVEIS DO TEMPLATE
   // ==========================================
 
