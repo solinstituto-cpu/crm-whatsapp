@@ -1129,13 +1129,6 @@ export default function InboxPage() {
         fetch(`${apiUrl}/api/conversations/${conversationId}`)
           .then(res => res.json())
           .then(conv => {
-            // Trocar para a conta WhatsApp correta da conversa
-            if (conv.whatsappAccountId) {
-              setSelectedAccountId(conv.whatsappAccountId)
-            }
-            // Limpar filtro de pendentes para garantir que a conversa apareça
-            setConversationFilter('all')
-            
             const lastMsg = conv.messages?.[conv.messages.length - 1]
             const formattedConv = {
               id: conv.id,
@@ -1155,7 +1148,25 @@ export default function InboxPage() {
               whatsappAccountId: conv.whatsappAccountId,
               messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
             }
+            
+            // Trocar para a conta WhatsApp correta e limpar filtros
+            if (conv.whatsappAccountId) {
+              setSelectedAccountId(conv.whatsappAccountId)
+            }
+            setConversationFilter('all')
+            
+            // Adicionar a conversa na lista e selecionar imediatamente
+            setConversations(prev => {
+              const exists = prev.find(c => c.id === formattedConv.id)
+              return exists ? prev : [formattedConv, ...prev]
+            })
             handleSelectConversation(formattedConv)
+            
+            // Re-selecionar após a troca de conta recarregar a lista
+            setTimeout(() => {
+              handleSelectConversation(formattedConv)
+            }, 1500)
+            
             // Limpar query param
             window.history.replaceState({}, '', '/inbox')
           })
