@@ -357,6 +357,20 @@ export default function CampaignsPage() {
   // Upload de mídia para o servidor
   // Envia direto para o Render (bypass do proxy Vercel que tem limite de 4.5MB)
   const handleMediaUpload = async (file: File) => {
+    // Validar tamanhos limites do WhatsApp/Meta
+    if (headerMediaType === 'IMAGE' && file.size > 5 * 1024 * 1024) {
+      alert('Imagens para o cabeçalho devem ter no máximo 5MB (limite do WhatsApp).')
+      return
+    }
+    if (headerMediaType === 'VIDEO' && file.size > 16 * 1024 * 1024) {
+      alert('Vídeos para o cabeçalho devem ter no máximo 16MB (limite do WhatsApp). Por favor, comprima o arquivo.')
+      return
+    }
+    if (headerMediaType === 'DOCUMENT' && file.size > 100 * 1024 * 1024) {
+      alert('Documentos para o cabeçalho devem ter no máximo 100MB (limite do WhatsApp).')
+      return
+    }
+
     setUploadingMedia(true)
     try {
       // Upload direto para o backend Render (sem proxy Vercel)
@@ -1101,7 +1115,7 @@ export default function CampaignsPage() {
                                 </p>
                                 <p className="text-xs text-gray-400">
                                   {headerMediaType === 'IMAGE' && 'JPG, PNG até 5MB'}
-                                  {headerMediaType === 'VIDEO' && 'MP4 até 50MB'}
+                                  {headerMediaType === 'VIDEO' && 'MP4 até 16MB'}
                                   {headerMediaType === 'DOCUMENT' && 'PDF até 100MB'}
                                 </p>
                               </div>
