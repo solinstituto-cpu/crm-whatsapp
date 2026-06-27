@@ -457,6 +457,13 @@ export class WebhookService {
         if (!campaignMessage.deliveredAt) {
           updateData.deliveredAt = new Date();
         }
+      } else if (statusUpper === 'FAILED') {
+        const errorDetail = status.errors && status.errors.length > 0 ? status.errors[0] : null;
+        if (errorDetail) {
+          updateData.error = `Erro Meta ${errorDetail.code}: ${errorDetail.message}${errorDetail.error_data?.details ? ' - ' + errorDetail.error_data.details : ''}`;
+        } else {
+          updateData.error = 'Falha desconhecida (relatada por webhook)';
+        }
       }
 
       await this.prisma.campaignMessage.update({
