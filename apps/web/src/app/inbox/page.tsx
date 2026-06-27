@@ -73,6 +73,7 @@ interface Message {
     content: string
     fromMe: boolean
   }
+  templateHeaderType?: 'video' | 'image' | null
 }
 
 interface AssignedUser {
@@ -430,6 +431,18 @@ export default function InboxPage() {
       if (mediaId) {
         return `${apiUrl}/api/wa/media/${mediaId}`
       }
+      // Extrair media ID de templates com header de vídeo/imagem
+      // Formato: { components: [{ type: 'header', parameters: [{ type: 'video', video: { id: '...' } }] }] }
+      if (mediaData?.components) {
+        const headerComp = mediaData.components.find((c: any) => c.type === 'header')
+        if (headerComp?.parameters?.[0]) {
+          const param = headerComp.parameters[0]
+          const templateMediaId = param?.video?.id || param?.image?.id
+          if (templateMediaId) {
+            return `${apiUrl}/api/wa/media/${templateMediaId}`
+          }
+        }
+      }
       return null
     }
     
@@ -445,7 +458,15 @@ export default function InboxPage() {
       caption: mediaData?.caption || null,
       filename: mediaData?.filename || null,
       buttons: buttons.length > 0 ? buttons : undefined,
-      replyToMessageId: replyToMsgId
+      replyToMessageId: replyToMsgId,
+      templateHeaderType: (() => {
+        if (mediaData?.components) {
+          const hdr = mediaData.components.find((c: any) => c.type === 'header')
+          if (hdr?.parameters?.[0]?.type === 'video') return 'video' as const
+          if (hdr?.parameters?.[0]?.type === 'image') return 'image' as const
+        }
+        return null
+      })()
     }
   }
 
@@ -3194,9 +3215,30 @@ export default function InboxPage() {
                       )}
                       
                       {message.type === 'template' && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded mb-1 inline-block ${message.fromMe ? 'bg-green-700 text-green-100' : 'bg-gray-100 text-gray-600'}`}>
-                          📄 Template
-                        </span>
+                        <>
+                          <span className={`text-xs px-1.5 py-0.5 rounded mb-1 inline-block ${message.fromMe ? 'bg-green-700 text-green-100' : 'bg-gray-100 text-gray-600'}`}>
+                            📄 Template
+                          </span>
+                          {message.mediaUrl && message.templateHeaderType === 'video' && (
+                            <div className="mb-1">
+                              <video 
+                                src={message.mediaUrl} 
+                                controls
+                                className="max-w-[250px] max-h-[200px] rounded"
+                              />
+                            </div>
+                          )}
+                          {message.mediaUrl && message.templateHeaderType === 'image' && (
+                            <div className="mb-1">
+                              <img 
+                                src={message.mediaUrl} 
+                                alt="Header" 
+                                className="max-w-[250px] max-h-[250px] rounded cursor-pointer hover:opacity-90"
+                                onClick={() => window.open(message.mediaUrl, '_blank')}
+                              />
+                            </div>
+                          )}
+                        </>
                       )}
                       
                       {/* Exibição de sticker */}
