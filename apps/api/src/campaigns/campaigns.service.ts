@@ -94,8 +94,9 @@ export class CampaignsService {
     sendEndHour?: number;
     sendDays?: string; // "0,1,2,3,4,5,6" (0=Dom, 1=Seg...6=Sab)
     whatsappAccountId?: string;
+    maxMessagesPerDay?: number;
   }) {
-    this.logger.log(`Criando campanha: ${data.name} (conta: ${data.whatsappAccountId || 'padrão'})`);
+    this.logger.log(`Criando campanha: ${data.name} (conta: ${data.whatsappAccountId || 'padrão'}, limite diário: ${data.maxMessagesPerDay || 'sem limite'})`);
     this.logger.log(`templateVariables recebido: ${JSON.stringify(data.templateVariables)?.slice(0, 500)}`);
     
     // Garantir que sempre tenha uma conta WhatsApp associada
@@ -127,6 +128,7 @@ export class CampaignsService {
         sendStartHour: data.sendStartHour,
         sendEndHour: data.sendEndHour,
         sendDays: data.sendDays,
+        maxMessagesPerDay: data.maxMessagesPerDay || null,
         whatsappAccountId: accountId || undefined,
         status: data.scheduledAt ? 'SCHEDULED' : 'DRAFT',
       },
@@ -150,6 +152,7 @@ export class CampaignsService {
     scheduledAt: Date;
     sendRatePerMinute: number;
     whatsappAccountId: string;
+    maxMessagesPerDay: number;
   }>) {
     const campaign = await this.findOne(id);
     
@@ -163,6 +166,7 @@ export class CampaignsService {
         ...data,
         templateVariables: data.templateVariables ? JSON.stringify(data.templateVariables) : undefined,
         filterTags: data.filterTags ? JSON.stringify(data.filterTags) : undefined,
+        maxMessagesPerDay: data.maxMessagesPerDay !== undefined ? (data.maxMessagesPerDay || null) : undefined,
       },
     });
   }
@@ -480,10 +484,19 @@ export class CampaignsService {
     }
 
     while (this.runningCampaigns.get(campaignId)) {
+      // Recarregar dados atualizados da campanha a cada iteração para checar limites
+      const currentCampaign = await this.prisma.campaign.findUnique({
+        where: { id: campaignId },
+      });
+      if (!currentCampaign || currentCampaign.status !== 'RUNNING') {
+        this.runningCampaigns.delete(campaignId);
+        break;
+      }
+
       // Verificar dia da semana (usando horário de Brasília)
-      if (campaign.sendDays) {
+      if (currentCampaign.sendDays) {
         const brazilDay = this.getBrazilDayOfWeek();
-        const allowedDays = campaign.sendDays.split(',').map(d => parseInt(d.trim()));
+        const allowedDays = currentCampaign.sendDays.split(',').map(d => parseInt(d.trim()));
         if (!allowedDays.includes(brazilDay)) {
           this.logger.log(`Dia ${brazilDay} não permitido para envio. Aguardando próximo dia válido...`);
           // Pausar e esperar 1 hora, depois verificar novamente
@@ -493,13 +506,56 @@ export class CampaignsService {
       }
       
       // Verificar horário de envio (usando horário de Brasília)
-      if (campaign.sendStartHour !== null && campaign.sendEndHour !== null) {
+      if (currentCampaign.sendStartHour !== null && currentCampaign.sendEndHour !== null) {
         const currentHour = this.getBrazilHour();
         
-        if (currentHour < campaign.sendStartHour || currentHour >= campaign.sendEndHour) {
+        if (currentHour < currentCampaign.sendStartHour || currentHour >= currentCampaign.sendEndHour) {
           this.logger.log(`Fora do horário de envio (${currentHour}h Brasília). Aguardando próximo horário válido...`);
           // Pausar e esperar 5 minutos, depois verificar novamente
           await this.sleep(5 * 60 * 1000);
+          continue;
+        }
+      }
+
+      // --- LOGICA DE LIMITE DIARIO ---
+      if (currentCampaign.maxMessagesPerDay && currentCampaign.maxMessagesPerDay > 0) {
+        const now = new Date();
+        let shouldReset = false;
+
+        if (!currentCampaign.lastDayResetAt) {
+          shouldReset = true;
+        } else {
+          const timeSinceResetMs = now.getTime() - new Date(currentCampaign.lastDayResetAt).getTime();
+          const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+          if (timeSinceResetMs >= twentyFourHoursMs) {
+            shouldReset = true;
+          }
+        }
+
+        if (shouldReset) {
+          this.logger.log(`🔄 Reiniciando ciclo de 24h para a campanha ${currentCampaign.name}.`);
+          await this.prisma.campaign.update({
+            where: { id: campaignId },
+            data: {
+              daySentCount: 0,
+              lastDayResetAt: now,
+            },
+          });
+          currentCampaign.daySentCount = 0;
+          currentCampaign.lastDayResetAt = now;
+        }
+
+        if (currentCampaign.daySentCount >= currentCampaign.maxMessagesPerDay) {
+          const timeSinceResetMs = now.getTime() - new Date(currentCampaign.lastDayResetAt!).getTime();
+          const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+          const timeRemainingMs = Math.max(0, twentyFourHoursMs - timeSinceResetMs);
+          const minutesRemaining = Math.ceil(timeRemainingMs / (60 * 1000));
+          const hoursRemaining = (timeRemainingMs / (3600 * 1000)).toFixed(1);
+
+          this.logger.log(`⏳ Limite diário (${currentCampaign.maxMessagesPerDay}) atingido para campanha ${currentCampaign.name}. Aguardando ${hoursRemaining}h (${minutesRemaining} min) até reiniciar o ciclo.`);
+          
+          // Entra em modo de sono leve de 15 minutos antes de re-checar, para não consumir CPU
+          await this.sleep(15 * 60 * 1000);
           continue;
         }
       }
@@ -523,14 +579,14 @@ export class CampaignsService {
           },
         });
         this.runningCampaigns.delete(campaignId);
-        this.logger.log(`Campanha concluída: ${campaign.name}`);
+        this.logger.log(`Campanha concluída: ${currentCampaign.name}`);
         break;
       }
 
       // Enviar mensagem
       try {
-        const templateVariables = campaign.templateVariables 
-          ? JSON.parse(campaign.templateVariables) 
+        const templateVariables = currentCampaign.templateVariables 
+          ? JSON.parse(currentCampaign.templateVariables) 
           : undefined;
 
         // Buscar dados do contato para substituir variáveis
@@ -544,14 +600,14 @@ export class CampaignsService {
         // Só enviar components se houver algum válido
         const finalComponents = components.length > 0 ? components : undefined;
         
-        this.logger.log(`Enviando template ${campaign.templateName} para ${message.contactPhone} - components: ${JSON.stringify(finalComponents)?.slice(0,200)}`);
+        this.logger.log(`Enviando template ${currentCampaign.templateName} para ${message.contactPhone} - components: ${JSON.stringify(finalComponents)?.slice(0,200)}`);
 
         const result = await this.whatsappService.sendTemplate({
           to: message.contactPhone,
-          templateName: campaign.templateName,
-          language: campaign.templateLanguage,
+          templateName: currentCampaign.templateName,
+          language: currentCampaign.templateLanguage,
           components: finalComponents,
-        }, campaign.whatsappAccountId || undefined);
+        }, currentCampaign.whatsappAccountId || undefined);
 
         // O WhatsApp retorna o ID em result.messages[0].id
         const waMessageId = result?.messages?.[0]?.id;
@@ -567,13 +623,16 @@ export class CampaignsService {
           },
         });
 
-        // Incrementar contador
+        // Incrementar contadores geral e diário
         await this.prisma.campaign.update({
           where: { id: campaignId },
-          data: { sentCount: { increment: 1 } },
+          data: { 
+            sentCount: { increment: 1 },
+            daySentCount: { increment: 1 }
+          },
         });
 
-        this.logger.log(`✅ Enviado para ${message.contactPhone}`);
+        this.logger.log(`✅ Enviado para ${message.contactPhone} (${currentCampaign.daySentCount + 1}/${currentCampaign.maxMessagesPerDay || '∞'} hoje)`);
 
       } catch (error) {
         this.logger.error(`❌ Erro ao enviar para ${message.contactPhone}: ${error.message}`);

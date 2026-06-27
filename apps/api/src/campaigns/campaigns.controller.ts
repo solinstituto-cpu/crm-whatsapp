@@ -80,8 +80,9 @@ export class CampaignsController {
     sendEndHour?: number;
     sendDays?: string; // "0,1,2,3,4,5,6" (0=Dom...6=Sab)
     whatsappAccountId?: string;
+    maxMessagesPerDay?: number;
   }) {
-    this.logger.log(`Criando campanha: ${body.name} (conta: ${body.whatsappAccountId || 'padrão'})`);
+    this.logger.log(`Criando campanha: ${body.name} (conta: ${body.whatsappAccountId || 'padrão'}, limite diário: ${body.maxMessagesPerDay || 'sem limite'})`);
     return this.campaignsService.create({
       ...body,
       scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
@@ -104,6 +105,7 @@ export class CampaignsController {
       scheduledAt?: string;
       sendRatePerMinute?: number;
       whatsappAccountId?: string;
+      maxMessagesPerDay?: number;
     },
   ) {
     return this.campaignsService.update(id, {

@@ -428,6 +428,9 @@ model Campaign {
 
   // Controle de velocidade
   sendRatePerMinute Int @default(10) // msgs por minuto (para evitar bloqueio)
+  maxMessagesPerDay Int? // Limite diário de mensagens (opcional)
+  daySentCount      Int       @default(0) // Mensagens enviadas no ciclo diário atual
+  lastDayResetAt    DateTime? // Timestamp do início do ciclo diário atual (24h)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -55,6 +55,8 @@ interface Campaign {
   readCount: number
   failedCount: number
   sendRatePerMinute: number
+  maxMessagesPerDay?: number | null
+  daySentCount?: number
   createdAt: string
   whatsappAccountId?: string
   whatsappAccount?: { id: string; name: string; phoneNumber: string }
@@ -128,6 +130,7 @@ export default function CampaignsPage() {
   const [formSendStartHour, setFormSendStartHour] = useState<number | null>(null)
   const [formSendEndHour, setFormSendEndHour] = useState<number | null>(null)
   const [formSendDays, setFormSendDays] = useState<number[]>([1, 2, 3, 4, 5]) // Seg-Sex por padrão
+  const [formMaxMessagesPerDay, setFormMaxMessagesPerDay] = useState<string>('')
   const [saving, setSaving] = useState(false)
   
   // Campos customizados disponíveis
@@ -550,6 +553,7 @@ export default function CampaignsPage() {
         sendEndHour: formSendEndHour,
         sendDays: formSendDays.length > 0 ? formSendDays.join(',') : undefined,
         whatsappAccountId: finalAccountId, // SEMPRE enviar o accountId
+        maxMessagesPerDay: formMaxMessagesPerDay ? Number(formMaxMessagesPerDay) : undefined,
       }
 
       console.log('📤 Payload da campanha:', JSON.stringify({ ...campaignPayload, templateVariables: '...' }))
@@ -654,6 +658,7 @@ export default function CampaignsPage() {
     setFormSendStartHour(null)
     setFormSendEndHour(null)
     setFormSendDays([1, 2, 3, 4, 5]) // Seg-Sex padrão
+    setFormMaxMessagesPerDay('')
     setPreviewContacts([])
     setPreviewTotal(0)
     setSelectedTemplateData(null)
@@ -882,10 +887,9 @@ export default function CampaignsPage() {
                             <Users className="h-4 w-4 mr-1" />
                             {campaign.totalContacts} contatos
                           </span>
-                          {campaign.scheduledAt && (
-                            <span className="flex items-center text-blue-600">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {new Date(campaign.scheduledAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
+                          {campaign.maxMessagesPerDay && (
+                            <span className="flex items-center text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full text-xs font-medium border border-orange-200">
+                              Limite Diário: {campaign.daySentCount ?? 0}/{campaign.maxMessagesPerDay} envios
                             </span>
                           )}
                         </div>
@@ -1343,6 +1347,23 @@ export default function CampaignsPage() {
                         <option value={30}>30 msgs/min (agressivo)</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Limite de envios por dia (opcional)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Ex: 50 (deixe em branco para sem limite)"
+                      value={formMaxMessagesPerDay}
+                      onChange={(e) => setFormMaxMessagesPerDay(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      O sistema enviará esta quantidade de mensagens e aguardará 24 horas antes de continuar com o restante da lista.
+                    </p>
                   </div>
 
                   <div className="mt-4">
