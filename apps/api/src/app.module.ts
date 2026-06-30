@@ -22,6 +22,7 @@ import { QuickRepliesModule } from './quick-replies/quick-replies.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { EmailCampaignsModule } from './email-campaigns/email-campaigns.module';
 import { EmailAuthModule } from './email-auth/email-auth.module';
+import { SseModule } from './sse/sse.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { EmailAuthModule } from './email-auth/email-auth.module';
     KnowledgeModule,
     EmailCampaignsModule,
     EmailAuthModule,
+    SseModule,
   ],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ import { WhatsAppWebhookDto } from '../common/schemas';
 import { WhatsAppService } from './whatsapp.service';
 import { FlowEngineService } from '../flows/flow-engine.service';
 import { TemplatesService } from '../templates/templates.service';
+import { SseService } from '../sse/sse.service';
 
 @Injectable()
 export class WebhookService {
@@ -15,6 +16,7 @@ export class WebhookService {
     @Inject(forwardRef(() => FlowEngineService))
     private flowEngineService: FlowEngineService,
     private templatesService: TemplatesService,
+    private sseService: SseService,
   ) {}
 
   async processWebhook(webhookData: any) {
@@ -227,6 +229,24 @@ export class WebhookService {
     });
 
     this.logger.log(`✅ Saved inbound message from ${phoneNumber} to conversation ${conversation.id}`);
+
+    // Emitir evento SSE para atualização em tempo real no frontend
+    try {
+      this.sseService.emit({
+        type: 'new_message',
+        conversationId: conversation.id,
+        accountId: whatsappAccountId || undefined,
+        data: {
+          contactName: contact.name,
+          contactPhone: phoneNumber,
+          messagePreview: (messageBody || '').substring(0, 100),
+          messageType: message.type,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (e) {
+      this.logger.warn(`SSE emit error: ${e.message}`);
+    }
 
     // ==========================================
     // PROCESSAR FLUXOS DE AUTOMAÇÃO
@@ -478,6 +498,24 @@ export class WebhookService {
     }
 
     this.logger.log(`Updated message status: ${status.id} -> ${status.status}`);
+
+    // Emitir evento SSE de atualização de status
+    try {
+      if (message) {
+        this.sseService.emit({
+          type: 'status_update',
+          conversationId: message.conversationId,
+          accountId: message.conversation?.whatsappAccountId || undefined,
+          data: {
+            waMessageId: status.id,
+            newStatus: status.status,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`SSE status emit error: ${e.message}`);
+    }
   }
 
   // Atualiza as estatísticas da campanha baseado nas mensagens
