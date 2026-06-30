@@ -1032,28 +1032,22 @@ export default function InboxPage() {
     }
 
     initInbox()
-    
-    // Polling de fallback a cada 15s (backup caso SSE desconecte)
-    const interval = setInterval(() => {
-      fetchConversationsBackground()
-    }, 15000)
-    
-    return () => clearInterval(interval)
+    // Sem polling — atualizações são 100% via SSE em tempo real
   }, [status, initialLoadDone])
 
-  // SSE (Server-Sent Events) para atualizações em tempo real
+  // SSE (Server-Sent Events) — tempo real para TODOS os números conectados
   useEffect(() => {
     if (status !== 'authenticated') return
 
     const apiUrl = getApiUrl()
-    const accountId = selectedAccountIdRef.current
-    const sseUrl = `${apiUrl}/api/sse/events${accountId ? `?accountId=${accountId}` : ''}`
+    // Sem filtro de accountId — recebe eventos de TODOS os números
+    const sseUrl = `${apiUrl}/api/sse/events`
     
     let eventSource: EventSource | null = null
     let reconnectTimer: NodeJS.Timeout | null = null
 
     const connect = () => {
-      console.log('🔌 SSE: Conectando...', sseUrl)
+      console.log('🔌 SSE: Conectando a todos os números...', sseUrl)
       eventSource = new EventSource(sseUrl)
 
       eventSource.addEventListener('new_message', (event) => {
@@ -1064,25 +1058,24 @@ export default function InboxPage() {
           // Tocar som de notificação
           playNotificationSound()
           
-          // Se a conversa da mensagem é a selecionada, buscar detalhes dela imediatamente
+          // Se a conversa da mensagem é a selecionada, buscar detalhes imediatamente
           const currentSelected = selectedConversationRef.current
           if (currentSelected && data.conversationId === currentSelected.id) {
             fetchConversationDetails(data.conversationId)
           }
           
-          // Atualizar lista de conversas em background
+          // SEMPRE atualizar a lista de conversas (nova msg = conversa sobe pro topo)
           fetchConversationsBackground()
         } catch (e) {
-          console.warn('SSE: Erro ao processar evento new_message', e)
+          console.warn('SSE: Erro ao processar new_message', e)
         }
       })
 
       eventSource.addEventListener('status_update', (event) => {
         try {
           const data = JSON.parse(event.data)
-          console.log('📊 SSE: Status atualizado', data)
           
-          // Atualizar status da mensagem localmente se a conversa está selecionada
+          // Atualizar status da mensagem localmente se a conversa está aberta
           const currentSelected = selectedConversationRef.current
           if (currentSelected && data.conversationId === currentSelected.id) {
             setSelectedConversation((prev: any) => {
@@ -1099,35 +1092,38 @@ export default function InboxPage() {
               }
             })
           }
+          
+          // Atualizar lista de conversas para refletir status
+          fetchConversationsBackground()
         } catch (e) {
-          console.warn('SSE: Erro ao processar evento status_update', e)
+          console.warn('SSE: Erro ao processar status_update', e)
         }
       })
 
       eventSource.addEventListener('heartbeat', () => {
-        // Heartbeat recebido - conexão está viva
+        // Conexão viva
       })
 
       eventSource.onopen = () => {
-        console.log('✅ SSE: Conectado com sucesso')
+        console.log('✅ SSE: Conectado — tempo real ativo para todos os números')
+        // Ao reconectar, buscar todas as conversas para não perder nada
+        fetchConversationsBackground()
       }
 
       eventSource.onerror = () => {
-        console.warn('⚠️ SSE: Erro na conexão, reconectando em 5s...')
+        console.warn('⚠️ SSE: Conexão perdida, reconectando em 3s...')
         eventSource?.close()
-        // Reconectar após 5 segundos
-        reconnectTimer = setTimeout(connect, 5000)
+        reconnectTimer = setTimeout(connect, 3000)
       }
     }
 
     connect()
 
     return () => {
-      console.log('🔌 SSE: Desconectando...')
       eventSource?.close()
       if (reconnectTimer) clearTimeout(reconnectTimer)
     }
-  }, [status, selectedAccountId])
+  }, [status])
 
   // Recarregar contas WhatsApp quando a sessão estiver pronta com token
   useEffect(() => {
