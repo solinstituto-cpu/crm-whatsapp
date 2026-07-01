@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
-import { getApiUrl } from '@/lib/api-config'
+import { getApiUrl, getSseUrl } from '@/lib/api-config'
 import { fetchUserWhatsAppAccounts, resolveDefaultAccountId, getAccountFilterId } from '@/lib/whatsapp-accounts'
 import DashboardLayout from '@/components/layout/dashboard-layout'
 import { 
@@ -1032,16 +1032,20 @@ export default function InboxPage() {
     }
 
     initInbox()
-    // Sem polling — atualizações são 100% via SSE em tempo real
+
+    // Polling de fallback a cada 12s (caso SSE desconecte ou falhe via proxy)
+    const interval = setInterval(() => {
+      fetchConversationsBackground()
+    }, 12000)
+
+    return () => clearInterval(interval)
   }, [status, initialLoadDone])
 
   // SSE (Server-Sent Events) — tempo real para TODOS os números conectados
   useEffect(() => {
     if (status !== 'authenticated') return
 
-    const apiUrl = getApiUrl()
-    // Sem filtro de accountId — recebe eventos de TODOS os números
-    const sseUrl = `${apiUrl}/api/sse/events`
+    const sseUrl = getSseUrl()
     
     let eventSource: EventSource | null = null
     let reconnectTimer: NodeJS.Timeout | null = null
@@ -1050,7 +1054,7 @@ export default function InboxPage() {
       console.log('🔌 SSE: Conectando a todos os números...', sseUrl)
       eventSource = new EventSource(sseUrl)
 
-      eventSource.addEventListener('new_message', (event) => {
+      eventSource.addEventListener('new_message', async (event) => {
         try {
           const data = JSON.parse(event.data)
           console.log('📩 SSE: Nova mensagem recebida', data)
@@ -1058,10 +1062,16 @@ export default function InboxPage() {
           // Tocar som de notificação
           playNotificationSound()
           
-          // Se a conversa da mensagem é a selecionada, buscar detalhes imediatamente
+          // Se a conversa da mensagem é a selecionada, buscar e aplicar detalhes imediatamente
           const currentSelected = selectedConversationRef.current
           if (currentSelected && data.conversationId === currentSelected.id) {
-            fetchConversationDetails(data.conversationId)
+            const fullConv = await fetchConversationDetails(data.conversationId)
+            if (fullConv) {
+              setSelectedConversation((prev) => ({
+                ...fullConv,
+                unreadCount: prev?.unreadCount ?? fullConv.unreadCount,
+              }))
+            }
           }
           
           // SEMPRE atualizar a lista de conversas (nova msg = conversa sobe pro topo)

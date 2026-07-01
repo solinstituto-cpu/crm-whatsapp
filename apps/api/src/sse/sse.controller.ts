@@ -2,7 +2,7 @@ import { Controller, Sse, Query, Logger } from '@nestjs/common';
 import { Observable, interval, map, merge } from 'rxjs';
 import { SseService } from './sse.service';
 
-@Controller('api/sse')
+@Controller('sse')
 export class SseController {
   private readonly logger = new Logger(SseController.name);
 
@@ -10,7 +10,7 @@ export class SseController {
 
   /**
    * Endpoint SSE para receber eventos em tempo real.
-   * O frontend conecta via EventSource('/api/sse/events?accountId=xxx')
+   * O frontend conecta via EventSource(getSseUrl()) → /api/sse/events no Render
    * 
    * Envia um heartbeat a cada 30s para manter a conexão viva.
    */

@@ -22,6 +22,7 @@ const nextConfig = {
     // which go through the Vercel proxy to the Render backend.
     // Direct cross-origin calls break authentication (401).
     NEXT_PUBLIC_API_URL: process.env.VERCEL ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
+    NEXT_PUBLIC_RENDER_API_URL: RENDER_API_URL,
   },
   async rewrites() {
     // Rewrite proxy for local development and fallback
