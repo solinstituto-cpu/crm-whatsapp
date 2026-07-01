@@ -81,8 +81,16 @@ export class ConversationsController {
   }
 
   @Post('find-or-create')
-  findOrCreate(@Body('phoneE164') phoneE164: string) {
-    return this.conversationsService.findOrCreateByPhone(phoneE164);
+  findOrCreate(
+    @Body('phoneE164') phoneE164: string,
+    @Body('whatsappAccountId') whatsappAccountId?: string,
+    @Body('contactId') contactId?: string,
+  ) {
+    return this.conversationsService.findOrCreateByPhone(
+      phoneE164,
+      whatsappAccountId ?? null,
+      contactId,
+    );
   }
 
   /**

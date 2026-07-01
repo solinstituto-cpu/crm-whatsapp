@@ -1237,6 +1237,7 @@ export default function InboxPage() {
       const params = new URLSearchParams(window.location.search)
       const phone = params.get('phone')
       const conversationId = params.get('conversationId')
+      const accountIdParam = params.get('accountId')
       
       // Priorizar conversationId se fornecido
       if (conversationId) {
@@ -1246,6 +1247,8 @@ export default function InboxPage() {
           .then(res => res.json())
           .then(conv => {
             const lastMsg = conv.messages?.[conv.messages.length - 1]
+            // Priorizar conta vinda dos Contatos; senão usar a da conversa
+            const targetAccountId = accountIdParam || conv.whatsappAccountId
             const formattedConv = {
               id: conv.id,
               contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
@@ -1261,15 +1264,18 @@ export default function InboxPage() {
                 color: conv.assignedTo.color
               } : undefined,
               lastIncomingMessageAt: conv.lastIncomingMessageAt,
-              whatsappAccountId: conv.whatsappAccountId,
+              whatsappAccountId: targetAccountId,
               messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
             }
             
-            // Trocar para a conta WhatsApp correta e limpar filtros
-            if (conv.whatsappAccountId) {
-              setSelectedAccountId(conv.whatsappAccountId)
+            if (targetAccountId) {
+              setSelectedAccountId(targetAccountId)
+              selectedAccountIdRef.current = targetAccountId
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('crm_selectedAccountId', targetAccountId)
+              }
             }
-            setConversationFilter('all')
+            setConversationFilter('active')
             
             // Adicionar a conversa na lista e selecionar imediatamente
             setConversations(prev => {

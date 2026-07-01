@@ -182,54 +182,89 @@ export class ConversationsService {
     });
   }
 
-  async findOrCreateByPhone(phoneE164: string) {
-    this.logger.log(`Finding or creating conversation for ${phoneE164}`);
+  async findOrCreateByPhone(
+    phoneE164: string,
+    whatsappAccountId?: string | null,
+    contactId?: string,
+  ) {
+    const accountId = whatsappAccountId ?? null;
+    this.logger.log(
+      `Finding or creating conversation for ${phoneE164} (account: ${accountId || 'none'}, contactId: ${contactId || 'none'})`,
+    );
 
-    // Primeiro, verificar se existe um contato com esse telefone
-    let contact = await this.prisma.contact.findFirst({
-      where: { phoneE164 },
-    });
+    const conversationInclude = {
+      contact: true,
+      messages: {
+        orderBy: { createdAt: 'desc' as const },
+        take: 20,
+      },
+    };
 
-    // Se não existir contato, criar um
+    let contact = contactId
+      ? await this.prisma.contact.findUnique({ where: { id: contactId } })
+      : null;
+
     if (!contact) {
-      this.logger.log(`Creating new contact for ${phoneE164}`);
-      contact = await this.prisma.contact.create({
-        data: {
-          phoneE164,
-          name: phoneE164, // Nome padrão é o próprio número
-          tags: '[]', // Tags vazio como JSON string
+      contact = await this.prisma.contact.findFirst({
+        where: {
+          phoneE164_whatsappAccountId: {
+            phoneE164,
+            whatsappAccountId: accountId,
+          },
         },
       });
     }
 
-    // Verificar se já existe uma conversa com esse contato
-    let conversation = await this.prisma.conversation.findFirst({
-      where: { contactId: contact.id },
-      include: {
-        contact: true,
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
+    if (!contact) {
+      this.logger.log(`Creating new contact for ${phoneE164} on account ${accountId || 'none'}`);
+      contact = await this.prisma.contact.create({
+        data: {
+          phoneE164,
+          name: phoneE164,
+          tags: '[]',
+          whatsappAccountId: accountId,
         },
+      });
+    }
+
+    let conversation = await this.prisma.conversation.findFirst({
+      where: {
+        contactId: contact.id,
+        ...(accountId ? { whatsappAccountId: accountId } : {}),
       },
+      include: conversationInclude,
     });
 
-    // Se não existir conversa, criar uma nova
+    if (!conversation && accountId) {
+      conversation = await this.prisma.conversation.findFirst({
+        where: { phoneE164, whatsappAccountId: accountId },
+        include: conversationInclude,
+      });
+      if (conversation && !conversation.contactId) {
+        conversation = await this.prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { contactId: contact.id },
+          include: conversationInclude,
+        });
+      }
+    }
+
     if (!conversation) {
-      this.logger.log(`Creating new conversation for contact ${contact.id}`);
+      this.logger.log(`Creating new conversation for contact ${contact.id} on account ${accountId || 'none'}`);
       conversation = await this.prisma.conversation.create({
         data: {
           contactId: contact.id,
-          phoneE164: phoneE164, // Salvar número na conversa
+          phoneE164,
           status: 'OPEN',
+          whatsappAccountId: accountId ?? undefined,
         },
-        include: {
-          contact: true,
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 20,
-          },
-        },
+        include: conversationInclude,
+      });
+    } else if (!conversation.whatsappAccountId && accountId) {
+      conversation = await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { whatsappAccountId: accountId },
+        include: conversationInclude,
       });
     }
 

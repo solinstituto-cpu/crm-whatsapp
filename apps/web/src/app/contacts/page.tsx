@@ -158,6 +158,7 @@ export default function ContactsPage() {
   // Estado para contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
+  const selectedAccountIdRef = useRef(selectedAccountId)
 
   // Carregar dados salvos no mount
   useEffect(() => {
@@ -177,6 +178,7 @@ export default function ContactsPage() {
       const storedAccountId = localStorage.getItem('crm_selectedAccountId')
       if (storedAccountId) {
         setSelectedAccountId(storedAccountId)
+        selectedAccountIdRef.current = storedAccountId
       }
     }
   }, [])
@@ -219,54 +221,50 @@ export default function ContactsPage() {
   
   // Persistir conta selecionada
   useEffect(() => {
+    selectedAccountIdRef.current = selectedAccountId
     if (typeof window !== 'undefined' && selectedAccountId) {
       localStorage.setItem('crm_selectedAccountId', selectedAccountId)
     }
   }, [selectedAccountId])
   
-  // Sincronizar conta selecionada quando voltar à página ou mudar em outra aba
+  // Sincronizar conta quando outra aba alterar o localStorage
   useEffect(() => {
     const syncAccountFromStorage = () => {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('crm_selectedAccountId')
-        if (stored && stored !== selectedAccountId) {
-          setSelectedAccountId(stored)
-        }
+      if (typeof window === 'undefined') return
+      const stored = localStorage.getItem('crm_selectedAccountId')
+      if (stored && stored !== selectedAccountIdRef.current) {
+        selectedAccountIdRef.current = stored
+        setSelectedAccountId(stored)
       }
     }
-    
-    // Quando outra aba altera localStorage
+
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'crm_selectedAccountId' && e.newValue && e.newValue !== selectedAccountId) {
+      if (e.key === 'crm_selectedAccountId' && e.newValue && e.newValue !== selectedAccountIdRef.current) {
+        selectedAccountIdRef.current = e.newValue
         setSelectedAccountId(e.newValue)
       }
     }
-    
-    // Quando a página fica visível novamente (navegação SPA)
+
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         syncAccountFromStorage()
       }
     }
-    
-    // Quando a janela recebe foco (voltou de outra aba/página)
+
     const handleFocus = () => {
       syncAccountFromStorage()
     }
-    
+
     window.addEventListener('storage', handleStorage)
     document.addEventListener('visibilitychange', handleVisibility)
     window.addEventListener('focus', handleFocus)
-    
-    // Sincronizar imediatamente ao montar (caso tenha mudado no inbox antes de navegar)
-    syncAccountFromStorage()
-    
+
     return () => {
       window.removeEventListener('storage', handleStorage)
       document.removeEventListener('visibilitychange', handleVisibility)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [selectedAccountId])
+  }, [])
   
   // Buscar usuários/atendentes
   const fetchUsers = async () => {
@@ -292,11 +290,20 @@ export default function ContactsPage() {
       const savedAccountId = typeof window !== 'undefined'
         ? localStorage.getItem('crm_selectedAccountId')
         : null
-      if (accounts.length > 0) {
-        const activeId = resolveDefaultAccountId(accounts, savedAccountId)
-        if (!selectedAccountId || !accounts.find((a) => a.id === selectedAccountId)) {
-          setSelectedAccountId(activeId)
+
+      let accountId = selectedAccountIdRef.current
+      if (accounts.length === 1) {
+        accountId = accounts[0].id
+      } else if (accounts.length > 1) {
+        const validCurrent = accountId && accounts.some((a) => a.id === accountId)
+        if (!validCurrent) {
+          accountId = resolveDefaultAccountId(accounts, savedAccountId)
         }
+      }
+
+      if (accountId && accountId !== selectedAccountIdRef.current) {
+        selectedAccountIdRef.current = accountId
+        setSelectedAccountId(accountId)
       }
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
@@ -610,12 +617,16 @@ export default function ContactsPage() {
 
   const handleOpenChat = async (contact: Contact) => {
     try {
-      // Criar ou buscar conversa existente
+      const accountId = selectedAccountIdRef.current || selectedAccountId
       const apiUrl = getApiUrl()
       const response = await fetch(`${apiUrl}/api/conversations/find-or-create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneE164: contact.phoneE164 })
+        body: JSON.stringify({
+          phoneE164: contact.phoneE164,
+          contactId: contact.id,
+          whatsappAccountId: accountId || null,
+        }),
       })
 
       if (!response.ok) {
@@ -623,9 +634,10 @@ export default function ContactsPage() {
       }
 
       const conversation = await response.json()
-      
-      // Redirecionar para inbox com a conversa criada/encontrada
-      router.push(`/inbox?conversationId=${conversation.id}`)
+
+      const query = new URLSearchParams({ conversationId: conversation.id })
+      if (accountId) query.set('accountId', accountId)
+      router.push(`/inbox?${query.toString()}`)
     } catch (error) {
       console.error('Erro ao abrir chat:', error)
       alert('Erro ao abrir conversa. Tente novamente.')
