@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/layout/dashboard-layout'
@@ -156,41 +156,68 @@ export default function CampaignsPage() {
   
   // Contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
-  const [filterAccountId, setFilterAccountId] = useState<string>('')
+  const [filterAccountId, setFilterAccountId] = useState<string>('') // filtro da lista
+  const [formAccountId, setFormAccountId] = useState<string>('') // número da campanha no modal (isolado)
   const [accountsLoaded, setAccountsLoaded] = useState(false)
+  const filterAccountIdRef = useRef(filterAccountId)
+  const formAccountIdRef = useRef(formAccountId)
+  const showNewModalRef = useRef(showNewModal)
+  const initialLoadDoneRef = useRef(false)
 
-  // Carregar conta selecionada do localStorage no mount
+  useEffect(() => { filterAccountIdRef.current = filterAccountId }, [filterAccountId])
+  useEffect(() => { formAccountIdRef.current = formAccountId }, [formAccountId])
+  useEffect(() => { showNewModalRef.current = showNewModal }, [showNewModal])
+
+  // Carregar filtro da lista do localStorage no mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('crm_selectedAccountId')
       if (stored) {
-        setSelectedAccountId(stored)
         setFilterAccountId(stored)
+        filterAccountIdRef.current = stored
       }
     }
   }, [])
 
-  // Quando o filterAccountId muda (seletor de filtro), salvar no localStorage e sincronizar selectedAccountId
+  const openNewCampaignModal = () => {
+    const accountId = filterAccountIdRef.current || formAccountIdRef.current
+    if (accountId) {
+      setFormAccountId(accountId)
+      formAccountIdRef.current = accountId
+      fetchTemplates(accountId)
+    }
+    setShowNewModal(true)
+  }
+
+  // Quando o filtro da lista muda — não altera o formulário do modal aberto
   const handleFilterAccountChange = (newAccountId: string) => {
     setFilterAccountId(newAccountId)
-    setSelectedAccountId(newAccountId)
+    filterAccountIdRef.current = newAccountId
     if (typeof window !== 'undefined' && newAccountId) {
       localStorage.setItem('crm_selectedAccountId', newAccountId)
     }
-    // Recarregar templates da nova conta
+  }
+
+  const handleFormAccountChange = (newAccountId: string) => {
+    setFormAccountId(newAccountId)
+    formAccountIdRef.current = newAccountId
+    setFormTemplate('')
+    setSelectedTemplateData(null)
+    setHeaderMediaType(null)
+    setHeaderMediaUrl('')
+    setHeaderMediaFile(null)
     fetchTemplates(newAccountId)
   }
 
-  // Sincronizar quando outra aba altera localStorage
+  // Sincronizar filtro da lista quando outra aba altera localStorage
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'crm_selectedAccountId' && e.newValue) {
-        setSelectedAccountId(e.newValue)
+      if (e.key === 'crm_selectedAccountId' && e.newValue && !showNewModalRef.current) {
         setFilterAccountId(e.newValue)
+        filterAccountIdRef.current = e.newValue
       }
     }
-    
+
     window.addEventListener('storage', handleStorage)
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
@@ -199,14 +226,15 @@ export default function CampaignsPage() {
     if (status === 'unauthenticated') {
       redirect('/auth/login')
     }
-    if (status === 'authenticated' && session) {
+    if (status === 'authenticated' && !initialLoadDoneRef.current) {
+      initialLoadDoneRef.current = true
       fetchCampaigns()
       fetchStats()
       fetchCustomFields()
       fetchAvailableTags()
       fetchWhatsAppAccounts()
     }
-  }, [status, session])
+  }, [status])
 
   // Re-fetch quando muda o filtro de conta ou status
   useEffect(() => {
@@ -223,14 +251,29 @@ export default function CampaignsPage() {
       const accounts = await fetchUserWhatsAppAccounts(userId)
       setWhatsappAccounts(accounts)
 
+      if (accounts.length === 0) return
+
       const savedAccountId = typeof window !== 'undefined'
         ? localStorage.getItem('crm_selectedAccountId')
         : null
-      if (accounts.length > 0) {
-        const activeId = resolveDefaultAccountId(accounts, savedAccountId)
-        setSelectedAccountId(activeId)
-        setFilterAccountId(activeId)
-        fetchTemplates(activeId)
+
+      let accountId = filterAccountIdRef.current
+      if (accounts.length === 1) {
+        accountId = accounts[0].id
+      } else {
+        const validCurrent = accountId && accounts.some((a) => a.id === accountId)
+        if (!validCurrent) {
+          accountId = resolveDefaultAccountId(accounts, savedAccountId)
+        }
+      }
+
+      // Não sobrescrever filtro nem formulário enquanto o modal de nova campanha está aberto
+      if (!showNewModalRef.current && accountId && accountId !== filterAccountIdRef.current) {
+        setFilterAccountId(accountId)
+        filterAccountIdRef.current = accountId
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('crm_selectedAccountId', accountId)
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
@@ -381,13 +424,12 @@ export default function CampaignsPage() {
       const formData = new FormData()
       formData.append('file', file)
       
-      const url = selectedAccountId 
-        ? `${directApiUrl}/api/wa/upload-media?accountId=${selectedAccountId}`
+      const accountId = formAccountIdRef.current || formAccountId
+      const url = accountId
+        ? `${directApiUrl}/api/wa/upload-media?accountId=${accountId}`
         : `${directApiUrl}/api/wa/upload-media`
-      
-      // Incluir token de autenticação
-      const session = await import('next-auth/react').then(m => m.getSession())
-      const token = (session as any)?.user?.token || (session as any)?.accessToken
+
+      const token = (session?.user as any)?.token || (session as any)?.accessToken
       
       const response = await fetch(url, {
         method: 'POST',
@@ -443,7 +485,7 @@ export default function CampaignsPage() {
   const fetchPreviewContacts = async () => {
     try {
       const apiUrl = getApiUrl()
-      let finalAccountId = selectedAccountId
+      let finalAccountId = formAccountIdRef.current || formAccountId
       if (!finalAccountId && whatsappAccounts.length > 0) {
         const defaultAcc = whatsappAccounts.find((a: any) => a.isDefault) || whatsappAccounts[0]
         finalAccountId = defaultAcc.id
@@ -482,7 +524,7 @@ export default function CampaignsPage() {
     }
 
     // VALIDAÇÃO OBRIGATÓRIA: garantir que uma conta WhatsApp está selecionada
-    let finalAccountId = selectedAccountId
+    let finalAccountId = formAccountIdRef.current || formAccountId
     if (!finalAccountId && whatsappAccounts.length > 0) {
       const defaultAcc = whatsappAccounts.find((a: any) => a.isDefault) || whatsappAccounts[0]
       finalAccountId = defaultAcc.id
@@ -708,7 +750,7 @@ export default function CampaignsPage() {
             </div>
           </div>
           <button
-            onClick={() => setShowNewModal(true)}
+            onClick={openNewCampaignModal}
             className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -844,7 +886,7 @@ export default function CampaignsPage() {
               <Megaphone className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <p>Nenhuma campanha encontrada</p>
               <button
-                onClick={() => setShowNewModal(true)}
+                onClick={openNewCampaignModal}
                 className="mt-4 text-green-600 hover:text-green-700 font-medium"
               >
                 Criar primeira campanha
@@ -1041,19 +1083,8 @@ export default function CampaignsPage() {
                       Número WhatsApp *
                     </label>
                     <select
-                      value={selectedAccountId}
-                      onChange={(e) => {
-                        const newId = e.target.value
-                        setSelectedAccountId(newId)
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem('crm_selectedAccountId', newId)
-                        }
-                        // Limpar template selecionado quando mudar de conta (templates podem ser diferentes)
-                        setFormTemplate('')
-                        setSelectedTemplateData(null)
-                        // Recarregar templates da nova conta
-                        fetchTemplates(newId)
-                      }}
+                      value={formAccountId}
+                      onChange={(e) => handleFormAccountChange(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     >
                       {whatsappAccounts.map((account) => (
