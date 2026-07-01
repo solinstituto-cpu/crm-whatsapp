@@ -205,7 +205,7 @@ export class ConversationsService {
       : null;
 
     if (!contact) {
-      contact = await this.prisma.contact.findFirst({
+      contact = await this.prisma.contact.findUnique({
         where: {
           phoneE164_whatsappAccountId: {
             phoneE164,
