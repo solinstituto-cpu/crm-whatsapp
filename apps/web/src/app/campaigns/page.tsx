@@ -1646,6 +1646,31 @@ export default function CampaignsPage() {
                   <div className="bg-red-50 rounded-lg p-3 text-center">
                     <p className="text-xl font-bold text-red-600">{selectedCampaign.failedCount}</p>
                     <p className="text-sm text-gray-500">Falhas</p>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Reenviar ${selectedCampaign.failedCount} mensagens que falharam?`)) return
+                        try {
+                          const apiUrl = getApiUrl()
+                          const res = await fetch(`${apiUrl}/api/campaigns/${selectedCampaign.id}/retry-failed`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                          })
+                          const data = await res.json()
+                          if (data.success) {
+                            alert(`✅ ${data.retriedCount} mensagens sendo reenviadas!`)
+                            setShowDetailsModal(false)
+                            fetchCampaigns()
+                          } else {
+                            alert(`Erro: ${data.message || 'Erro desconhecido'}`)
+                          }
+                        } catch (e: any) {
+                          alert(`Erro: ${e.message}`)
+                        }
+                      }}
+                      className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      🔄 Reenviar Falhas
+                    </button>
                   </div>
                 )}
 

@@ -435,6 +435,68 @@ export class CampaignsService {
     return { success: true };
   }
 
+  /**
+   * Reenviar todas as mensagens que falharam — reseta FAILED para PENDING,
+   * recalcula contadores e reinicia o processamento da campanha.
+   */
+  async retryFailed(id: string) {
+    const campaign = await this.findOne(id);
+
+    // Contar mensagens com falha
+    const failedCount = await this.prisma.campaignMessage.count({
+      where: { campaignId: id, status: 'FAILED' },
+    });
+
+    if (failedCount === 0) {
+      throw new BadRequestException('Nenhuma mensagem com falha para reenviar');
+    }
+
+    // Resetar todas as mensagens FAILED para PENDING
+    await this.prisma.campaignMessage.updateMany({
+      where: { campaignId: id, status: 'FAILED' },
+      data: { status: 'PENDING', error: null },
+    });
+
+    // Recalcular contadores da campanha baseado nos status reais
+    const stats = await this.prisma.campaignMessage.groupBy({
+      by: ['status'],
+      where: { campaignId: id },
+      _count: { status: true },
+    });
+
+    const sentCount = stats.find(s => s.status === 'SENT')?._count?.status || 0;
+    const deliveredCount = stats.find(s => s.status === 'DELIVERED')?._count?.status || 0;
+    const readCount = stats.find(s => s.status === 'READ')?._count?.status || 0;
+    const newFailedCount = stats.find(s => s.status === 'FAILED')?._count?.status || 0;
+
+    // Atualizar campanha: resetar contadores e voltar para RUNNING
+    await this.prisma.campaign.update({
+      where: { id },
+      data: {
+        status: 'RUNNING',
+        sentCount: sentCount + deliveredCount + readCount,
+        deliveredCount,
+        readCount,
+        failedCount: newFailedCount,
+        completedAt: null,
+        // Resetar contador diário para permitir envio imediato
+        daySentCount: 0,
+        lastDayResetAt: new Date(),
+      },
+    });
+
+    this.logger.log(`🔄 Campanha ${campaign.name}: ${failedCount} mensagens resetadas para reenvio`);
+
+    // Iniciar processamento em background
+    this.processCampaign(id);
+
+    return { 
+      success: true, 
+      retriedCount: failedCount,
+      message: `${failedCount} mensagens sendo reenviadas`,
+    };
+  }
+
   // ==========================================
   // PROCESSAMENTO EM BACKGROUND
   // ==========================================
@@ -583,65 +645,110 @@ export class CampaignsService {
         break;
       }
 
-      // Enviar mensagem
-      try {
-        const templateVariables = currentCampaign.templateVariables 
-          ? JSON.parse(currentCampaign.templateVariables) 
-          : undefined;
+      // Enviar mensagem com retry para erros temporários
+      const maxRetries = 3;
+      let lastError: any = null;
+      let sent = false;
 
-        // Buscar dados do contato para substituir variáveis
-        const contact = await this.prisma.contact.findUnique({
-          where: { id: message.contactId },
-        });
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const templateVariables = currentCampaign.templateVariables 
+            ? JSON.parse(currentCampaign.templateVariables) 
+            : undefined;
 
-        // Converter variáveis para o formato da API do Meta
-        const components = this.buildTemplateComponents(templateVariables, contact);
-        
-        // Só enviar components se houver algum válido
-        const finalComponents = components.length > 0 ? components : undefined;
-        
-        this.logger.log(`Enviando template ${currentCampaign.templateName} para ${message.contactPhone} - components: ${JSON.stringify(finalComponents)?.slice(0,200)}`);
+          // Buscar dados do contato para substituir variáveis
+          const contact = await this.prisma.contact.findUnique({
+            where: { id: message.contactId },
+          });
 
-        const result = await this.whatsappService.sendTemplate({
-          to: message.contactPhone,
-          templateName: currentCampaign.templateName,
-          language: currentCampaign.templateLanguage,
-          components: finalComponents,
-        }, currentCampaign.whatsappAccountId || undefined);
+          // Converter variáveis para o formato da API do Meta
+          const components = this.buildTemplateComponents(templateVariables, contact);
+          
+          // Só enviar components se houver algum válido
+          const finalComponents = components.length > 0 ? components : undefined;
+          
+          if (attempt === 1) {
+            this.logger.log(`Enviando template ${currentCampaign.templateName} para ${message.contactPhone} - components: ${JSON.stringify(finalComponents)?.slice(0,200)}`);
+          } else {
+            this.logger.log(`🔄 Tentativa ${attempt}/${maxRetries} para ${message.contactPhone}`);
+          }
 
-        // O WhatsApp retorna o ID em result.messages[0].id
-        const waMessageId = result?.messages?.[0]?.id;
-        this.logger.log(`📨 waMessageId recebido: ${waMessageId}`);
+          const result = await this.whatsappService.sendTemplate({
+            to: message.contactPhone,
+            templateName: currentCampaign.templateName,
+            language: currentCampaign.templateLanguage,
+            components: finalComponents,
+          }, currentCampaign.whatsappAccountId || undefined);
 
-        // Atualizar mensagem como enviada
-        await this.prisma.campaignMessage.update({
-          where: { id: message.id },
-          data: {
-            status: 'SENT',
-            waMessageId: waMessageId,
-            sentAt: new Date(),
-          },
-        });
+          // O WhatsApp retorna o ID em result.messages[0].id
+          const waMessageId = result?.messages?.[0]?.id;
+          this.logger.log(`📨 waMessageId recebido: ${waMessageId}`);
 
-        // Incrementar contadores geral e diário
-        await this.prisma.campaign.update({
-          where: { id: campaignId },
-          data: { 
-            sentCount: { increment: 1 },
-            daySentCount: { increment: 1 }
-          },
-        });
+          // Atualizar mensagem como enviada
+          await this.prisma.campaignMessage.update({
+            where: { id: message.id },
+            data: {
+              status: 'SENT',
+              waMessageId: waMessageId,
+              sentAt: new Date(),
+              error: null, // Limpar erro anterior se houver
+            },
+          });
 
-        this.logger.log(`✅ Enviado para ${message.contactPhone} (${currentCampaign.daySentCount + 1}/${currentCampaign.maxMessagesPerDay || '∞'} hoje)`);
+          // Incrementar contadores geral e diário
+          await this.prisma.campaign.update({
+            where: { id: campaignId },
+            data: { 
+              sentCount: { increment: 1 },
+              daySentCount: { increment: 1 }
+            },
+          });
 
-      } catch (error) {
-        this.logger.error(`❌ Erro ao enviar para ${message.contactPhone}: ${error.message}`);
+          this.logger.log(`✅ Enviado para ${message.contactPhone} (${currentCampaign.daySentCount + 1}/${currentCampaign.maxMessagesPerDay || '∞'} hoje)`);
+          sent = true;
+          break; // Saiu do loop de retry
+
+        } catch (error) {
+          lastError = error;
+          
+          // Verificar se é erro permanente da Meta (não vale tentar de novo)
+          const metaErrorCode = error?.response?.data?.error?.code;
+          const statusCode = error?.response?.status;
+          const isPermanentError = (
+            (metaErrorCode && metaErrorCode >= 130000) || // Erros Meta (131xxx, 132xxx)
+            statusCode === 400 || // Bad request
+            statusCode === 401    // Unauthorized
+          );
+
+          if (isPermanentError) {
+            this.logger.error(`❌ Erro permanente para ${message.contactPhone}: ${error.message}`);
+            break; // Não vale retry
+          }
+
+          // Erro temporário (404, 500, timeout, rede) — tentar de novo
+          if (attempt < maxRetries) {
+            const retryDelay = attempt * 5000; // 5s, 10s, 15s
+            this.logger.warn(`⚠️ Erro temporário (${statusCode || 'network'}) para ${message.contactPhone}, tentando de novo em ${retryDelay/1000}s...`);
+            await this.sleep(retryDelay);
+          }
+        }
+      }
+
+      // Se não conseguiu enviar após todas as tentativas
+      if (!sent) {
+        this.logger.error(`❌ Falha definitiva para ${message.contactPhone} após ${maxRetries} tentativas: ${lastError?.message}`);
+
+        // Extrair mensagem de erro detalhada
+        const metaError = lastError?.response?.data?.error;
+        const errorMsg = metaError 
+          ? `Erro Meta ${metaError.code}: ${metaError.error_data?.details || metaError.message}`
+          : lastError?.message || 'Erro desconhecido';
 
         await this.prisma.campaignMessage.update({
           where: { id: message.id },
           data: {
             status: 'FAILED',
-            error: error.message,
+            error: errorMsg,
           },
         });
 

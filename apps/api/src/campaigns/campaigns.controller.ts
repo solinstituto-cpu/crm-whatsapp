@@ -163,4 +163,10 @@ export class CampaignsController {
     this.logger.log(`Limpando TODAS conversas do número: ${body.phoneNumber}`);
     return this.campaignsService.cleanupAllAccountConversations(body.phoneNumber);
   }
+
+  @Post(':id/retry-failed')
+  async retryFailed(@Param('id') id: string) {
+    this.logger.log(`Reenviando mensagens com falha da campanha: ${id}`);
+    return this.campaignsService.retryFailed(id);
+  }
 }
