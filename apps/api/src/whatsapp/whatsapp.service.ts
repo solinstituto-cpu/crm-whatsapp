@@ -41,7 +41,7 @@ export class WhatsAppService {
 
     try {
       if (accountId) {
-        // Busca conta específica
+        // Conta EXPLÍCITA — NUNCA fazer fallback para outra conta
         const account = await this.prisma.whatsAppAccount.findUnique({
           where: { id: accountId },
         });
@@ -49,14 +49,14 @@ export class WhatsAppService {
           phoneNumberId = account.phoneNumberId;
           accessToken = account.accessToken;
           resolvedAccountId = account.id;
-          this.logger.log(`📱 Usando conta específica: ${account.name} (${account.phoneNumber})`);
+          this.logger.log(`📱 Usando conta explícita: ${account.name} (${account.phoneNumber})`);
         } else {
-          this.logger.warn(`⚠️ Conta ${accountId} não encontrada ou inativa, tentando fallback`);
+          // Conta não encontrada ou inativa — ERRO, não fallback
+          this.logger.error(`❌ Conta ${accountId} não encontrada ou inativa. NÃO fazendo fallback.`);
+          throw new Error(`Conta WhatsApp (${accountId}) não encontrada ou está inativa. Verifique as configurações.`);
         }
-      }
-      
-      // Se não resolveu por accountId, tenta pela conversa do contato
-      if (!resolvedAccountId && phoneNumber) {
+      } else if (phoneNumber) {
+        // Sem accountId explícito — tenta detectar pela conversa/contato
         const conversation = await this.prisma.conversation.findFirst({
           where: { 
             phoneE164: phoneNumber,
@@ -69,7 +69,7 @@ export class WhatsAppService {
           phoneNumberId = conversation.whatsappAccount.phoneNumberId;
           accessToken = conversation.whatsappAccount.accessToken;
           resolvedAccountId = conversation.whatsappAccount.id;
-          this.logger.log(`📱 Conta detectada pela conversa: ${conversation.whatsappAccount.name}`);
+          this.logger.log(`📱 Conta detectada pela conversa: ${conversation.whatsappAccount.name} (${conversation.whatsappAccount.phoneNumber})`);
         } else {
           // Busca o contato para ver a qual conta ele pertence
           const contact = await this.prisma.contact.findFirst({
@@ -83,13 +83,13 @@ export class WhatsAppService {
             phoneNumberId = contact.whatsappAccount.phoneNumberId;
             accessToken = contact.whatsappAccount.accessToken;
             resolvedAccountId = contact.whatsappAccount.id;
-            this.logger.log(`📱 Conta detectada pelo contato: ${contact.whatsappAccount.name}`);
+            this.logger.log(`📱 Conta detectada pelo contato: ${contact.whatsappAccount.name} (${contact.whatsappAccount.phoneNumber})`);
           }
         }
       }
       
-      // Fallback: conta padrão do banco
-      if (!resolvedAccountId) {
+      // Fallback para conta padrão — SOMENTE quando nenhum accountId foi passado
+      if (!resolvedAccountId && !accountId) {
         const defaultAccount = await this.prisma.whatsAppAccount.findFirst({
           where: { isDefault: true, isActive: true },
         });
@@ -115,6 +115,10 @@ export class WhatsAppService {
         }
       }
     } catch (error) {
+      // Se o erro veio da verificação de accountId explícito, re-throw
+      if (accountId) {
+        throw error;
+      }
       // Se der erro (ex: tabela não existe ainda), usa fallback do .env
       this.logger.warn(`Usando credenciais do .env (fallback): ${error.message}`);
     }
