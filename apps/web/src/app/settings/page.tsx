@@ -2224,7 +2224,7 @@ export default function SettingsPage() {
               </div>
               <nav className="p-2">
                 {tabs
-                  .filter((tab) => session?.user?.role !== 'SUPERVISOR' || tab.id === 'quick-replies' || tab.id === 'security')
+                  .filter((tab) => session?.user?.role !== 'SUPERVISOR' || tab.id === 'quick-replies' || tab.id === 'appearance')
                   .map((tab) => (
                   <button
                     key={tab.id}
