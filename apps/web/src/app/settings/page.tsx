@@ -1954,6 +1954,13 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('whatsapp')
   const [saving, setSaving] = useState(false)
 
+  // Redirect SUPERVISOR to quick-replies as default tab
+  useEffect(() => {
+    if (session?.user?.role === 'SUPERVISOR' && activeTab === 'whatsapp') {
+      setActiveTab('quick-replies')
+    }
+  }, [session, activeTab])
+
   // Estados para configurações
   const [whatsappConfig, setWhatsappConfig] = useState({
     accessToken: process.env.NEXT_PUBLIC_WHATSAPP_ACCESS_TOKEN || '',
@@ -2216,7 +2223,9 @@ export default function SettingsPage() {
                 <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Menu</h3>
               </div>
               <nav className="p-2">
-                {tabs.map((tab) => (
+                {tabs
+                  .filter((tab) => session?.user?.role !== 'SUPERVISOR' || tab.id === 'quick-replies' || tab.id === 'security')
+                  .map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -2734,16 +2743,18 @@ export default function SettingsPage() {
               )}
 
               {/* Save Button */}
-              <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {saving ? 'Salvando...' : 'Salvar Configurações'}
-                </button>
-              </div>
+              {session?.user?.role !== 'SUPERVISOR' && (
+                <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? 'Salvando...' : 'Salvar Configurações'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

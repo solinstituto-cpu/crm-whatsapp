@@ -24,7 +24,7 @@ export const CAN_ACCESS: Record<string, UserRole[]> = {
   campaigns: ['ADMIN', 'SUPERVISOR'],
   reports: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
   users: ['ADMIN'],
-  settings: ['ADMIN'],
+  settings: ['ADMIN', 'SUPERVISOR'],
   whatsappTest: ['ADMIN'],
   help: ['ADMIN', 'SUPERVISOR', 'AGENT', 'VIEWER'],
 }
@@ -41,7 +41,7 @@ export const CAN_EDIT: Record<string, UserRole[]> = {
   campaigns: ['ADMIN', 'SUPERVISOR'],
   reports: ['ADMIN', 'SUPERVISOR'],
   users: ['ADMIN', 'SUPERVISOR'],
-  settings: ['ADMIN'],
+  settings: ['ADMIN', 'SUPERVISOR'],
 }
 
 export function canAccess(role: string | undefined, module: string): boolean {
