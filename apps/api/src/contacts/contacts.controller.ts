@@ -55,6 +55,19 @@ export class ContactsController {
     return this.contactsService.findAll(page, limit, search, filters);
   }
 
+  // ==========================================
+  // ANÁLISE: CONTATOS SEM FORMAÇÃO NA SAÚDE
+  // ==========================================
+
+  @Get('analyze-no-health-degree')
+  async analyzeNoHealthDegree(
+    @Query('interest') interest?: string,
+    @Query('accountId') accountId?: string,
+  ) {
+    this.logger.log(`🔍 Análise de contatos sem formação na saúde - interesse: ${interest || 'acupuntura'}`);
+    return this.contactsService.analyzeNoHealthDegree({ interest, accountId });
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.contactsService.findOne(id);
