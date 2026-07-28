@@ -156,8 +156,8 @@ export class CampaignsService {
   }>) {
     const campaign = await this.findOne(id);
     
-    if (campaign.status !== 'DRAFT' && campaign.status !== 'SCHEDULED') {
-      throw new BadRequestException('Só é possível editar campanhas em rascunho ou agendadas');
+    if (campaign.status === 'RUNNING') {
+      throw new BadRequestException('Não é possível editar uma campanha em execução. Pause a campanha primeiro.');
     }
 
     return this.prisma.campaign.update({
@@ -759,7 +759,7 @@ export class CampaignsService {
       }
 
       // Aguardar antes da próxima mensagem
-      await this.sleep(delayMs);
+      await this.sleep(delayMs, campaignId);
     }
   }
 
@@ -833,8 +833,21 @@ export class CampaignsService {
     return allContacts;
   }
 
-  private sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  private sleep(ms: number, campaignId?: string) {
+    return new Promise<void>((resolve) => {
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        if (campaignId && !this.runningCampaigns.get(campaignId)) {
+          clearInterval(interval);
+          resolve();
+          return;
+        }
+        if (Date.now() - startTime >= ms) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 500);
+    });
   }
 
   // ==========================================

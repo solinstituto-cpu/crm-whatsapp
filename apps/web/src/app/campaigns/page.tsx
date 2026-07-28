@@ -111,6 +111,7 @@ export default function CampaignsPage() {
 
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false)
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [previewContacts, setPreviewContacts] = useState<any[]>([])
@@ -600,25 +601,34 @@ export default function CampaignsPage() {
 
       console.log('📤 Payload da campanha:', JSON.stringify({ ...campaignPayload, templateVariables: '...' }))
 
-      const response = await fetch(`${apiUrl}/api/campaigns`, {
-        method: 'POST',
+      const isEditing = Boolean(editingCampaignId)
+      const url = isEditing ? `${apiUrl}/api/campaigns/${editingCampaignId}` : `${apiUrl}/api/campaigns`
+      const method = isEditing ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(campaignPayload),
       })
 
       if (response.ok) {
-        const newCampaign = await response.json()
-        setCampaigns([newCampaign, ...campaigns])
+        const savedCampaign = await response.json()
+        if (isEditing) {
+          setCampaigns(campaigns.map(c => c.id === editingCampaignId ? savedCampaign : c))
+        } else {
+          setCampaigns([savedCampaign, ...campaigns])
+        }
         setShowNewModal(false)
         resetForm()
         fetchStats()
+        fetchCampaigns()
       } else {
         const error = await response.json()
-        alert(error.message || 'Erro ao criar campanha')
+        alert(error.message || 'Erro ao salvar campanha')
       }
     } catch (error) {
-      console.error('Erro ao criar campanha:', error)
-      alert('Erro ao criar campanha')
+      console.error('Erro ao salvar campanha:', error)
+      alert('Erro ao salvar campanha')
     } finally {
       setSaving(false)
     }
@@ -659,9 +669,14 @@ export default function CampaignsPage() {
           c.id === id ? { ...c, status: 'PAUSED' } : c
         ))
         fetchStats()
+        fetchCampaigns()
+      } else {
+        const error = await response.json()
+        alert(error.message || 'Erro ao pausar campanha')
       }
     } catch (error) {
       console.error('Erro ao pausar campanha:', error)
+      alert('Erro ao pausar campanha')
     }
   }
 
@@ -704,11 +719,23 @@ export default function CampaignsPage() {
     setPreviewContacts([])
     setPreviewTotal(0)
     setSelectedTemplateData(null)
+    setEditingCampaignId(null)
     setHeaderVariables({})
     setBodyVariables({})
     setHeaderMediaType(null)
     setHeaderMediaUrl('')
     setHeaderMediaFile(null)
+  }
+
+  const openEditModal = (campaign: Campaign) => {
+    setEditingCampaignId(campaign.id)
+    setFormName(campaign.name || '')
+    setFormDescription(campaign.description || '')
+    setFormTemplate(campaign.templateName || '')
+    setFormTemplateLanguage(campaign.templateLanguage || 'pt_BR')
+    setFormSendRate(campaign.sendRatePerMinute || 10)
+    setFormMaxMessagesPerDay(campaign.maxMessagesPerDay ? String(campaign.maxMessagesPerDay) : '')
+    setShowNewModal(true)
   }
 
   const openDetails = (campaign: Campaign) => {
@@ -1019,6 +1046,15 @@ export default function CampaignsPage() {
                         </button>
                         {campaign.status !== 'RUNNING' && (
                           <button
+                            onClick={() => openEditModal(campaign)}
+                            className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200"
+                            title="Editar parâmetros da campanha"
+                          >
+                            <Edit className="h-5 w-5" />
+                          </button>
+                        )}
+                        {campaign.status !== 'RUNNING' && (
+                          <button
                             onClick={() => handleDeleteCampaign(campaign.id)}
                             className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
                             title="Excluir"
@@ -1040,7 +1076,7 @@ export default function CampaignsPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Nova Campanha</h2>
+                <h2 className="text-xl font-bold">{editingCampaignId ? 'Editar Parâmetros da Campanha' : 'Nova Campanha'}</h2>
                 <button onClick={() => { setShowNewModal(false); resetForm() }}>
                   <X className="h-6 w-6 text-gray-500 hover:text-gray-700" />
                 </button>
@@ -1687,10 +1723,21 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end mt-6 pt-4 border-t">
+              <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                {selectedCampaign.status !== 'RUNNING' && (
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false)
+                      openEditModal(selectedCampaign)
+                    }}
+                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 flex items-center gap-2 font-medium"
+                  >
+                    <Edit className="h-4 w-4" /> Editar Parâmetros
+                  </button>
+                )}
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 ml-auto"
                 >
                   Fechar
                 </button>
