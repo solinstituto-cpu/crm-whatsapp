@@ -1720,6 +1720,19 @@ export default function CampaignsPage() {
                   {selectedCampaign.completedAt && (
                     <p><strong>Concluída:</strong> {new Date(selectedCampaign.completedAt).toLocaleString('pt-BR')}</p>
                   )}
+                  {selectedCampaign.status !== 'RUNNING' && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => {
+                          setShowDetailsModal(false)
+                          openEditModal(selectedCampaign)
+                        }}
+                        className="px-3 py-1.5 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1.5"
+                      >
+                        <Edit className="h-3.5 w-3.5" /> Editar Parâmetros da Campanha
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
