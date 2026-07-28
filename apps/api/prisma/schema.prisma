@@ -92,6 +92,12 @@ model Contact {
   deals         Deal[]
 
   @@unique([phoneE164, whatsappAccountId])
+  @@index([whatsappAccountId])
+  @@index([customerStatus])
+  @@index([optedOut])
+  @@index([createdAt])
+  @@index([lastMessageAt])
+  @@index([assignedToId])
   @@map("contacts")
 }
 
@@ -122,6 +128,11 @@ model Conversation {
   messages Message[]
 
   @@index([whatsappAccountId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@index([contactId])
+  @@index([assignedToId])
+  @@index([whatsappAccountId, status])
   @@map("conversations")
 }
 
@@ -140,6 +151,10 @@ model Message {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([createdAt])
+  @@index([waMessageId])
   @@map("messages")
 }
 
@@ -441,6 +456,8 @@ model Campaign {
   @@index([status])
   @@index([scheduledAt])
   @@index([whatsappAccountId])
+  @@index([status, whatsappAccountId])
+  @@index([createdAt])
   @@map("campaigns")
 }
 
@@ -465,6 +482,7 @@ model CampaignMessage {
   @@index([campaignId])
   @@index([contactId])
   @@index([status])
+  @@index([campaignId, status])
   @@map("campaign_messages")
 }
 

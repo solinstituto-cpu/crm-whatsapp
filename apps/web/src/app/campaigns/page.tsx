@@ -43,8 +43,10 @@ interface Campaign {
   status: string
   templateName: string
   templateLanguage: string
+  templateVariables?: string // JSON string from DB
   filterTags?: string
   filterStatus?: string
+  filterCustomFields?: string
   excludeOptOut: boolean
   scheduledAt?: string
   startedAt?: string
@@ -55,6 +57,9 @@ interface Campaign {
   readCount: number
   failedCount: number
   sendRatePerMinute: number
+  sendStartHour?: number | null
+  sendEndHour?: number | null
+  sendDays?: string | null
   maxMessagesPerDay?: number | null
   daySentCount?: number
   createdAt: string
@@ -727,15 +732,148 @@ export default function CampaignsPage() {
     setHeaderMediaFile(null)
   }
 
-  const openEditModal = (campaign: Campaign) => {
-    setEditingCampaignId(campaign.id)
-    setFormName(campaign.name || '')
-    setFormDescription(campaign.description || '')
-    setFormTemplate(campaign.templateName || '')
-    setFormTemplateLanguage(campaign.templateLanguage || 'pt_BR')
-    setFormSendRate(campaign.sendRatePerMinute || 10)
-    setFormMaxMessagesPerDay(campaign.maxMessagesPerDay ? String(campaign.maxMessagesPerDay) : '')
-    setShowNewModal(true)
+  const openEditModal = async (campaign: Campaign) => {
+    // Buscar dados completos da campanha via API (inclui templateVariables)
+    try {
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/campaigns/${campaign.id}`)
+      const fullCampaign = response.ok ? await response.json() : campaign
+
+      // Campos básicos
+      setEditingCampaignId(fullCampaign.id)
+      setFormName(fullCampaign.name || '')
+      setFormDescription(fullCampaign.description || '')
+      setFormTemplate(fullCampaign.templateName || '')
+      setFormTemplateLanguage(fullCampaign.templateLanguage || 'pt_BR')
+      setFormSendRate(fullCampaign.sendRatePerMinute || 10)
+      setFormMaxMessagesPerDay(fullCampaign.maxMessagesPerDay ? String(fullCampaign.maxMessagesPerDay) : '')
+
+      // Conta WhatsApp
+      const accountId = fullCampaign.whatsappAccountId || filterAccountIdRef.current || ''
+      setFormAccountId(accountId)
+      formAccountIdRef.current = accountId
+
+      // Filtros de segmentação
+      if (fullCampaign.filterTags) {
+        try {
+          const tags = typeof fullCampaign.filterTags === 'string' ? JSON.parse(fullCampaign.filterTags) : fullCampaign.filterTags
+          setFormFilterTags(Array.isArray(tags) ? tags : [])
+        } catch { setFormFilterTags([]) }
+      } else {
+        setFormFilterTags([])
+      }
+      setFormFilterStatus(fullCampaign.filterStatus || '')
+      setFormExcludeOptOut(fullCampaign.excludeOptOut !== false)
+
+      // Filtros de campos customizados
+      if (fullCampaign.filterCustomFields) {
+        try {
+          const cf = typeof fullCampaign.filterCustomFields === 'string' ? JSON.parse(fullCampaign.filterCustomFields) : fullCampaign.filterCustomFields
+          setFormFilterCustomFields(cf || {})
+        } catch { setFormFilterCustomFields({}) }
+      } else {
+        setFormFilterCustomFields({})
+      }
+
+      // Agendamento
+      if (fullCampaign.scheduledAt) {
+        const d = new Date(fullCampaign.scheduledAt)
+        const localStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+        setFormScheduledAt(localStr)
+      } else {
+        setFormScheduledAt('')
+      }
+
+      // Horário comercial
+      setFormSendStartHour(fullCampaign.sendStartHour ?? null)
+      setFormSendEndHour(fullCampaign.sendEndHour ?? null)
+      if (fullCampaign.sendDays) {
+        setFormSendDays(fullCampaign.sendDays.split(',').map((d: string) => parseInt(d.trim())))
+      } else {
+        setFormSendDays([1, 2, 3, 4, 5])
+      }
+
+      // Carregar templates da conta e depois selecionar o template correto
+      if (accountId) {
+        await fetchTemplates(accountId)
+      }
+
+      // Variáveis do template (imagem, body vars, header vars)
+      if (fullCampaign.templateVariables) {
+        try {
+          const tv = typeof fullCampaign.templateVariables === 'string' ? JSON.parse(fullCampaign.templateVariables) : fullCampaign.templateVariables
+
+          // Header media (imagem/vídeo/documento)
+          if (tv.headerMedia && tv.headerMedia.url) {
+            setHeaderMediaType(tv.headerMedia.type?.toUpperCase() || 'IMAGE')
+            setHeaderMediaUrl(tv.headerMedia.url)
+          } else {
+            setHeaderMediaType(null)
+            setHeaderMediaUrl('')
+          }
+          setHeaderMediaFile(null)
+
+          // Header variables
+          if (tv.header && Array.isArray(tv.header)) {
+            const hv: Record<string, { type: string, value: string }> = {}
+            tv.header.forEach((v: any) => {
+              hv[v.variable] = { type: v.type || 'name', value: v.value || '' }
+            })
+            setHeaderVariables(hv)
+          } else {
+            setHeaderVariables({})
+          }
+
+          // Body variables
+          if (tv.body && Array.isArray(tv.body)) {
+            const bv: Record<string, { type: string, value: string }> = {}
+            tv.body.forEach((v: any) => {
+              bv[v.variable] = { type: v.type || 'name', value: v.value || '' }
+            })
+            setBodyVariables(bv)
+          } else {
+            setBodyVariables({})
+          }
+        } catch {
+          setHeaderMediaType(null)
+          setHeaderMediaUrl('')
+          setHeaderMediaFile(null)
+          setHeaderVariables({})
+          setBodyVariables({})
+        }
+      }
+
+      // Selecionar template data para mostrar preview
+      setTimeout(() => {
+        const tmpl = templates.find(t => t.name === fullCampaign.templateName)
+        if (tmpl) {
+          setSelectedTemplateData(tmpl)
+          // Detectar tipo de mídia do header do template (se não veio das templateVariables)
+          if (!fullCampaign.templateVariables) {
+            const headerComp = tmpl.components?.find((c: any) => c.type === 'HEADER')
+            if (headerComp) {
+              const format = headerComp.format?.toUpperCase()
+              if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(format)) {
+                setHeaderMediaType(format)
+              }
+            }
+          }
+        }
+      }, 500)
+
+      setShowNewModal(true)
+    } catch (error) {
+      console.error('Erro ao carregar campanha para edição:', error)
+      // Fallback: abrir com dados básicos
+      setEditingCampaignId(campaign.id)
+      setFormName(campaign.name || '')
+      setFormDescription(campaign.description || '')
+      setFormTemplate(campaign.templateName || '')
+      setFormTemplateLanguage(campaign.templateLanguage || 'pt_BR')
+      setFormSendRate(campaign.sendRatePerMinute || 10)
+      setFormMaxMessagesPerDay(campaign.maxMessagesPerDay ? String(campaign.maxMessagesPerDay) : '')
+      setShowNewModal(true)
+    }
   }
 
   const openDetails = (campaign: Campaign) => {
