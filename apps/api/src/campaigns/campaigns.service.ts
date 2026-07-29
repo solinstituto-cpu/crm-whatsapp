@@ -291,6 +291,19 @@ export class CampaignsService {
         throw new BadRequestException(`Não é possível iniciar campanha com status: ${campaign.status}`);
       }
 
+      // 🛡️ TRAVA DE SEGURANÇA: Impedir envio para toda a base
+      const hasFilterTags = campaign.filterTags && campaign.filterTags !== '[]' && campaign.filterTags !== 'null';
+      const hasFilterStatus = campaign.filterStatus && campaign.filterStatus.trim() !== '';
+      const hasFilterSource = campaign.filterSource && campaign.filterSource.trim() !== '';
+      
+      if (!hasFilterTags && !hasFilterStatus && !hasFilterSource && !forceStart) {
+        throw new BadRequestException(
+          '🛡️ SEGURANÇA: A campanha não tem nenhum filtro de segmentação (tags, status ou origem). ' +
+          'Sem filtro, a campanha seria enviada para TODA a base de contatos. ' +
+          'Adicione pelo menos um filtro antes de iniciar.'
+        );
+      }
+
       // Verificar se a campanha está agendada para o futuro
       if (campaign.scheduledAt && !forceStart) {
         const now = new Date();

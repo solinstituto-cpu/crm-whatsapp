@@ -640,6 +640,19 @@ export default function CampaignsPage() {
   }
 
   const handleStartCampaign = async (id: string) => {
+    // 🛡️ TRAVA DE SEGURANÇA: Verificar se a campanha tem filtro
+    const campaign = campaigns.find(c => c.id === id)
+    if (campaign) {
+      const hasFilter = (campaign.filterTags && campaign.filterTags !== '[]' && campaign.filterTags !== 'null') ||
+                        (campaign.filterStatus && campaign.filterStatus.trim() !== '')
+      if (!hasFilter) {
+        alert('🛡️ SEGURANÇA: Esta campanha não tem nenhum filtro de segmentação (tags ou status).\n\n' +
+              'Sem filtro, a campanha seria enviada para TODA a base de contatos!\n\n' +
+              'Edite a campanha e adicione pelo menos um filtro (tag ou status) antes de iniciar.')
+        return
+      }
+    }
+
     if (!confirm('Iniciar envio da campanha?')) return
 
     try {
