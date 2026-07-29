@@ -455,18 +455,19 @@ export class CampaignsService {
   async retryFailed(id: string) {
     const campaign = await this.findOne(id);
 
-    // Contar mensagens com falha
+    // Contar mensagens com falha que NUNCA foram enviadas com sucesso ao Meta
+    // Mensagens com waMessageId já possuem registro no WhatsApp Meta e não devem ser reenviadas para o cliente!
     const failedCount = await this.prisma.campaignMessage.count({
-      where: { campaignId: id, status: 'FAILED' },
+      where: { campaignId: id, status: 'FAILED', waMessageId: null },
     });
 
     if (failedCount === 0) {
-      throw new BadRequestException('Nenhuma mensagem com falha para reenviar');
+      throw new BadRequestException('Nenhuma mensagem pendente de envio para reenviar');
     }
 
-    // Resetar todas as mensagens FAILED para PENDING
+    // Resetar apenas mensagens FAILED sem waMessageId para PENDING
     await this.prisma.campaignMessage.updateMany({
-      where: { campaignId: id, status: 'FAILED' },
+      where: { campaignId: id, status: 'FAILED', waMessageId: null },
       data: { status: 'PENDING', error: null },
     });
 
@@ -492,9 +493,6 @@ export class CampaignsService {
         readCount,
         failedCount: newFailedCount,
         completedAt: null,
-        // Resetar contador diário para permitir envio imediato
-        daySentCount: 0,
-        lastDayResetAt: new Date(),
       },
     });
 
