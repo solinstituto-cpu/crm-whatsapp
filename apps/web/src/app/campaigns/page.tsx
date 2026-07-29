@@ -118,6 +118,7 @@ export default function CampaignsPage() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [previewContacts, setPreviewContacts] = useState<any[]>([])
   const [previewTotal, setPreviewTotal] = useState(0)
@@ -1834,9 +1835,12 @@ export default function CampaignsPage() {
                     <p className="text-xl font-bold text-red-600">{selectedCampaign.failedCount}</p>
                     <p className="text-sm text-gray-500">Falhas</p>
                     <button
+                      disabled={isRetrying}
                       onClick={async () => {
+                        if (isRetrying) return
                         if (!confirm(`Reenviar ${selectedCampaign.failedCount} mensagens que falharam?`)) return
                         try {
+                          setIsRetrying(true)
                           const apiUrl = getApiUrl()
                           const res = await fetch(`${apiUrl}/api/campaigns/${selectedCampaign.id}/retry-failed`, {
                             method: 'POST',
@@ -1852,11 +1856,13 @@ export default function CampaignsPage() {
                           }
                         } catch (e: any) {
                           alert(`Erro: ${e.message}`)
+                        } finally {
+                          setIsRetrying(false)
                         }
                       }}
-                      className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
+                      className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
-                      🔄 Reenviar Falhas
+                      {isRetrying ? '⏳ Reenviando...' : '🔄 Reenviar Falhas'}
                     </button>
                   </div>
                 )}

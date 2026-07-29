@@ -536,6 +536,10 @@ export class CampaignsService {
   }
 
   async processCampaign(campaignId: string) {
+    if (this.runningCampaigns.get(campaignId)) {
+      this.logger.log(`Campanha ${campaignId} já está em execução. Ignorando chamada duplicada.`);
+      return;
+    }
     this.runningCampaigns.set(campaignId, true);
 
     const campaign = await this.prisma.campaign.findUnique({
@@ -545,7 +549,10 @@ export class CampaignsService {
       },
     });
 
-    if (!campaign) return;
+    if (!campaign) {
+      this.runningCampaigns.delete(campaignId);
+      return;
+    }
 
     const delayMs = Math.floor(60000 / campaign.sendRatePerMinute); // Delay entre mensagens
 
@@ -645,7 +652,16 @@ export class CampaignsService {
       });
 
       if (!message) {
-        // Não há mais mensagens pendentes
+        // Checar se há mensagens sendo processadas no momento por outro worker
+        const processingCount = await this.prisma.campaignMessage.count({
+          where: { campaignId, status: 'PROCESSING' },
+        });
+        if (processingCount > 0) {
+          await this.sleep(2000);
+          continue;
+        }
+
+        // Não há mais mensagens pendentes nem em processamento
         await this.prisma.campaign.update({
           where: { id: campaignId },
           data: { 
@@ -656,6 +672,22 @@ export class CampaignsService {
         this.runningCampaigns.delete(campaignId);
         this.logger.log(`Campanha concluída: ${currentCampaign.name}`);
         break;
+      }
+
+      // Tentar reservar a mensagem atomicamente para evitar envios duplicados em paralelo
+      const updateResult = await this.prisma.campaignMessage.updateMany({
+        where: {
+          id: message.id,
+          status: 'PENDING',
+        },
+        data: {
+          status: 'PROCESSING',
+        },
+      });
+
+      if (updateResult.count === 0) {
+        // Outra execução reservou esta mensagem, tentar a próxima
+        continue;
       }
 
       // Enviar mensagem com retry para erros temporários
