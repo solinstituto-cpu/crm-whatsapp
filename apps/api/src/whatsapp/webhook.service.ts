@@ -467,34 +467,41 @@ export class WebhookService {
 
     if (campaignMessage) {
       const statusUpper = status.status.toUpperCase();
-      const updateData: any = { status: statusUpper };
 
-      if (statusUpper === 'DELIVERED' && !campaignMessage.deliveredAt) {
-        updateData.deliveredAt = new Date();
-      } else if (statusUpper === 'READ' && !campaignMessage.readAt) {
-        updateData.readAt = new Date();
-        // Se foi lido, também foi entregue
-        if (!campaignMessage.deliveredAt) {
+      // 🛡️ Não retroagir: mensagem já entregue/lida NÃO pode voltar para FAILED
+      const NON_RETROGRADABLE = ['DELIVERED', 'READ'];
+      if (statusUpper === 'FAILED' && NON_RETROGRADABLE.includes(campaignMessage.status)) {
+        this.logger.warn(`⚠️ Ignorando callback FAILED para mensagem ${campaignMessage.id} que já está ${campaignMessage.status} (waMessageId=${status.id})`);
+      } else {
+        const updateData: any = { status: statusUpper };
+
+        if (statusUpper === 'DELIVERED' && !campaignMessage.deliveredAt) {
           updateData.deliveredAt = new Date();
+        } else if (statusUpper === 'READ' && !campaignMessage.readAt) {
+          updateData.readAt = new Date();
+          // Se foi lido, também foi entregue
+          if (!campaignMessage.deliveredAt) {
+            updateData.deliveredAt = new Date();
+          }
+        } else if (statusUpper === 'FAILED') {
+          const errorDetail = status.errors && status.errors.length > 0 ? status.errors[0] : null;
+          if (errorDetail) {
+            updateData.error = `Erro Meta ${errorDetail.code}: ${errorDetail.message}${errorDetail.error_data?.details ? ' - ' + errorDetail.error_data.details : ''}`;
+          } else {
+            updateData.error = 'Falha desconhecida (relatada por webhook)';
+          }
         }
-      } else if (statusUpper === 'FAILED') {
-        const errorDetail = status.errors && status.errors.length > 0 ? status.errors[0] : null;
-        if (errorDetail) {
-          updateData.error = `Erro Meta ${errorDetail.code}: ${errorDetail.message}${errorDetail.error_data?.details ? ' - ' + errorDetail.error_data.details : ''}`;
-        } else {
-          updateData.error = 'Falha desconhecida (relatada por webhook)';
-        }
+
+        await this.prisma.campaignMessage.update({
+          where: { id: campaignMessage.id },
+          data: updateData,
+        });
+
+        // Atualizar contadores da campanha
+        await this.updateCampaignStats(campaignMessage.campaignId);
+
+        this.logger.log(`📊 Campaign message ${status.id} -> ${statusUpper}`);
       }
-
-      await this.prisma.campaignMessage.update({
-        where: { id: campaignMessage.id },
-        data: updateData,
-      });
-
-      // Atualizar contadores da campanha
-      await this.updateCampaignStats(campaignMessage.campaignId);
-
-      this.logger.log(`📊 Campaign message ${status.id} -> ${statusUpper}`);
     }
 
     this.logger.log(`Updated message status: ${status.id} -> ${status.status}`);

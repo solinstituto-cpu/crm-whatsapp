@@ -453,22 +453,37 @@ export class CampaignsService {
    * recalcula contadores e reinicia o processamento da campanha.
    */
   async retryFailed(id: string) {
+    // 🛡️ Parar qualquer processamento anterior antes de iniciar novo retry
+    this.runningCampaigns.set(id, false);
+    await this.sleep(2000); // Dar tempo pro loop anterior parar
+
     const campaign = await this.findOne(id);
 
-    // Contar mensagens com falha que NUNCA foram enviadas com sucesso ao Meta
-    // Mensagens com waMessageId já possuem registro no WhatsApp Meta e não devem ser reenviadas para o cliente!
+    // Contar mensagens FAILED que NUNCA foram entregues ao destinatário
+    // Mensagens com deliveredAt ou readAt já chegaram ao cliente — não reenviar!
     const failedCount = await this.prisma.campaignMessage.count({
-      where: { campaignId: id, status: 'FAILED', waMessageId: null },
+      where: { 
+        campaignId: id, 
+        status: 'FAILED',
+        deliveredAt: null,   // nunca entregue
+        readAt: null,        // nunca lido
+      },
     });
 
     if (failedCount === 0) {
       throw new BadRequestException('Nenhuma mensagem pendente de envio para reenviar');
     }
 
-    // Resetar apenas mensagens FAILED sem waMessageId para PENDING
+    // Resetar apenas mensagens FAILED que nunca foram entregues para PENDING
+    // Limpar waMessageId para que o novo envio gere um novo ID (evita confusão de callbacks)
     await this.prisma.campaignMessage.updateMany({
-      where: { campaignId: id, status: 'FAILED', waMessageId: null },
-      data: { status: 'PENDING', error: null },
+      where: { 
+        campaignId: id, 
+        status: 'FAILED',
+        deliveredAt: null,
+        readAt: null,
+      },
+      data: { status: 'PENDING', error: null, waMessageId: null },
     });
 
     // Recalcular contadores da campanha baseado nos status reais
