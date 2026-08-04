@@ -230,6 +230,9 @@ export class WebhookService {
 
     this.logger.log(`✅ Saved inbound message from ${phoneNumber} to conversation ${conversation.id}`);
 
+    // Auto-tag "Anuncio Google" para conta Vendas Sol
+    await this.autoTagAnuncioGoogle(contact, conversation, messageBody, whatsappAccountId);
+
     // Emitir evento SSE para atualização em tempo real no frontend
     try {
       this.sseService.emit({
@@ -613,6 +616,69 @@ export class WebhookService {
         return message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || 'Resposta interativa';
       default:
         return `${message.type} message received`;
+    }
+  }
+
+  /**
+   * Auto-tag "Anuncio Google" para conversas da conta Vendas Sol
+   * Detecta se a primeira mensagem do cliente começa com frases de anúncio do Google
+   */
+  private async autoTagAnuncioGoogle(
+    contact: any,
+    conversation: any,
+    messageBody: string | null,
+    whatsappAccountId: string | null | undefined,
+  ) {
+    try {
+      if (!whatsappAccountId || !messageBody) return;
+
+      // Verificar se é a conta Vendas Sol
+      const account = await this.prisma.whatsappAccount.findUnique({
+        where: { id: whatsappAccountId },
+        select: { name: true },
+      });
+
+      if (!account || !account.name.toLowerCase().includes('vendas sol')) return;
+
+      // Verificar se é a primeira mensagem IN desta conversa
+      const inboundCount = await this.prisma.message.count({
+        where: {
+          conversationId: conversation.id,
+          direction: 'IN',
+        },
+      });
+
+      // Se tem mais de 1 mensagem IN, não é a primeira (a que acabamos de salvar conta)
+      if (inboundCount > 1) return;
+
+      // Verificar se a mensagem começa com frases de anúncio Google
+      const bodyLower = messageBody.toLowerCase().trim();
+      const anuncioGooglePhrases = [
+        'olá! quero garantir',
+        'vi voces',
+        'vi vcs',
+      ];
+
+      const isAnuncioGoogle = anuncioGooglePhrases.some(phrase => bodyLower.startsWith(phrase));
+
+      if (!isAnuncioGoogle) return;
+
+      // Adicionar tag "Anuncio Google" ao contato
+      let currentTags: string[] = [];
+      try {
+        currentTags = contact.tags ? JSON.parse(contact.tags) : [];
+      } catch { currentTags = []; }
+
+      if (!currentTags.includes('Anuncio Google')) {
+        currentTags.push('Anuncio Google');
+        await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: { tags: JSON.stringify(currentTags) },
+        });
+        this.logger.log(`🏷️ Auto-tag "Anuncio Google" adicionada ao contato ${contact.id} (${contact.name})`);
+      }
+    } catch (error) {
+      this.logger.warn(`⚠️ Erro ao auto-tag Anuncio Google: ${error.message}`);
     }
   }
 }

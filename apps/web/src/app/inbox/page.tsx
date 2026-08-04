@@ -247,6 +247,10 @@ export default function InboxPage() {
   const selectedAccountIdRef = useRef(selectedAccountId)
   const whatsappAccountsRef = useRef(whatsappAccounts)
   
+  // Nome da conta selecionada (para lógica de tags Vendas Sol)
+  const selectedAccountName = whatsappAccounts.find(a => a.id === selectedAccountId)?.name || ''
+  const isVendasSol = selectedAccountName.toLowerCase().includes('vendas sol')
+  
   // Persistir filtros do inbox
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -2945,11 +2949,37 @@ export default function InboxPage() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {conversation.contactName}
                             </p>
-                            {conversation.lastIncomingMessageAt && (!conversation.contactTags || !conversation.contactTags.some(t => t.toLowerCase() !== 'golden')) && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente e sem tag de classificação">
-                                Novo
-                              </span>
-                            )}
+                            {/* Tag dinâmica: Anuncio Google / Ativo / Novo */}
+                            {(() => {
+                              const hasAnuncioGoogle = conversation.contactTags?.some(t => t === 'Anuncio Google')
+                              const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                              
+                              // Conta Vendas Sol: Anuncio Google (laranja)
+                              if (isVendasSol && hasAnuncioGoogle && !hasNonDisplayTags) {
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
+                                    Anuncio Google
+                                  </span>
+                                )
+                              }
+                              // Conta Vendas Sol: Ativo (azul) - conversa iniciada pelo atendente
+                              if (isVendasSol && !conversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
+                                    Ativo
+                                  </span>
+                                )
+                              }
+                              // Novo (vermelho) - cliente iniciou, sem tags de classificação
+                              if (conversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente e sem tag de classificação">
+                                    Novo
+                                  </span>
+                                )
+                              }
+                              return null
+                            })()}
                           </div>
                           <div className="flex items-center space-x-2">
                             {/* Bolinha dourada indicando cliente Golden */}
@@ -3045,11 +3075,34 @@ export default function InboxPage() {
                       <h2 className="text-lg font-medium text-gray-900">
                         {selectedConversation.contactName}
                       </h2>
-                      {selectedConversation.lastIncomingMessageAt && (!selectedConversation.contactTags || !selectedConversation.contactTags.some(t => t.toLowerCase() !== 'golden')) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente e sem tag de classificação">
-                          Novo
-                        </span>
-                      )}
+                      {/* Tag dinâmica no header: Anuncio Google / Ativo / Novo */}
+                      {(() => {
+                        const hasAnuncioGoogle = selectedConversation.contactTags?.some(t => t === 'Anuncio Google')
+                        const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                        
+                        if (isVendasSol && hasAnuncioGoogle && !hasNonDisplayTags) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm" title="Lead vindo de anúncio do Google">
+                              Anuncio Google
+                            </span>
+                          )
+                        }
+                        if (isVendasSol && !selectedConversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
+                              Ativo
+                            </span>
+                          )
+                        }
+                        if (selectedConversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente e sem tag de classificação">
+                              Novo
+                            </span>
+                          )
+                        }
+                        return null
+                      })()}
                       {selectedConversation.assignedTo && (
                         <span 
                           className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"

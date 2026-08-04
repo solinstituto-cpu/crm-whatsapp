@@ -47,22 +47,30 @@ export class ConversationsService {
       
       if (filters?.hasTags !== undefined) {
         if (filters.hasTags === true) {
-          // Campanhas/Reengaja: tem tags que NÃO sejam nulas, vazias ou apenas Golden/gold
+          // Campanhas/Reengaja: tem tags que NÃO sejam nulas, vazias, apenas Golden/gold ou apenas "Anuncio Google"
           where.contact = {
             ...(where.contact || {}),
             tags: {
               not: null,
-              notIn: ['[]', '', '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]'],
+              notIn: [
+                '[]', '',
+                '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]',
+                '[\"Anuncio Google\"]',
+                '[\"Golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Golden\"]',
+                '[\"golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"golden\"]',
+                '[\"Gold\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Gold\"]',
+              ],
             }
           };
         } else {
-          // Ativas: sem contato OU contato sem tags (null, vazio, []) OU que contenha a tag Golden/gold
+          // Ativas: sem contato OU contato sem tags (null, vazio, []) OU que contenha apenas Golden/gold e/ou "Anuncio Google"
           const noTagsCondition = {
             OR: [
               { contactId: null },
               { contact: { tags: null } },
               { contact: { tags: { in: ['[]', ''] } } },
               { contact: { tags: { contains: 'olden', mode: 'insensitive' as const } } },
+              { contact: { tags: { contains: 'Anuncio Google', mode: 'insensitive' as const } } },
             ]
           };
           
@@ -77,6 +85,7 @@ export class ConversationsService {
           }
         }
       }
+
 
       this.logger.log(`Fetching conversations: page=${pageNum}, limit=${limitNum}, status=${status || 'all'}, accountId=${accountId || 'all'}, filters=${JSON.stringify(filters)}`);
 
