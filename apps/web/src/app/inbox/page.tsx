@@ -2959,47 +2959,41 @@ export default function InboxPage() {
                                 const hasTags = conversation.contactTags && conversation.contactTags.filter(t => !['golden', 'gold'].includes(t.toLowerCase())).length > 0
                                 if (hasTags) return null
 
-                                // Verificar a conta Vendas Sol
-                                const accountName = whatsappAccounts.find(a => a.id === conversation.whatsappAccountId)?.name || ''
-                                const isVendasSolAccount = accountName.toLowerCase().includes('vendas sol')
-
-                                if (isVendasSolAccount) {
-                                  // Se a conversa foi iniciada pelo atendente -> "Ativo"
-                                  if (conversation.initiatedBy === 'agent') {
-                                    return (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Iniciado pelo atendente">
-                                        Ativo
-                                      </span>
-                                    )
-                                  }
-
-                                  const msgText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase().trim()
-                                  // "Anuncio google" quando o início da conversa conter "olá quero garantir" ou "encontrei v"
-                                  const isAnuncio = msgText.includes('olá! quero garantir') || 
-                                                    msgText.includes('olá, quero garantir') || 
-                                                    msgText.includes('ola! quero garantir') || 
-                                                    msgText.includes('ola, quero garantir') || 
-                                                    msgText.includes('ola quero garantir') || 
-                                                    msgText.includes('olá quero garantir') || 
-                                                    msgText.includes('encontrei v')
-
-                                  if (isAnuncio) {
-                                    return (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Anúncio do Google">
-                                        Anuncio Google
-                                      </span>
-                                    )
-                                  }
-
-                                  // "Novo" quando conter qualquer outra palavra que não seja as do anúncio
+                                // Se a conversa foi iniciada pelo atendente -> "Ativo"
+                                if (conversation.initiatedBy === 'agent') {
                                   return (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-wider flex-shrink-0" title="Novo Cliente">
-                                      Novo
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Iniciado pelo atendente">
+                                      Ativo
                                     </span>
                                   )
                                 }
 
-                                return null
+                                const msgText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase().trim()
+                                // "Anuncio google" quando o início da conversa conter "olá quero garantir" ou "encontrei v"
+                                const isAnuncio = msgText.includes('olá! quero garantir') || 
+                                                  msgText.includes('olá, quero garantir') || 
+                                                  msgText.includes('ola! quero garantir') || 
+                                                  msgText.includes('ola, quero garantir') || 
+                                                  msgText.includes('ola quero garantir') || 
+                                                  msgText.includes('olá quero garantir') || 
+                                                  msgText.includes('encontrei v') ||
+                                                  msgText.includes('vi voces') ||
+                                                  msgText.includes('vi vcs')
+
+                                if (isAnuncio) {
+                                  return (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Anúncio do Google">
+                                      Anuncio Google
+                                    </span>
+                                  )
+                                }
+
+                                // "Novo" quando conter qualquer outra palavra que não seja as do anúncio
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-wider flex-shrink-0" title="Novo Cliente">
+                                    Novo
+                                  </span>
+                                )
                               })()}
                           </div>
                           <div className="flex items-center space-x-2">
