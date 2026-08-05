@@ -2965,13 +2965,14 @@ export default function InboxPage() {
                                   )
                                 }
 
-                                // Pegar APENAS o texto da primeira mensagem enviada pelo cliente (Inbound)
-                                const rawText = (conversation.firstMessageBody || '').toLowerCase()
-                                const cleanText = rawText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+                                // Pegar APENAS a PRIMEIRA LINHA da PRIMEIRA MENSAGEM enviada pelo cliente
+                                const fullMessage = (conversation.firstMessageBody || '').trim()
+                                const firstLine = fullMessage.split(/\r?\n/)[0] || ''
+                                const cleanFirstLine = firstLine.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
-                                // Anúncio Google se a PRIMEIRA mensagem do cliente contiver "olá quero garantir" ou "encontrei v"
-                                const isAnuncio = cleanText.includes('quero garantir') || 
-                                                  cleanText.includes('encontrei v')
+                                // Anúncio Google SOMENTE se a PRIMEIRA LINHA contiver "olá quero garantir" ou "encontrei v"
+                                const isAnuncio = cleanFirstLine.includes('quero garantir') || 
+                                                  cleanFirstLine.includes('encontrei v')
 
                                 if (isAnuncio) {
                                   return (
