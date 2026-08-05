@@ -2968,10 +2968,12 @@ export default function InboxPage() {
                                 const rawText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase()
                                 const cleanText = rawText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
-                                const isAnuncio = cleanText.includes('quero garantir') || 
-                                                  cleanText.includes('encontrei v') ||
+                                const isAnuncio = cleanText.includes('garantir') || 
+                                                  cleanText.includes('encontrei') ||
                                                   cleanText.includes('vi voce') ||
-                                                  cleanText.includes('vi vc')
+                                                  cleanText.includes('vi vc') ||
+                                                  cleanText.includes('anuncio') ||
+                                                  cleanText.includes('google')
 
                                 if (isAnuncio) {
                                   return (

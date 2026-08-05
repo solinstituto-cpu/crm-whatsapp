@@ -135,7 +135,14 @@ export class ConversationsService {
           });
 
           const firstInbound = await this.prisma.message.findFirst({
-            where: { conversationId: conv.id, direction: 'IN' },
+            where: {
+              conversationId: conv.id,
+              OR: [
+                { direction: 'IN' },
+                { direction: 'in' },
+                { direction: null },
+              ],
+            },
             orderBy: { createdAt: 'asc' },
             select: { body: true },
           });
