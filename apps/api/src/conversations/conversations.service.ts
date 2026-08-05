@@ -125,13 +125,19 @@ export class ConversationsService {
 
       this.logger.log(`Found ${conversations.length} conversations`);
 
-      // Enriquecer cada conversa com quem iniciou (agente ou cliente) e tags do contato
+      // Enriquecer cada conversa com quem iniciou e a primeira mensagem recebida do cliente
       const enrichedConversations = await Promise.all(
         conversations.map(async (conv) => {
           const firstMessage = await this.prisma.message.findFirst({
             where: { conversationId: conv.id },
             orderBy: { createdAt: 'asc' },
             select: { direction: true, body: true },
+          });
+
+          const firstInbound = await this.prisma.message.findFirst({
+            where: { conversationId: conv.id, direction: 'IN' },
+            orderBy: { createdAt: 'asc' },
+            select: { body: true },
           });
 
           let contactTags: string[] = [];
@@ -147,7 +153,7 @@ export class ConversationsService {
             ...conv,
             contactTags,
             initiatedBy: firstMessage?.direction === 'OUT' ? 'agent' : 'client',
-            firstMessageBody: firstMessage?.body || null,
+            firstMessageBody: firstInbound?.body || firstMessage?.body || null,
           };
         }),
       );
