@@ -3105,10 +3105,10 @@ export default function InboxPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-gray-500">{selectedConversation.contactPhone}</p>
-                      {selectedConversation.contactTags && selectedConversation.contactTags.length > 0 && (
+                      {selectedConversation.contactTags && selectedConversation.contactTags.filter((t: string) => t.toLowerCase() !== 'anuncio google').length > 0 && (
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-gray-400 font-medium">Tags:</span>
-                          {selectedConversation.contactTags.map((tag: string, index: number) => (
+                          {selectedConversation.contactTags.filter((t: string) => t.toLowerCase() !== 'anuncio google').map((tag: string, index: number) => (
                             <span 
                               key={index} 
                               className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
