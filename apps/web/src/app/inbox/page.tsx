@@ -2958,12 +2958,15 @@ export default function InboxPage() {
                               const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
                               if (hasNonDisplayTags) return null
 
-                              // Verificar o texto da primeira mensagem / preview da conversa
+                              // Procurar frases de Anúncio Google no histórico de mensagens da conversa ou na primeira mensagem
+                              const allMessagesText = (conversation.messages || []).map(m => (m.content || m.body || '').toLowerCase()).join(' ')
                               const firstMsgText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase().trim()
-                              const isAnuncioGoogle = firstMsgText.includes('olá! quero garantir') || 
-                                                     firstMsgText.includes('encontrei v') || 
-                                                     firstMsgText.includes('vi voces') || 
-                                                     firstMsgText.includes('vi vcs')
+                              const fullSearchText = `${allMessagesText} ${firstMsgText}`
+
+                              const isAnuncioGoogle = fullSearchText.includes('olá! quero garantir') || 
+                                                     fullSearchText.includes('encontrei v') || 
+                                                     fullSearchText.includes('vi voces') || 
+                                                     fullSearchText.includes('vi vcs')
 
                               // 1. Anuncio Google (laranja)
                               if (isAnuncioGoogle) {
@@ -3090,11 +3093,14 @@ export default function InboxPage() {
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
                         if (hasNonDisplayTags) return null
                         
+                        const allMessagesText = (selectedConversation.messages || []).map(m => (m.content || m.body || '').toLowerCase()).join(' ')
                         const firstMsgText = (selectedConversation.firstMessageBody || selectedConversation.lastMessage || '').toLowerCase().trim()
-                        const isAnuncioGoogle = firstMsgText.includes('olá! quero garantir') || 
-                                               firstMsgText.includes('encontrei v') || 
-                                               firstMsgText.includes('vi voces') || 
-                                               firstMsgText.includes('vi vcs')
+                        const fullSearchText = `${allMessagesText} ${firstMsgText}`
+
+                        const isAnuncioGoogle = fullSearchText.includes('olá! quero garantir') || 
+                                               fullSearchText.includes('encontrei v') || 
+                                               fullSearchText.includes('vi voces') || 
+                                               fullSearchText.includes('vi vcs')
 
                         if (isAnuncioGoogle) {
                           return (
