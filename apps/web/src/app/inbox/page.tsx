@@ -247,9 +247,12 @@ export default function InboxPage() {
   const selectedAccountIdRef = useRef(selectedAccountId)
   const whatsappAccountsRef = useRef(whatsappAccounts)
   
-  // Nome da conta selecionada (para lógica de tags Vendas Sol)
-  const selectedAccountName = whatsappAccounts.find(a => a.id === selectedAccountId)?.name || ''
-  const isVendasSol = selectedAccountName.toLowerCase().includes('vendas sol')
+  // Helper: verifica se uma conversa pertence à conta Vendas Sol
+  const isConversaVendasSol = (conv: { whatsappAccountId?: string | null }) => {
+    if (!conv.whatsappAccountId) return false
+    const accountName = whatsappAccounts.find(a => a.id === conv.whatsappAccountId)?.name || ''
+    return accountName.toLowerCase().includes('vendas sol')
+  }
   
   // Persistir filtros do inbox
   useEffect(() => {
@@ -2955,7 +2958,7 @@ export default function InboxPage() {
                               const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
                               
                               // Conta Vendas Sol: Anuncio Google (laranja)
-                              if (isVendasSol && hasAnuncioGoogle && !hasNonDisplayTags) {
+                              if (isConversaVendasSol(conversation) && hasAnuncioGoogle && !hasNonDisplayTags) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
                                     Anuncio Google
@@ -2963,7 +2966,7 @@ export default function InboxPage() {
                                 )
                               }
                               // Conta Vendas Sol: Ativo (azul) - conversa iniciada pelo atendente
-                              if (isVendasSol && !conversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                              if (isConversaVendasSol(conversation) && !conversation.lastIncomingMessageAt && !hasNonDisplayTags) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
                                     Ativo
@@ -3080,14 +3083,14 @@ export default function InboxPage() {
                         const hasAnuncioGoogle = selectedConversation.contactTags?.some(t => t === 'Anuncio Google')
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
                         
-                        if (isVendasSol && hasAnuncioGoogle && !hasNonDisplayTags) {
+                        if (isConversaVendasSol(selectedConversation) && hasAnuncioGoogle && !hasNonDisplayTags) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm" title="Lead vindo de anúncio do Google">
                               Anuncio Google
                             </span>
                           )
                         }
-                        if (isVendasSol && !selectedConversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                        if (isConversaVendasSol(selectedConversation) && !selectedConversation.lastIncomingMessageAt && !hasNonDisplayTags) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
                               Ativo
