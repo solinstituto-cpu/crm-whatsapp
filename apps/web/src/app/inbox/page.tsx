@@ -1372,11 +1372,12 @@ export default function InboxPage() {
         const formattedFirstPage = conversationsList.map((conv: any) => {
           const lastMsg = conv.messages?.[0]
           let contactTags: string[] = []
-          if (conv.contact?.tags) {
+          const rawTags = conv.contactTags || conv.contact?.tags
+          if (rawTags) {
             try {
-              contactTags = typeof conv.contact.tags === 'string' 
-                ? JSON.parse(conv.contact.tags) 
-                : conv.contact.tags
+              contactTags = typeof rawTags === 'string' 
+                ? JSON.parse(rawTags) 
+                : rawTags
             } catch { contactTags = [] }
           }
           return {
@@ -2953,42 +2954,13 @@ export default function InboxPage() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {conversation.contactName}
                             </p>
-                            {/* Tag dinâmica: Anuncio Google / Ativo / Novo */}
+                            {/* Badge Padrão NOVO */}
                             {(() => {
-                              const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                              const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold'].includes(t.toLowerCase()))
                               if (hasNonDisplayTags) return null
 
-                              // Procurar frases de Anúncio Google no histórico de mensagens da conversa ou na primeira mensagem
-                              const allMessagesText = (conversation.messages || []).map(m => (m.content || m.body || '').toLowerCase()).join(' ')
-                              const firstMsgText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase().trim()
-                              const fullSearchText = `${allMessagesText} ${firstMsgText}`
-
-                              const isAnuncioGoogle = fullSearchText.includes('olá! quero garantir') || 
-                                                     fullSearchText.includes('encontrei v') || 
-                                                     fullSearchText.includes('vi voces') || 
-                                                     fullSearchText.includes('vi vcs')
-
-                              // 1. Anuncio Google (laranja)
-                              if (isAnuncioGoogle) {
-                                return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
-                                    Anuncio Google
-                                  </span>
-                                )
-                              }
-
-                              // 2. Ativo (azul) - conversa iniciada pelo atendente
-                              if (conversation.initiatedBy === 'agent' || !conversation.lastIncomingMessageAt) {
-                                return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
-                                    Ativo
-                                  </span>
-                                )
-                              }
-
-                              // 3. Novo (vermelho) - cliente iniciou normalmente
                               return (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Novo Atendimento">
                                   Novo
                                 </span>
                               )
@@ -3088,38 +3060,13 @@ export default function InboxPage() {
                       <h2 className="text-lg font-medium text-gray-900">
                         {selectedConversation.contactName}
                       </h2>
-                      {/* Tag dinâmica no header: Anuncio Google / Ativo / Novo */}
+                      {/* Badge Padrão NOVO no Header */}
                       {(() => {
-                        const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                        const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold'].includes(t.toLowerCase()))
                         if (hasNonDisplayTags) return null
-                        
-                        const allMessagesText = (selectedConversation.messages || []).map(m => (m.content || m.body || '').toLowerCase()).join(' ')
-                        const firstMsgText = (selectedConversation.firstMessageBody || selectedConversation.lastMessage || '').toLowerCase().trim()
-                        const fullSearchText = `${allMessagesText} ${firstMsgText}`
-
-                        const isAnuncioGoogle = fullSearchText.includes('olá! quero garantir') || 
-                                               fullSearchText.includes('encontrei v') || 
-                                               fullSearchText.includes('vi voces') || 
-                                               fullSearchText.includes('vi vcs')
-
-                        if (isAnuncioGoogle) {
-                          return (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm" title="Lead vindo de anúncio do Google">
-                              Anuncio Google
-                            </span>
-                          )
-                        }
-
-                        if (selectedConversation.initiatedBy === 'agent' || !selectedConversation.lastIncomingMessageAt) {
-                          return (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
-                              Ativo
-                            </span>
-                          )
-                        }
 
                         return (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm">
                             Novo
                           </span>
                         )
