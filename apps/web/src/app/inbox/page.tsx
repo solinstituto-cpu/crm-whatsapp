@@ -2955,20 +2955,26 @@ export default function InboxPage() {
                             </p>
                             {/* Tag dinâmica: Anuncio Google / Ativo / Novo */}
                             {(() => {
-                              const hasAnuncioGoogle = conversation.contactTags?.some(t => t.toLowerCase() === 'anuncio google')
                               const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
-                              
                               if (hasNonDisplayTags) return null
 
-                              // Anuncio Google (laranja)
-                              if (hasAnuncioGoogle) {
+                              // Verificar o texto da primeira mensagem / preview da conversa
+                              const firstMsgText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase().trim()
+                              const isAnuncioGoogle = firstMsgText.includes('olá! quero garantir') || 
+                                                     firstMsgText.includes('encontrei v') || 
+                                                     firstMsgText.includes('vi voces') || 
+                                                     firstMsgText.includes('vi vcs')
+
+                              // 1. Anuncio Google (laranja)
+                              if (isAnuncioGoogle) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
                                     Anuncio Google
                                   </span>
                                 )
                               }
-                              // Ativo (azul) - conversa iniciada pelo atendente
+
+                              // 2. Ativo (azul) - conversa iniciada pelo atendente
                               if (conversation.initiatedBy === 'agent' || !conversation.lastIncomingMessageAt) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
@@ -2976,7 +2982,8 @@ export default function InboxPage() {
                                   </span>
                                 )
                               }
-                              // Novo (vermelho) - cliente iniciou sem tag
+
+                              // 3. Novo (vermelho) - cliente iniciou normalmente
                               return (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
                                   Novo
@@ -3080,18 +3087,23 @@ export default function InboxPage() {
                       </h2>
                       {/* Tag dinâmica no header: Anuncio Google / Ativo / Novo */}
                       {(() => {
-                        const hasAnuncioGoogle = selectedConversation.contactTags?.some(t => t.toLowerCase() === 'anuncio google')
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
-                        
                         if (hasNonDisplayTags) return null
                         
-                        if (hasAnuncioGoogle) {
+                        const firstMsgText = (selectedConversation.firstMessageBody || selectedConversation.lastMessage || '').toLowerCase().trim()
+                        const isAnuncioGoogle = firstMsgText.includes('olá! quero garantir') || 
+                                               firstMsgText.includes('encontrei v') || 
+                                               firstMsgText.includes('vi voces') || 
+                                               firstMsgText.includes('vi vcs')
+
+                        if (isAnuncioGoogle) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm" title="Lead vindo de anúncio do Google">
                               Anuncio Google
                             </span>
                           )
                         }
+
                         if (selectedConversation.initiatedBy === 'agent' || !selectedConversation.lastIncomingMessageAt) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
@@ -3099,6 +3111,7 @@ export default function InboxPage() {
                             </span>
                           )
                         }
+
                         return (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente">
                             Novo
