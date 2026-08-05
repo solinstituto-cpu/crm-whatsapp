@@ -2954,10 +2954,23 @@ export default function InboxPage() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {conversation.contactName}
                             </p>
-                            {/* Badges: Anuncio Google / Ativo / Novo */}
+                            {/* Badges: Anuncio Google / Ativo / Novo (Exclusivo da conta Vendas Sol) */}
                             {(() => {
                               const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
                               if (hasNonDisplayTags) return null
+
+                              // Verificar se a conversa pertence à conta Vendas Sol
+                              const accountName = whatsappAccounts.find(a => a.id === conversation.whatsappAccountId)?.name || ''
+                              const isVendasSolAccount = accountName.toLowerCase().includes('vendas sol')
+
+                              // Se não for Vendas Sol, exibe apenas a badge padrão Novo para conversas sem tag
+                              if (!isVendasSolAccount) {
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Novo Atendimento">
+                                    Novo
+                                  </span>
+                                )
+                              }
 
                               const hasAnuncioTag = conversation.contactTags?.some(t => t.toLowerCase() === 'anuncio google')
                               if (hasAnuncioTag) {
@@ -2968,7 +2981,7 @@ export default function InboxPage() {
                                 )
                               }
 
-                              // Iniciado pelo atendente = Ativo (azul)
+                              // Iniciado pelo atendente na Vendas Sol = Ativo (azul)
                               if (conversation.initiatedBy === 'agent') {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
