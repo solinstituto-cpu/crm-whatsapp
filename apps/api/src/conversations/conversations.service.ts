@@ -48,20 +48,47 @@ export class ConversationsService {
       if (filters?.hasTags !== undefined) {
         if (filters.hasTags === true) {
           // Campanhas/Reengaja: tem tags que NÃO sejam nulas, vazias, apenas Golden/gold ou apenas "Anuncio Google"
-          where.contact = {
-            ...(where.contact || {}),
-            tags: {
-              not: null,
-              notIn: [
-                '[]', '',
-                '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]',
-                '[\"Anuncio Google\"]',
-                '[\"Golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Golden\"]',
-                '[\"golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"golden\"]',
-                '[\"Gold\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Gold\"]',
-              ],
-            }
-          };
+          // Exclui conversas onde tags contém APENAS Gold/Golden e/ou "Anuncio Google"
+          where.AND = [
+            ...(Array.isArray(where.AND) ? where.AND : []),
+            {
+              contact: {
+                tags: { not: null },
+              },
+            },
+            {
+              contact: {
+                tags: {
+                  notIn: ['[]', ''],
+                },
+              },
+            },
+            // Deve ter alguma tag que NÃO seja Gold/Golden/Anuncio Google
+            // Usamos NOT para excluir quem tem APENAS essas tags
+            {
+              NOT: {
+                OR: [
+                  { contact: { tags: { in: ['[]', ''] } } },
+                  { contact: { tags: null } },
+                  { contactId: null },
+                  // Apenas Gold/Golden em qualquer formato
+                  { contact: { tags: { in: [
+                    '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]',
+                    '[\"Anuncio Google\"]',
+                    '[\"Golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Golden\"]',
+                    '[\"golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"golden\"]',
+                    '[\"Gold\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Gold\"]',
+                    '[\"gold\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"gold\"]',
+                  ] } } },
+                ],
+              },
+            },
+          ];
+          // Mover OR existente para AND se necessário
+          if (where.OR) {
+            where.AND.unshift({ OR: where.OR });
+            delete where.OR;
+          }
         } else {
           // Ativas: sem contato OU contato sem tags (null, vazio, []) OU que contenha apenas Golden/gold e/ou "Anuncio Google"
           const noTagsCondition = {
@@ -69,8 +96,19 @@ export class ConversationsService {
               { contactId: null },
               { contact: { tags: null } },
               { contact: { tags: { in: ['[]', ''] } } },
-              { contact: { tags: { contains: 'olden', mode: 'insensitive' as const } } },
-              { contact: { tags: { contains: 'Anuncio Google', mode: 'insensitive' as const } } },
+              // Apenas Gold/Golden
+              { contact: { tags: { in: [
+                '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]',
+              ] } } },
+              // Apenas Anuncio Google
+              { contact: { tags: '[\"Anuncio Google\"]' } },
+              // Gold + Anuncio Google em qualquer ordem
+              { contact: { tags: { in: [
+                '[\"Golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Golden\"]',
+                '[\"golden\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"golden\"]',
+                '[\"Gold\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"Gold\"]',
+                '[\"gold\",\"Anuncio Google\"]', '[\"Anuncio Google\",\"gold\"]',
+              ] } } },
             ]
           };
           
