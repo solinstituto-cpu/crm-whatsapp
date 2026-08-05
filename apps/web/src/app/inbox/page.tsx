@@ -2951,24 +2951,20 @@ export default function InboxPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center space-x-2 truncate pr-2">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {conversation.contactName}
-                            </p>
-                              {/* Marcações puramente visuais (Sem mexer em NENHUMA tag do banco) */}
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                              {/* Marcação diretamente prefixada no nome */}
                               {(() => {
                                 const hasTags = conversation.contactTags && conversation.contactTags.filter(t => !['golden', 'gold'].includes(t.toLowerCase())).length > 0
                                 if (hasTags) return null
 
-                                // Se a conversa foi iniciada pelo atendente -> "Ativo"
                                 if (conversation.initiatedBy === 'agent') {
                                   return (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Iniciado pelo atendente">
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0">
                                       Ativo
                                     </span>
                                   )
                                 }
 
-                                // Trata o texto removendo acentos e símbolos para comparação universal
                                 const rawText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase()
                                 const cleanText = rawText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
@@ -2979,19 +2975,20 @@ export default function InboxPage() {
 
                                 if (isAnuncio) {
                                   return (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Anúncio do Google">
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0">
                                       Anuncio Google
                                     </span>
                                   )
                                 }
 
-                                // "Novo" quando conter qualquer outra palavra que não seja as do anúncio
                                 return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-wider flex-shrink-0" title="Novo Cliente">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-wider flex-shrink-0">
                                     Novo
                                   </span>
                                 )
                               })()}
+                              <span>{conversation.contactName}</span>
+                            </p>
                           </div>
                           <div className="flex items-center space-x-2">
                             {/* Bolinha dourada indicando cliente Golden */}
