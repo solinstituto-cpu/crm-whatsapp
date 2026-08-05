@@ -2954,13 +2954,32 @@ export default function InboxPage() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {conversation.contactName}
                             </p>
-                            {/* Badge Padrão NOVO */}
+                            {/* Badges: Anuncio Google / Ativo / Novo */}
                             {(() => {
-                              const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold'].includes(t.toLowerCase()))
+                              const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
                               if (hasNonDisplayTags) return null
 
+                              const hasAnuncioTag = conversation.contactTags?.some(t => t.toLowerCase() === 'anuncio google')
+                              if (hasAnuncioTag) {
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
+                                    Anuncio Google
+                                  </span>
+                                )
+                              }
+
+                              // Iniciado pelo atendente = Ativo (azul)
+                              if (conversation.initiatedBy === 'agent') {
+                                return (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
+                                    Ativo
+                                  </span>
+                                )
+                              }
+
+                              // Demais iniciados pelo cliente = Novo (vermelho)
                               return (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Novo Atendimento">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
                                   Novo
                                 </span>
                               )
