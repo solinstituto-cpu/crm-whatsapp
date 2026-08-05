@@ -101,6 +101,7 @@ interface Conversation {
   contactNotes?: string | null
   whatsappAccountId?: string | null
   initiatedBy?: 'agent' | 'client' | null
+  firstMessageBody?: string | null
 }
 
 const ContactNotesField = ({ 
@@ -613,6 +614,7 @@ export default function InboxPage() {
           lastIncomingMessageAt: conv.lastIncomingMessageAt,
           whatsappAccountId: conv.whatsappAccountId,
           initiatedBy: conv.initiatedBy || null,
+          firstMessageBody: conv.firstMessageBody || null,
           messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
         }
       }
@@ -1396,6 +1398,7 @@ export default function InboxPage() {
             lastIncomingMessageAt: conv.lastIncomingMessageAt,
             whatsappAccountId: conv.whatsappAccountId,
             initiatedBy: conv.initiatedBy || null,
+            firstMessageBody: conv.firstMessageBody || null,
             messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
 
           }
@@ -2952,11 +2955,14 @@ export default function InboxPage() {
                             </p>
                             {/* Tag dinâmica: Anuncio Google / Ativo / Novo */}
                             {(() => {
-                              const hasAnuncioGoogle = conversation.contactTags?.some(t => t === 'Anuncio Google')
                               const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                              if (hasNonDisplayTags) return null
                               
-                              // Anuncio Google (laranja)
-                              if (hasAnuncioGoogle && !hasNonDisplayTags) {
+                              // Anuncio Google (laranja) - primeira mensagem começa com frases de anúncio
+                              const firstBody = (conversation.firstMessageBody || '').toLowerCase().trim()
+                              const isAnuncioGoogle = firstBody.startsWith('olá! quero garantir') || firstBody.startsWith('encontrei v')
+                              
+                              if (conversation.initiatedBy === 'client' && isAnuncioGoogle) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
                                     Anuncio Google
@@ -2964,15 +2970,15 @@ export default function InboxPage() {
                                 )
                               }
                               // Ativo (azul) - conversa iniciada pelo atendente
-                              if (conversation.initiatedBy === 'agent' && !hasNonDisplayTags) {
+                              if (conversation.initiatedBy === 'agent') {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
                                     Ativo
                                   </span>
                                 )
                               }
-                              // Novo (vermelho) - cliente iniciou, sem tags
-                              if (conversation.initiatedBy === 'client' && !hasNonDisplayTags) {
+                              // Novo (vermelho) - cliente iniciou sem ser anúncio
+                              if (conversation.initiatedBy === 'client') {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
                                     Novo
@@ -3078,24 +3084,27 @@ export default function InboxPage() {
                       </h2>
                       {/* Tag dinâmica no header: Anuncio Google / Ativo / Novo */}
                       {(() => {
-                        const hasAnuncioGoogle = selectedConversation.contactTags?.some(t => t === 'Anuncio Google')
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                        if (hasNonDisplayTags) return null
                         
-                        if (hasAnuncioGoogle && !hasNonDisplayTags) {
+                        const firstBody = (selectedConversation.firstMessageBody || '').toLowerCase().trim()
+                        const isAnuncioGoogle = firstBody.startsWith('olá! quero garantir') || firstBody.startsWith('encontrei v')
+                        
+                        if (selectedConversation.initiatedBy === 'client' && isAnuncioGoogle) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm" title="Lead vindo de anúncio do Google">
                               Anuncio Google
                             </span>
                           )
                         }
-                        if (selectedConversation.initiatedBy === 'agent' && !hasNonDisplayTags) {
+                        if (selectedConversation.initiatedBy === 'agent') {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
                               Ativo
                             </span>
                           )
                         }
-                        if (selectedConversation.initiatedBy === 'client' && !hasNonDisplayTags) {
+                        if (selectedConversation.initiatedBy === 'client') {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente">
                               Novo

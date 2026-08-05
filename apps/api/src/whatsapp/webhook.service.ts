@@ -655,8 +655,7 @@ export class WebhookService {
       const bodyLower = messageBody.toLowerCase().trim();
       const anuncioGooglePhrases = [
         'olá! quero garantir',
-        'vi voces',
-        'vi vcs',
+        'encontrei v',
       ];
 
       const isAnuncioGoogle = anuncioGooglePhrases.some(phrase => bodyLower.startsWith(phrase));
