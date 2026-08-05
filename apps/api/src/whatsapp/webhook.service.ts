@@ -230,9 +230,6 @@ export class WebhookService {
 
     this.logger.log(`✅ Saved inbound message from ${phoneNumber} to conversation ${conversation.id}`);
 
-    // Auto-tag "Anuncio Google" para conta Vendas Sol
-    await this.autoTagAnuncioGoogle(contact, conversation, messageBody, whatsappAccountId);
-
     // Emitir evento SSE para atualização em tempo real no frontend
     try {
       this.sseService.emit({

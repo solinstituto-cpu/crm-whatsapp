@@ -219,7 +219,9 @@ export default function InboxPage() {
   // Filtros avançados do inbox - persistir no localStorage
   const [showInboxFilters, setShowInboxFilters] = useState(false)
   const [inboxFilters, setInboxFilters] = useState<{assignedToId: string, campaignId: string, tag: string, unreadOnly: boolean}>({ assignedToId: '', campaignId: '', tag: '', unreadOnly: false })
-  
+  // Filtro por marcação (Ativo/Novo/Anuncio Google) — só exibido na conta Vendas Sol, aba Ativas
+  const [badgeFilter, setBadgeFilter] = useState<'all' | 'ativo' | 'novo' | 'anuncio'>('all')
+
   // Estado para contas WhatsApp (multi-números)
   const [whatsappAccounts, setWhatsappAccounts] = useState<{id: string, name: string, phoneNumber: string, isDefault: boolean}[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
@@ -1566,10 +1568,12 @@ export default function InboxPage() {
             contactTags,
             lastIncomingMessageAt: conv.lastIncomingMessageAt,
             whatsappAccountId: conv.whatsappAccountId,
+            initiatedBy: conv.initiatedBy || null,
+            firstMessageBody: conv.firstMessageBody || null,
             messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
           }
         })
-        
+
         if (append) {
           setConversations(prev => [...prev, ...formattedConversations])
         } else {
@@ -1610,13 +1614,31 @@ export default function InboxPage() {
     }
   }, [hasMoreConversations, loadingMore, conversationPage])
 
-  const filteredConversations = Array.isArray(conversations) 
+  // Marcação (Ativo/Anuncio Google/Novo) exibida ao lado do nome — usada na lista, no cabeçalho e no filtro por botão
+  const getConversationBadge = (conversation: any): 'ativo' | 'anuncio' | 'novo' | null => {
+    const hasTags = conversation.contactTags && conversation.contactTags.filter((t: string) => !['golden', 'gold'].includes(t.toLowerCase())).length > 0
+    if (hasTags) return null
+
+    if (conversation.initiatedBy === 'agent') return 'ativo'
+
+    const fullMessage = (conversation.firstMessageBody || '').trim()
+    const firstLine = fullMessage.split(/\r?\n/)[0] || ''
+    const cleanFirstLine = firstLine.toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '').trim()
+    const isAnuncio = cleanFirstLine.includes('quero garantir') || cleanFirstLine.includes('encontrei v')
+
+    return isAnuncio ? 'anuncio' : 'novo'
+  }
+
+  const filteredConversations = Array.isArray(conversations)
     ? conversations.filter(conversation => {
         // Filtro de tag ainda é local (não implementado no backend)
-        const matchesTag = !inboxFilters.tag || 
+        const matchesTag = !inboxFilters.tag ||
           (conversation.contactTags && conversation.contactTags.includes(inboxFilters.tag))
-        
-        return matchesTag
+
+        // Filtro por marcação (Ativo/Novo/Anuncio Google) — só aplicável na aba Ativas
+        const matchesBadge = badgeFilter === 'all' || getConversationBadge(conversation) === badgeFilter
+
+        return matchesTag && matchesBadge
       }).sort((a, b) => {
         const getSlaPriority = (conv: any) => {
           if (conv.unreadCount > 0) {
@@ -2874,10 +2896,46 @@ export default function InboxPage() {
                 Pendentes
               </button>
 
+              {/* Filtro por marcação (Ativo/Novo/Anuncio Google) — só na conta Vendas Sol, aba Ativas */}
+              {conversationFilter === 'active' && whatsappAccounts.find(a => a.id === selectedAccountId)?.name === 'Vendas Sol' && (
+                <>
+                  <button
+                    onClick={() => setBadgeFilter(prev => prev === 'ativo' ? 'all' : 'ativo')}
+                    className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                      badgeFilter === 'ativo'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400'
+                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Ativos
+                  </button>
+                  <button
+                    onClick={() => setBadgeFilter(prev => prev === 'novo' ? 'all' : 'novo')}
+                    className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                      badgeFilter === 'novo'
+                        ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400'
+                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Novos
+                  </button>
+                  <button
+                    onClick={() => setBadgeFilter(prev => prev === 'anuncio' ? 'all' : 'anuncio')}
+                    className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                      badgeFilter === 'anuncio'
+                        ? 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400'
+                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Anuncio Google
+                  </button>
+                </>
+              )}
+
               {/* Limpar filtros (mostra só quando tem filtro ativo) */}
-              {(inboxFilters.assignedToId || inboxFilters.tag || inboxFilters.unreadOnly) && (
+              {(inboxFilters.assignedToId || inboxFilters.tag || inboxFilters.unreadOnly || badgeFilter !== 'all') && (
                 <button
-                  onClick={() => setInboxFilters({ assignedToId: '', campaignId: '', tag: '', unreadOnly: false })}
+                  onClick={() => { setInboxFilters({ assignedToId: '', campaignId: '', tag: '', unreadOnly: false }); setBadgeFilter('all') }}
                   className="text-xs px-2 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   ✕ Limpar
@@ -3085,10 +3143,33 @@ export default function InboxPage() {
                       <h2 className="text-lg font-medium text-gray-900">
                         {selectedConversation.contactName}
                       </h2>
-                      {/* Badge Padrão NOVO no Header */}
+                      {/* Marcação no Header (mesma lógica da lista) */}
                       {(() => {
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold'].includes(t.toLowerCase()))
                         if (hasNonDisplayTags) return null
+
+                        if (selectedConversation.initiatedBy === 'agent') {
+                          return (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm">
+                              Ativo
+                            </span>
+                          )
+                        }
+
+                        const fullMessage = (selectedConversation.firstMessageBody || '').trim()
+                        const firstLine = fullMessage.split(/\r?\n/)[0] || ''
+                        const cleanFirstLine = firstLine.toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '').trim()
+
+                        const isAnuncio = cleanFirstLine.includes('quero garantir') ||
+                                          cleanFirstLine.includes('encontrei v')
+
+                        if (isAnuncio) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm">
+                              Anuncio Google
+                            </span>
+                          )
+                        }
 
                         return (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm">

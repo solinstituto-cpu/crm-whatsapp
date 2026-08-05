@@ -51,12 +51,13 @@ export class ConversationsService {
           const reengajaCondition = {
             contactId: { not: null },
             contact: {
-              tags: {
-                notIn: [
-                  '[]', '',
-                  '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]'
-                ],
-                not: null,
+              is: {
+                tags: {
+                  notIn: [
+                    '[]', '',
+                    '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]'
+                  ],
+                },
               },
             },
           };
@@ -72,15 +73,11 @@ export class ConversationsService {
             where.contact = reengajaCondition.contact;
           }
         } else {
-          // Ativas: sem contato OU sem tags (null, vazio, []) OU com tag apenas Gold/Golden
+          // Ativas: sem contato OU sem tags (null, vazio, []) — exclui contatos com tag Gold/Golden
           const noTagsCondition = {
             OR: [
               { contactId: null },
-              { contact: { tags: null } },
-              { contact: { tags: { in: ['[]', ''] } } },
-              { contact: { tags: { in: [
-                '[\"Golden\"]', '[\"golden\"]', '[\"Gold\"]', '[\"gold\"]'
-              ] } } },
+              { contact: { is: { tags: { in: ['[]', ''] } } } },
             ]
           };
           
@@ -140,7 +137,6 @@ export class ConversationsService {
               OR: [
                 { direction: 'IN' },
                 { direction: 'in' },
-                { direction: null },
               ],
             },
             orderBy: { createdAt: 'asc' },
