@@ -2968,17 +2968,14 @@ export default function InboxPage() {
                                   )
                                 }
 
-                                const msgText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase().trim()
-                                // "Anuncio google" quando o início da conversa conter "olá quero garantir" ou "encontrei v"
-                                const isAnuncio = msgText.includes('olá! quero garantir') || 
-                                                  msgText.includes('olá, quero garantir') || 
-                                                  msgText.includes('ola! quero garantir') || 
-                                                  msgText.includes('ola, quero garantir') || 
-                                                  msgText.includes('ola quero garantir') || 
-                                                  msgText.includes('olá quero garantir') || 
-                                                  msgText.includes('encontrei v') ||
-                                                  msgText.includes('vi voces') ||
-                                                  msgText.includes('vi vcs')
+                                // Trata o texto removendo acentos e símbolos para comparação universal
+                                const rawText = (conversation.firstMessageBody || conversation.lastMessage || '').toLowerCase()
+                                const cleanText = rawText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+                                const isAnuncio = cleanText.includes('quero garantir') || 
+                                                  cleanText.includes('encontrei v') ||
+                                                  cleanText.includes('vi voce') ||
+                                                  cleanText.includes('vi vc')
 
                                 if (isAnuncio) {
                                   return (
