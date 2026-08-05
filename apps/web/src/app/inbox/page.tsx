@@ -2955,14 +2955,13 @@ export default function InboxPage() {
                             </p>
                             {/* Tag dinâmica: Anuncio Google / Ativo / Novo */}
                             {(() => {
+                              const hasAnuncioGoogle = conversation.contactTags?.some(t => t.toLowerCase() === 'anuncio google')
                               const hasNonDisplayTags = conversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                              
                               if (hasNonDisplayTags) return null
-                              
-                              // Anuncio Google (laranja) - primeira mensagem começa com frases de anúncio
-                              const firstBody = (conversation.firstMessageBody || '').toLowerCase().trim()
-                              const isAnuncioGoogle = firstBody.startsWith('olá! quero garantir') || firstBody.startsWith('encontrei v')
-                              
-                              if (conversation.initiatedBy === 'client' && isAnuncioGoogle) {
+
+                              // Anuncio Google (laranja)
+                              if (hasAnuncioGoogle) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider flex-shrink-0" title="Lead vindo de anúncio do Google">
                                     Anuncio Google
@@ -2970,22 +2969,19 @@ export default function InboxPage() {
                                 )
                               }
                               // Ativo (azul) - conversa iniciada pelo atendente
-                              if (conversation.initiatedBy === 'agent') {
+                              if (conversation.initiatedBy === 'agent' || !conversation.lastIncomingMessageAt) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
                                     Ativo
                                   </span>
                                 )
                               }
-                              // Novo (vermelho) - cliente iniciou sem ser anúncio
-                              if (conversation.initiatedBy === 'client') {
-                                return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
-                                    Novo
-                                  </span>
-                                )
-                              }
-                              return null
+                              // Novo (vermelho) - cliente iniciou sem tag
+                              return (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
+                                  Novo
+                                </span>
+                              )
                             })()}
                           </div>
                           <div className="flex items-center space-x-2">
@@ -3084,34 +3080,30 @@ export default function InboxPage() {
                       </h2>
                       {/* Tag dinâmica no header: Anuncio Google / Ativo / Novo */}
                       {(() => {
+                        const hasAnuncioGoogle = selectedConversation.contactTags?.some(t => t.toLowerCase() === 'anuncio google')
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold', 'anuncio google'].includes(t.toLowerCase()))
+                        
                         if (hasNonDisplayTags) return null
                         
-                        const firstBody = (selectedConversation.firstMessageBody || '').toLowerCase().trim()
-                        const isAnuncioGoogle = firstBody.startsWith('olá! quero garantir') || firstBody.startsWith('encontrei v')
-                        
-                        if (selectedConversation.initiatedBy === 'client' && isAnuncioGoogle) {
+                        if (hasAnuncioGoogle) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wider shadow-sm" title="Lead vindo de anúncio do Google">
                               Anuncio Google
                             </span>
                           )
                         }
-                        if (selectedConversation.initiatedBy === 'agent') {
+                        if (selectedConversation.initiatedBy === 'agent' || !selectedConversation.lastIncomingMessageAt) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
                               Ativo
                             </span>
                           )
                         }
-                        if (selectedConversation.initiatedBy === 'client') {
-                          return (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente">
-                              Novo
-                            </span>
-                          )
-                        }
-                        return null
+                        return (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente">
+                            Novo
+                          </span>
+                        )
                       })()}
                       {selectedConversation.assignedTo && (
                         <span 
