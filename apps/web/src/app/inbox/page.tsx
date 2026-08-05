@@ -100,6 +100,7 @@ interface Conversation {
   contactId?: string | null
   contactNotes?: string | null
   whatsappAccountId?: string | null
+  initiatedBy?: 'agent' | 'client' | null
 }
 
 const ContactNotesField = ({ 
@@ -611,6 +612,7 @@ export default function InboxPage() {
           } : undefined,
           lastIncomingMessageAt: conv.lastIncomingMessageAt,
           whatsappAccountId: conv.whatsappAccountId,
+          initiatedBy: conv.initiatedBy || null,
           messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
         }
       }
@@ -1393,7 +1395,9 @@ export default function InboxPage() {
             contactTags,
             lastIncomingMessageAt: conv.lastIncomingMessageAt,
             whatsappAccountId: conv.whatsappAccountId,
+            initiatedBy: conv.initiatedBy || null,
             messages: Array.isArray(conv.messages) ? conv.messages.map(mapMessage) : []
+
           }
         })
         
@@ -2960,7 +2964,7 @@ export default function InboxPage() {
                                 )
                               }
                               // Ativo (azul) - conversa iniciada pelo atendente
-                              if (!conversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                              if (conversation.initiatedBy === 'agent' && !hasNonDisplayTags) {
                                 return (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0" title="Conversa iniciada pelo atendente">
                                     Ativo
@@ -2968,9 +2972,9 @@ export default function InboxPage() {
                                 )
                               }
                               // Novo (vermelho) - cliente iniciou, sem tags
-                              if (conversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                              if (conversation.initiatedBy === 'client' && !hasNonDisplayTags) {
                                 return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente e sem tag de classificação">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider flex-shrink-0" title="Atendimento iniciado pelo cliente">
                                     Novo
                                   </span>
                                 )
@@ -3084,16 +3088,16 @@ export default function InboxPage() {
                             </span>
                           )
                         }
-                        if (!selectedConversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                        if (selectedConversation.initiatedBy === 'agent' && !hasNonDisplayTags) {
                           return (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider shadow-sm" title="Conversa iniciada pelo atendente">
                               Ativo
                             </span>
                           )
                         }
-                        if (selectedConversation.lastIncomingMessageAt && !hasNonDisplayTags) {
+                        if (selectedConversation.initiatedBy === 'client' && !hasNonDisplayTags) {
                           return (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente e sem tag de classificação">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider shadow-sm" title="Atendimento iniciado pelo cliente">
                               Novo
                             </span>
                           )
