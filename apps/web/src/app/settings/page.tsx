@@ -1241,15 +1241,39 @@ function WhatsAppAccountsSettings() {
         )}
       </div>
 
-      {/* Info box */}
-      <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">💡 Sobre Multi-Números</h3>
-        <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-          <li>• Cada conta representa um número de WhatsApp Business diferente</li>
-          <li>• A conta padrão será usada quando nenhuma for especificada</li>
-          <li>• As conversas são automaticamente vinculadas à conta que recebeu a mensagem</li>
-          <li>• Use "Testar" para verificar se as credenciais estão corretas</li>
-        </ul>
+      {/* Info boxes */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">💡 Sobre Multi-Números</h3>
+          <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+            <li>• Cada conta representa um número de WhatsApp Business diferente</li>
+            <li>• A conta padrão será usada quando nenhuma for especificada</li>
+            <li>• As conversas são automaticamente vinculadas à conta que recebeu a mensagem</li>
+            <li>• Use "Testar" para verificar se as credenciais estão corretas</li>
+          </ul>
+        </div>
+
+        <div className="bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-gray-800 dark:text-gray-300 mb-2">🎨 Cores de Espera na Caixa de Entrada</h3>
+          <ul className="text-xs text-gray-700 dark:text-gray-400 space-y-1.5">
+            <li className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-green-100 border border-green-300 flex-shrink-0"></span>
+              0h a 3h sem resposta
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-orange-100 border border-orange-300 flex-shrink-0"></span>
+              3h a 6h sem resposta
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-red-100 border border-red-300 flex-shrink-0"></span>
+              6h a 12h sem resposta
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-purple-100 border border-purple-300 flex-shrink-0"></span>
+              Mais de 12h sem resposta (até 24h a janela do WhatsApp fecha)
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Modal de adicionar/editar */}

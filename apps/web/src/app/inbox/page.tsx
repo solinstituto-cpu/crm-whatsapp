@@ -1646,11 +1646,12 @@ export default function InboxPage() {
             const waitTimeMs = new Date().getTime() - new Date(incomingTime).getTime()
             const waitTimeHours = waitTimeMs / (1000 * 60 * 60)
             
-            if (waitTimeHours > 4) return 3 // Vermelho
-            if (waitTimeHours > 2) return 2 // Amarelo
+            if (waitTimeHours > 12) return 4 // Roxo
+            if (waitTimeHours > 6) return 3 // Vermelho
+            if (waitTimeHours > 3) return 2 // Laranja
             return 1 // Verde
           }
-          return 4 // Outros
+          return 5 // Outros
         }
         
         const priorityA = getSlaPriority(a)
@@ -2964,21 +2965,21 @@ export default function InboxPage() {
                   const isGolden = conversation.contactTags?.includes('Golden')
                   let bgColorClass = isGolden ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-white dark:bg-gray-800'
                   
-                  let isOver6Hours = false;
+                  let isOver12Hours = false;
                   // Se houver mensagem não lida E houver data de recebimento (SLA)
                   if (conversation.unreadCount > 0) {
                     // Usar lastIncomingMessageAt, se não existir cai para fallback (melhor que nada)
                     const incomingTime = conversation.lastIncomingMessageAt || conversation.updatedAt || new Date().toISOString();
                     const waitTimeMs = new Date().getTime() - new Date(incomingTime).getTime()
                     const waitTimeHours = waitTimeMs / (1000 * 60 * 60)
-                    
-                    if (waitTimeHours > 6) {
-                      bgColorClass = 'bg-gray-300 dark:bg-gray-700' // Cinza
-                      isOver6Hours = true;
-                    } else if (waitTimeHours > 4) {
+
+                    if (waitTimeHours > 12) {
+                      bgColorClass = 'bg-purple-100 dark:bg-purple-900/40' // Roxo claro
+                      isOver12Hours = true;
+                    } else if (waitTimeHours > 6) {
                       bgColorClass = 'bg-red-100 dark:bg-red-900/40' // Vermelho claro
-                    } else if (waitTimeHours > 2) {
-                      bgColorClass = 'bg-yellow-100 dark:bg-yellow-900/40' // Amarelo claro
+                    } else if (waitTimeHours > 3) {
+                      bgColorClass = 'bg-orange-100 dark:bg-orange-900/40' // Laranja claro
                     } else {
                       bgColorClass = 'bg-green-100 dark:bg-green-900/40' // Verde claro
                     }
@@ -3056,7 +3057,7 @@ export default function InboxPage() {
                             )}
                             {/* Bolinha verde/preta indicando demanda de resposta */}
                             {conversation.unreadCount > 0 && (
-                              <span className={`w-2 h-2 rounded-full ${isOver6Hours ? 'bg-black shadow-[0_0_5px_rgba(0,0,0,0.6)]' : 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.6)]'}`} title="Aguardando resposta do consultor"></span>
+                              <span className={`w-2 h-2 rounded-full ${isOver12Hours ? 'bg-black shadow-[0_0_5px_rgba(0,0,0,0.6)]' : 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.6)]'}`} title="Aguardando resposta do consultor"></span>
                             )}
 
                             {/* Indicador de atendente com cor personalizada */}
@@ -3070,7 +3071,7 @@ export default function InboxPage() {
                             )}
                           <p className="text-xs text-gray-500 dark:text-gray-400">{conversation.lastMessageTime}</p>
                           {conversation.unreadCount > 0 && (
-                            <span className={`inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full ${isOver6Hours ? 'bg-gray-800 dark:bg-black' : 'bg-green-600'}`}>
+                            <span className={`inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full ${isOver12Hours ? 'bg-gray-800 dark:bg-black' : 'bg-green-600'}`}>
                               {conversation.unreadCount}
                             </span>
                           )}
