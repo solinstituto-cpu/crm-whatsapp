@@ -184,7 +184,7 @@ export class WhatsAppService {
 
       // Check 24-hour window (skip if explicitly requested)
       if (!skipWindowCheck) {
-        const canSendFreeform = await this.isWithin24HourWindow(sendMessageDto.to);
+        const canSendFreeform = await this.isWithin24HourWindow(sendMessageDto.to, credentials.accountId);
         
         if (!canSendFreeform) {
           throw new Error('Outside 24-hour window. Use template message instead.');

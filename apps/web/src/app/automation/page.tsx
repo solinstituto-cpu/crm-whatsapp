@@ -95,6 +95,13 @@ const TRIGGER_TYPES = [
   { type: 'BIRTHDAY', name: 'Aniversário', description: 'Mensagem automática no aniversário do contato' },
 ]
 
+// Helper para formatar hora decimal em HH:MM (ex: 8.5 → "8:30", 18 → "18:00")
+const formatHourMinute = (hour: number): string => {
+  const h = Math.floor(hour)
+  const m = Math.round((hour % 1) * 60)
+  return `${h}:${m.toString().padStart(2, '0')}`
+}
+
 // Helper para formatar descrição do trigger
 const formatTriggerDescription = (flow: Flow): string => {
   const triggerName = TRIGGER_TYPES.find(t => t.type === flow.trigger)?.name || flow.trigger
@@ -114,7 +121,12 @@ const formatTriggerDescription = (flow: Flow): string => {
   
   // Horário comercial
   if (config.businessHoursOnly && config.businessHoursStart && config.businessHoursEnd) {
-    details.push(`🕐 ${config.businessHoursStart}-${config.businessHoursEnd}`)
+    details.push(`🕐 ${formatHourMinute(config.businessHoursStart)}-${formatHourMinute(config.businessHoursEnd)}`)
+  }
+  
+  // OUTSIDE_HOURS: mostrar o horário de atendimento configurado
+  if (flow.trigger === 'OUTSIDE_HOURS' && config.businessHoursStart != null && config.businessHoursEnd != null) {
+    details.push(`🌙 Atendimento: ${formatHourMinute(config.businessHoursStart)}-${formatHourMinute(config.businessHoursEnd)}`)
   }
   
   if (details.length > 0) {
@@ -150,14 +162,14 @@ const FLOW_TEMPLATES = [
     description: 'Resposta automática fora do expediente',
     icon: '🌙',
     trigger: 'OUTSIDE_HOURS',
-    triggerConfig: { businessHoursStart: 8, businessHoursEnd: 18 },
+    triggerConfig: { businessHoursStart: 8.5, businessHoursEnd: 18, cooldownHours: 12 },
     nodes: [
       {
         type: 'SEND_MESSAGE',
         name: 'Mensagem fora do horário',
         config: {
           messageType: 'text',
-          messageContent: 'Olá! 🌙\n\nObrigado por entrar em contato.\n\nNosso horário de atendimento é de segunda a sexta, das 8h às 18h.\n\nDeixe sua mensagem que responderemos assim que possível!'
+          messageContent: 'Olá! 🌙\n\nObrigado por entrar em contato.\n\nNosso horário de atendimento é de segunda a sexta, das 8:30h às 18h.\n\nDeixe sua mensagem que responderemos assim que possível!'
         }
       }
     ]

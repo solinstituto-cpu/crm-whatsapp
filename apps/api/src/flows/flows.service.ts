@@ -7,7 +7,7 @@ import axios from 'axios';
 export interface CreateFlowDto {
   name: string;
   description?: string;
-  trigger: 'NEW_MESSAGE' | 'KEYWORD' | 'NEW_CONTACT' | 'SCHEDULE' | 'BUTTON_CLICK';
+  trigger: 'NEW_MESSAGE' | 'KEYWORD' | 'NEW_CONTACT' | 'SCHEDULE' | 'BUTTON_CLICK' | 'OUTSIDE_HOURS';
   triggerConfig: {
     keywords?: string[];
     schedule?: string;
@@ -345,16 +345,21 @@ export class FlowsService {
 
   /**
    * Verifica se está dentro do horário comercial
+   * Suporta horas decimais: 8.5 = 8:30, 18.5 = 18:30
    */
   isBusinessHours(startHour: number = 8, endHour: number = 18): boolean {
     const now = new Date();
-    const hour = now.getHours();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const dayOfWeek = now.getDay(); // 0 = domingo, 6 = sábado
     
     // Fora do expediente (segunda a sexta)
     if (dayOfWeek === 0 || dayOfWeek === 6) return false;
     
-    return hour >= startHour && hour < endHour;
+    // Converter horas decimais para minutos (ex: 8.5 → 510 min, 18 → 1080 min)
+    const startMinutes = Math.floor(startHour) * 60 + Math.round((startHour % 1) * 60);
+    const endMinutes = Math.floor(endHour) * 60 + Math.round((endHour % 1) * 60);
+    
+    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
   }
 
   /**
@@ -521,6 +526,49 @@ export class FlowsService {
       }
       
       this.logger.log(`  🚀 Starting NEW_MESSAGE flow "${flow.name}"`);
+      return { type: 'START', flow };
+    }
+
+    // ==========================================
+    // BUSCAR FLUXOS OUTSIDE_HOURS (fora do horário)
+    // ==========================================
+    const outsideHoursFlows = await this.prisma.flow.findMany({
+      where: {
+        isActive: true,
+        trigger: 'OUTSIDE_HOURS',
+      },
+      include: {
+        nodes: { orderBy: { position: 'asc' } },
+      },
+      orderBy: [
+        { name: 'asc' },
+      ],
+    });
+
+    this.logger.log(`🌙 Found ${outsideHoursFlows.length} active OUTSIDE_HOURS flows`);
+
+    for (const flow of outsideHoursFlows) {
+      const config = JSON.parse(flow.triggerConfig || '{}');
+      const startHour = config.businessHoursStart ?? 8.5;
+      const endHour = config.businessHoursEnd ?? 18;
+      
+      // OUTSIDE_HOURS: executar APENAS quando está FORA do horário comercial
+      if (this.isBusinessHours(startHour, endHour)) {
+        this.logger.log(`  ☀️ Flow "${flow.name}" skipped: currently within business hours (${startHour}-${endHour})`);
+        continue;
+      }
+      
+      this.logger.log(`  🌙 Outside business hours detected! Checking cooldown...`);
+      
+      // Verificar cooldown (padrão 12h para não ficar spammando)
+      const cooldownHours = config.cooldownHours ?? 12;
+      const canRun = await this.checkCooldown(flow.id, phoneE164, cooldownHours);
+      if (!canRun) {
+        this.logger.log(`  ⏳ Flow "${flow.name}" skipped: cooldown not expired for ${phoneE164}`);
+        continue;
+      }
+      
+      this.logger.log(`  🚀 Starting OUTSIDE_HOURS flow "${flow.name}"`);
       return { type: 'START', flow };
     }
 
