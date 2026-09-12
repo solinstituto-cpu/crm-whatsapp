@@ -10,6 +10,8 @@ import { ContactsModule } from './contacts/contacts.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { WhatsAppAccountsModule } from './whatsapp-accounts/whatsapp-accounts.module';
+import { SocialAccountsModule } from './social-accounts/social-accounts.module';
+import { SocialModule } from './social/social.module';
 import { TemplatesModule } from './templates/templates.module';
 import { RulesModule } from './rules/rules.module';
 import { PipelineModule } from './pipeline/pipeline.module';
@@ -42,6 +44,8 @@ import { SseModule } from './sse/sse.module';
     ConversationsModule,
     WhatsAppModule,
     WhatsAppAccountsModule,
+    SocialAccountsModule,
+    SocialModule,
     TemplatesModule,
     RulesModule,
     PipelineModule,

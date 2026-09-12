@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { WhatsAppService } from './whatsapp.service';
 import { WebhookService } from './webhook.service';
+import { SocialAccountsService } from '../social-accounts/social-accounts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { 
   SendMessageDto, 
@@ -23,6 +24,7 @@ export class WhatsAppController {
     private whatsappService: WhatsAppService,
     private webhookService: WebhookService,
     private configService: ConfigService,
+    private socialAccountsService: SocialAccountsService,
   ) {}
 
   // Webhook verification (GET)
@@ -41,13 +43,20 @@ export class WhatsAppController {
         return challenge;
       }
 
-      // Check against database tokens
+      // Check against database tokens (contas WhatsApp)
       const isDbTokenValid = await this.whatsappService.verifyDatabaseToken(verifyToken);
       if (isDbTokenValid) {
         return challenge;
       }
+
+      // Check against contas sociais (Facebook/Instagram) - mesmo app da Meta
+      // pode usar a mesma URL de callback para os 3 produtos
+      const isSocialTokenValid = await this.socialAccountsService.isKnownVerifyToken(verifyToken);
+      if (isSocialTokenValid) {
+        return challenge;
+      }
     }
-    
+
     return 'Forbidden';
   }
 

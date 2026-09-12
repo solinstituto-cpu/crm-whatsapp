@@ -173,7 +173,10 @@ export const CreateQuickReplySchema = z.object({
   variables: z.array(z.string()).default([]),
 });
 
-// WhatsApp Webhook schemas - Schema flexível para aceitar qualquer payload do Meta
+// Meta Webhook schema - flexível para aceitar qualquer payload da Meta:
+// - WhatsApp Cloud API (object: "whatsapp_business_account"): entry[].changes[]
+// - Messenger (object: "page") e Instagram Direct (object: "instagram"): entry[].messaging[]
+// `changes` e `messaging` são ambos opcionais para aceitar os três formatos.
 export const WhatsAppWebhookSchema = z.object({
   object: z.string(),
   entry: z.array(z.object({
@@ -181,7 +184,8 @@ export const WhatsAppWebhookSchema = z.object({
     changes: z.array(z.object({
       value: z.any(), // Flexível para aceitar qualquer estrutura do Meta
       field: z.string(),
-    })),
+    })).optional(),
+    messaging: z.array(z.any()).optional(), // Formato do Messenger/Instagram
   })),
 }).passthrough();
 

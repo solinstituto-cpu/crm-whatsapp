@@ -102,6 +102,7 @@ interface Conversation {
   whatsappAccountId?: string | null
   initiatedBy?: 'agent' | 'client' | null
   firstMessageBody?: string | null
+  channel?: 'WHATSAPP' | 'FACEBOOK' | 'INSTAGRAM' | null
 }
 
 const ContactNotesField = ({ 
@@ -603,6 +604,7 @@ export default function InboxPage() {
           contactTags: conv.contact?.tags ? JSON.parse(conv.contact.tags) : [],
           contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
           contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
+          channel: conv.channel || 'WHATSAPP',
           lastMessage: formatLastMessage(lastMsg),
           lastMessageTime: lastMsgTime,
           unreadCount: 0,
@@ -657,6 +659,10 @@ export default function InboxPage() {
 
   // Abrir modal de templates
   const handleOpenTemplates = () => {
+    if (selectedConversation?.channel === 'INSTAGRAM' || selectedConversation?.channel === 'FACEBOOK') {
+      alert('📋 Templates aprovados pela Meta só existem no WhatsApp Business API. Instagram/Facebook não têm esse recurso.')
+      return
+    }
     setShowTemplateModal(true)
     fetchTemplates()
   }
@@ -1260,6 +1266,7 @@ export default function InboxPage() {
               id: conv.id,
               contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
               contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
+          channel: conv.channel || 'WHATSAPP',
               lastMessage: formatLastMessage(lastMsg),
               lastMessageTime: lastMsg?.createdAt ? formatMessageDate(lastMsg.createdAt) : '',
               unreadCount: conv.unreadCount || 0,
@@ -1386,6 +1393,7 @@ export default function InboxPage() {
             id: conv.id,
             contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
             contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
+          channel: conv.channel || 'WHATSAPP',
             lastMessage: formatLastMessage(lastMsg),
             lastMessageTime: lastMsg?.createdAt ? formatMessageDate(lastMsg.createdAt) : '',
             unreadCount: conv.unreadCount || 0,
@@ -1554,6 +1562,7 @@ export default function InboxPage() {
             contactNotes: conv.contact?.notes || null,
             contactName: conv.contact?.name || conv.phoneE164 || 'Desconhecido',
             contactPhone: conv.contact?.phoneE164 || conv.phoneE164 || '',
+          channel: conv.channel || 'WHATSAPP',
             lastMessage: formatLastMessage(lastMsg),
             lastMessageTime: lastMsg?.createdAt ? formatMessageDate(lastMsg.createdAt) : '',
             unreadCount: conv.unreadCount || 0,
@@ -1822,12 +1831,24 @@ export default function InboxPage() {
       conv.id === selectedConversation.id ? updatedConversation : conv
     ))
 
-    // Enviar mensagem pela API do backend (que salva no banco e envia para WhatsApp)
+    // Enviar mensagem pela API do backend (que salva no banco e envia para o canal certo)
     try {
       const apiUrl = getApiUrl()
-      
-      // Usar o endpoint público do backend - enviar context com waMessageId para quote no WhatsApp
-      const response = await fetch(`${apiUrl}/api/wa/send-public`, {
+      const isSocialChannel = selectedConversation.channel === 'INSTAGRAM' || selectedConversation.channel === 'FACEBOOK'
+
+      // Instagram/Facebook não usam número de telefone nem "context" de quote do WhatsApp -
+      // usam o endpoint /api/social/send, identificando a conversa pelo id
+      const response = isSocialChannel
+        ? await fetch(`${apiUrl}/api/social/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversationId: selectedConversation.id,
+              text: messageContent,
+              userId: (session?.user as any)?.id,
+            })
+          })
+        : await fetch(`${apiUrl}/api/wa/send-public`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1960,7 +1981,12 @@ export default function InboxPage() {
     input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files
       if (!files || files.length === 0) return
-      
+
+      if (selectedConversation?.channel === 'INSTAGRAM' || selectedConversation?.channel === 'FACEBOOK') {
+        alert('📎 Envio de arquivos para Instagram/Facebook ainda não é suportado neste CRM. Por enquanto, responda só por texto nesses canais.')
+        return
+      }
+
       const file = files[0]
       console.log(`Uploading ${file.name} (${type})`)
       
@@ -2088,6 +2114,11 @@ export default function InboxPage() {
   const handleSendContact = async () => {
     if (!selectedConversation || !contactToSend.name.trim() || !contactToSend.phone.trim()) {
       alert('Preencha o nome e telefone do contato')
+      return
+    }
+
+    if (selectedConversation.channel === 'INSTAGRAM' || selectedConversation.channel === 'FACEBOOK') {
+      alert('👤 Envio de cartão de contato só existe no WhatsApp. Envie o contato por texto nesta conversa.')
       return
     }
 
@@ -3048,6 +3079,16 @@ export default function InboxPage() {
                                 )
                               })()}
                               <span>{conversation.contactName}</span>
+                              {conversation.channel === 'INSTAGRAM' && (
+                                <span title="Instagram" className="px-1 py-0.5 rounded text-[9px] font-bold bg-pink-100 text-pink-700 border border-pink-200 uppercase tracking-wider flex-shrink-0">
+                                  IG
+                                </span>
+                              )}
+                              {conversation.channel === 'FACEBOOK' && (
+                                <span title="Facebook Messenger" className="px-1 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider flex-shrink-0">
+                                  FB
+                                </span>
+                              )}
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -3144,6 +3185,16 @@ export default function InboxPage() {
                       <h2 className="text-lg font-medium text-gray-900">
                         {selectedConversation.contactName}
                       </h2>
+                      {selectedConversation.channel === 'INSTAGRAM' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200 uppercase tracking-wider">
+                          Instagram
+                        </span>
+                      )}
+                      {selectedConversation.channel === 'FACEBOOK' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider">
+                          Messenger
+                        </span>
+                      )}
                       {/* Marcação no Header (mesma lógica da lista) */}
                       {(() => {
                         const hasNonDisplayTags = selectedConversation.contactTags?.some(t => !['golden', 'gold'].includes(t.toLowerCase()))

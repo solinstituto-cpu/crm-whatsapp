@@ -5,6 +5,7 @@ import { WhatsAppService } from './whatsapp.service';
 import { FlowEngineService } from '../flows/flow-engine.service';
 import { TemplatesService } from '../templates/templates.service';
 import { SseService } from '../sse/sse.service';
+import { SocialWebhookService } from '../social/social-webhook.service';
 
 @Injectable()
 export class WebhookService {
@@ -17,12 +18,31 @@ export class WebhookService {
     private flowEngineService: FlowEngineService,
     private templatesService: TemplatesService,
     private sseService: SseService,
+    private socialWebhookService: SocialWebhookService,
   ) {}
 
   async processWebhook(webhookData: any) {
     this.logger.log(`📥 Webhook received: ${JSON.stringify(webhookData).substring(0, 500)}`);
-    
+
     try {
+      // A Meta usa a mesma URL de callback para WhatsApp, Messenger e
+      // Instagram (um app pode ter os 3 produtos); o campo "object" no topo
+      // do payload diz de qual produto o evento veio.
+      const object = webhookData?.object;
+
+      if (object === 'page') {
+        await this.socialWebhookService.processMessengerWebhook(webhookData);
+        this.logger.log('✅ Webhook (Messenger) processed successfully');
+        return;
+      }
+
+      if (object === 'instagram') {
+        await this.socialWebhookService.processInstagramWebhook(webhookData);
+        this.logger.log('✅ Webhook (Instagram) processed successfully');
+        return;
+      }
+
+      // Padrão: WhatsApp Cloud API (object === 'whatsapp_business_account')
       for (const entry of webhookData.entry || []) {
         for (const change of entry.changes || []) {
           this.logger.log(`📨 Processing change field: ${change.field}`);
