@@ -81,6 +81,12 @@ model Contact {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // Canal de origem do contato: WHATSAPP (padrão, compatível com dados existentes), FACEBOOK, INSTAGRAM
+  channel    String  @default("WHATSAPP")
+  // Identificador externo do contato no canal (PSID no Messenger, IGSID no Instagram).
+  // Para WhatsApp continua null - o identificador é phoneE164.
+  externalId String?
+
   // Relations
   assignedToId String?
   assignedTo   User?   @relation(fields: [assignedToId], references: [id])
@@ -88,16 +94,23 @@ model Contact {
   whatsappAccountId String?
   whatsappAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: SetNull)
 
+  // Conta social (Facebook/Instagram) de onde este contato veio
+  socialAccountId String?
+  socialAccount   SocialAccount? @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
+
   conversations Conversation[]
   deals         Deal[]
 
   @@unique([phoneE164, whatsappAccountId])
+  @@unique([channel, externalId, socialAccountId])
   @@index([whatsappAccountId])
+  @@index([socialAccountId])
   @@index([customerStatus])
   @@index([optedOut])
   @@index([createdAt])
   @@index([lastMessageAt])
   @@index([assignedToId])
+  @@index([channel])
   @@map("contacts")
 }
 
@@ -112,6 +125,9 @@ model Conversation {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
+  // Canal da conversa: WHATSAPP (padrão), FACEBOOK, INSTAGRAM
+  channel String @default("WHATSAPP")
+
   // Atendente atribuído
   assignedToId String?
   assignedTo   User?     @relation("AssignedConversations", fields: [assignedToId], references: [id], onDelete: SetNull)
@@ -121,6 +137,10 @@ model Conversation {
   whatsappAccountId String?
   whatsappAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: SetNull)
 
+  // Conta social (Facebook/Instagram) desta conversa
+  socialAccountId String?
+  socialAccount   SocialAccount? @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
+
   // Relations
   contactId String?
   contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
@@ -128,11 +148,13 @@ model Conversation {
   messages Message[]
 
   @@index([whatsappAccountId])
+  @@index([socialAccountId])
   @@index([status])
   @@index([lastMessageAt])
   @@index([contactId])
   @@index([assignedToId])
   @@index([whatsappAccountId, status])
+  @@index([channel])
   @@map("conversations")
 }
 
@@ -146,6 +168,9 @@ model Message {
   status      String   @default("SENT") // PENDING, SENT, DELIVERED, READ, FAILED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Canal desta mensagem específica: WHATSAPP (padrão), FACEBOOK, INSTAGRAM
+  channel String @default("WHATSAPP")
 
   // Relations
   conversationId String
@@ -628,6 +653,44 @@ model UserWhatsAppAccount {
   @@index([userId])
   @@index([accountId])
   @@map("user_whatsapp_accounts")
+}
+
+// ==========================================
+// CONTAS SOCIAIS (FACEBOOK MESSENGER / INSTAGRAM)
+// ==========================================
+
+// Uma "conta social" = uma Página do Facebook conectada (usada para Messenger
+// e/ou Instagram, já que a Meta unificou o envio/recebimento das duas via
+// Página conectada). channel indica para qual inbox essa conta alimenta.
+model SocialAccount {
+  id      String @id @default(cuid())
+  channel String // FACEBOOK ou INSTAGRAM
+  name    String // Nome amigável: "Página Sol Instituto", "Instagram Sol Instituto"
+
+  // Página do Facebook (sempre necessária - Instagram DM também passa pela Página conectada)
+  pageId      String // ID da Página no Facebook
+  pageName    String? // Nome da Página, cacheado para exibição
+  accessToken String // Page Access Token (de longa duração / não expira)
+
+  // Só preenchido quando channel = INSTAGRAM
+  igBusinessId String? // ID da conta profissional do Instagram conectada à Página
+
+  appId              String? // App ID da Meta usado para gerar o token
+  webhookVerifyToken String  @default("sol_verify_token")
+
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  conversations Conversation[]
+  contacts      Contact[]
+
+  @@unique([channel, pageId])
+  @@index([channel])
+  @@map("social_accounts")
 }
 
 // Configurações do sistema (API Keys, integrações, etc)
