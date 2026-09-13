@@ -1176,8 +1176,7 @@ export default function InboxPage() {
       const accounts = await fetchUserWhatsAppAccounts(userId)
       const accountsWithSocial = [
         ...accounts,
-        { id: 'SOCIAL', name: 'Instagram / Facebook', phoneNumber: '', isDefault: false },
-      ]
+]
       setWhatsappAccounts(accountsWithSocial)
       whatsappAccountsRef.current = accountsWithSocial
 
