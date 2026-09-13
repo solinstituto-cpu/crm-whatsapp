@@ -40,7 +40,8 @@ import {
   Megaphone,
   CheckCircle2,
   ArrowLeft,
-  Edit3
+  Edit3,
+  Instagram
 } from 'lucide-react'
 
 interface MetaTemplate {
@@ -1166,12 +1167,19 @@ export default function InboxPage() {
   }, [inboxFilters.unreadOnly, inboxFilters.assignedToId, conversationFilter, searchTerm, selectedAccountId, initialLoadDone])
   
   // Buscar contas WhatsApp (multi-números) - filtradas pelo usuário logado
+  // + uma "caixinha" extra (não é uma conta de verdade, é só um filtro) que
+  // agrupa Instagram Direct e Facebook Messenger num único lugar, separado
+  // dos números de WhatsApp.
   const fetchWhatsAppAccounts = async () => {
     const userId = (session?.user as any)?.id
     try {
       const accounts = await fetchUserWhatsAppAccounts(userId)
-      setWhatsappAccounts(accounts)
-      whatsappAccountsRef.current = accounts
+      const accountsWithSocial = [
+        ...accounts,
+        { id: 'SOCIAL', name: 'Instagram / Facebook', phoneNumber: '', isDefault: false },
+      ]
+      setWhatsappAccounts(accountsWithSocial)
+      whatsappAccountsRef.current = accountsWithSocial
 
       const savedAccountId = typeof window !== 'undefined'
         ? localStorage.getItem('crm_selectedAccountId')
@@ -1179,18 +1187,24 @@ export default function InboxPage() {
 
       let accountId = selectedAccountIdRef.current
       if (accounts.length === 1) {
-        accountId = accounts[0].id
-        setSelectedAccountId(accountId)
+        // Só força a única conta de WhatsApp se ainda não havia uma seleção
+        // válida (isso preserva a escolha do atendente, incluindo a
+        // caixinha Instagram/Facebook, entre recarregamentos da página).
+        const validCurrent = accountId && accountsWithSocial.some((a) => a.id === accountId)
+        if (!validCurrent) {
+          accountId = accounts[0].id
+          setSelectedAccountId(accountId)
+        }
       } else if (accounts.length > 1) {
-        const validCurrent = accountId && accounts.some((a) => a.id === accountId)
+        const validCurrent = accountId && accountsWithSocial.some((a) => a.id === accountId)
         if (!validCurrent) {
           accountId = resolveDefaultAccountId(accounts, savedAccountId)
           setSelectedAccountId(accountId)
         }
       }
 
-      selectedAccountIdRef.current = getAccountFilterId(accounts, accountId)
-      return accounts
+      selectedAccountIdRef.current = getAccountFilterId(accountsWithSocial, accountId)
+      return accountsWithSocial
     } catch (error) {
       console.error('Erro ao buscar contas WhatsApp:', error)
       return []
@@ -2815,9 +2829,13 @@ export default function InboxPage() {
                   className="w-full flex items-center justify-between px-3 py-2 text-sm bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-green-600" />
+                    {selectedAccountId === 'SOCIAL' ? (
+                      <Instagram className="h-4 w-4 text-pink-600" />
+                    ) : (
+                      <Phone className="h-4 w-4 text-green-600" />
+                    )}
                     <span className="text-green-700 dark:text-green-300 font-medium">
-                      {selectedAccountId 
+                      {selectedAccountId
                         ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || 'Conta'
                         : 'Todas as Contas'
                       }
@@ -2853,8 +2871,14 @@ export default function InboxPage() {
                           selectedAccountId === account.id ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${account.isDefault ? 'bg-green-500' : 'bg-blue-500'}`}>
-                          <Phone className="h-3 w-3 text-white" />
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          account.id === 'SOCIAL' ? 'bg-pink-500' : account.isDefault ? 'bg-green-500' : 'bg-blue-500'
+                        }`}>
+                          {account.id === 'SOCIAL' ? (
+                            <Instagram className="h-3 w-3 text-white" />
+                          ) : (
+                            <Phone className="h-3 w-3 text-white" />
+                          )}
                         </div>
                         <div className="flex-1 text-left">
                           <div className="flex items-center gap-1">
