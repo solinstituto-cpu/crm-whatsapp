@@ -55,13 +55,37 @@ export class SocialController {
       return { message: 'Conversa sem conta social ou contato associado' };
     }
 
+    // "Comentário vira lead": se essa conversa nasceu de um comentário público
+    // e ainda não foi respondida, a primeira resposta precisa ir como
+    // "resposta privada" da Meta (recipient.comment_id), não como envio normal.
+    const isPendingCommentReply = !!conversation.pendingCommentId;
+
+    if (isPendingCommentReply && conversation.pendingCommentAt) {
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const ageMs = Date.now() - conversation.pendingCommentAt.getTime();
+      if (ageMs > sevenDaysMs) {
+        res.status(400);
+        return {
+          message:
+            'O prazo de 7 dias da Meta para responder esse comentário por mensagem privada já passou. Não é mais possível responder automaticamente por aqui — só se o cliente mandar uma mensagem direta primeiro.',
+        };
+      }
+    }
+
     try {
-      const result = await this.metaGraphService.sendText(
-        conversation.socialAccount.pageId,
-        conversation.socialAccount.accessToken,
-        conversation.contact.externalId,
-        text,
-      );
+      const result = isPendingCommentReply
+        ? await this.metaGraphService.sendPrivateReplyToComment(
+            conversation.socialAccount.pageId,
+            conversation.socialAccount.accessToken,
+            conversation.pendingCommentId!,
+            text,
+          )
+        : await this.metaGraphService.sendText(
+            conversation.socialAccount.pageId,
+            conversation.socialAccount.accessToken,
+            conversation.contact.externalId,
+            text,
+          );
 
       const message = await this.prisma.message.create({
         data: {
@@ -77,7 +101,7 @@ export class SocialController {
 
       await this.prisma.conversation.update({
         where: { id: conversation.id },
-        data: { lastMessageAt: new Date() },
+        data: { lastMessageAt: new Date(), pendingCommentId: null, pendingCommentAt: null },
       });
 
       return { ok: true, message };
@@ -90,6 +114,10 @@ export class SocialController {
       } else if (metaError?.code === 10 || metaError?.error_subcode === 2018278) {
         errorMessage =
           'Fora da janela de 24h para responder livremente (regra da Meta para Messenger/Instagram). É necessário que o contato envie uma nova mensagem primeiro.';
+      } else if (isPendingCommentReply) {
+        errorMessage =
+          'Não foi possível enviar a resposta privada a esse comentário (ele pode ter sido apagado, ou o prazo de 7 dias já passou). ' +
+          errorMessage;
       }
 
       res.status(error.statusCode && error.statusCode >= 400 ? error.statusCode : 500);

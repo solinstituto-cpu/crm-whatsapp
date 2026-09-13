@@ -65,6 +65,51 @@ export class MetaGraphService {
   }
 
   /**
+   * Envia uma "resposta privada" a um comentário público de um post do
+   * Facebook ou Instagram. Usa a MESMA Send API que `sendText`
+   * (`/{page-id}/messages`), mas o destinatário é endereçado pelo
+   * `comment_id` em vez do PSID/IGSID — é assim que a Meta implementa a
+   * opção "Responder de forma privada" (não existe um endpoint separado
+   * `/{comment-id}/private_replies`, apesar de alguns tutoriais sugerirem
+   * isso).
+   *
+   * Limitações impostas pela Meta:
+   * - Só é possível 1 resposta privada por comentário;
+   * - Precisa ser enviada em até 7 dias após o comentário;
+   * - A mensagem enviada inclui automaticamente um link pro post (não dá pra remover);
+   * - Só depois que a pessoa responder essa mensagem privada é que a janela normal de 24h começa.
+   *
+   * @param pageId ID da Página do Facebook (dono da conta social)
+   * @param pageAccessToken Page Access Token de longa duração
+   * @param commentId ID do comentário público ao qual estamos respondendo
+   */
+  async sendPrivateReplyToComment(pageId: string, pageAccessToken: string, commentId: string, text: string) {
+    const url = `${this.baseUrl}/${pageId}/messages`;
+    const body = {
+      recipient: { comment_id: commentId },
+      message: { text },
+    };
+
+    const res = await fetch(`${url}?access_token=${encodeURIComponent(pageAccessToken)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok || json.error) {
+      this.logger.error(`❌ Erro ao enviar resposta privada via Graph API: ${JSON.stringify(json.error || json)}`);
+      const error: any = new Error(json.error?.message || 'Falha ao enviar resposta privada ao comentário');
+      error.metaError = json.error;
+      error.statusCode = res.status;
+      throw error;
+    }
+
+    return json; // { recipient_id, message_id }
+  }
+
+  /**
    * Busca o nome de exibição de um usuário a partir do PSID/IGSID.
    * A Meta restringe bastante esse tipo de chamada (privacidade) — se falhar,
    * o chamador deve usar um nome genérico como fallback.

@@ -54,6 +54,16 @@ export class SocialWebhookService {
           this.logger.error(`❌ Erro processando evento ${channel}: ${(error as Error).message}`, (error as Error).stack);
         }
       }
+
+      // "Comentário vira lead": eventos de comentário público em posts
+      // chegam em entry.changes (não em entry.messaging, que é só DM).
+      for (const change of entry.changes || []) {
+        try {
+          await this.processCommentChange(channel, account, change);
+        } catch (error) {
+          this.logger.error(`❌ Erro processando comentário ${channel}: ${(error as Error).message}`, (error as Error).stack);
+        }
+      }
     }
   }
 
@@ -86,7 +96,17 @@ export class SocialWebhookService {
     if (!externalId) return;
 
     const contact = await this.findOrCreateContact(channel, account, externalId);
-    const conversation = await this.findOrCreateConversation(channel, account, contact);
+    const { conversation } = await this.findOrCreateConversation(channel, account, contact);
+
+    // Se a pessoa respondeu por DM (inclusive respondendo à nossa resposta
+    // privada de um comentário), a janela normal de mensagens está aberta -
+    // não há mais um "comentário pendente" a responder de forma especial.
+    if (conversation.pendingCommentId) {
+      await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { pendingCommentId: null, pendingCommentAt: null },
+      });
+    }
 
     const message = event.message;
     const attachment = Array.isArray(message.attachments) ? message.attachments[0] : undefined;
@@ -140,7 +160,125 @@ export class SocialWebhookService {
     }
   }
 
-  private async findOrCreateContact(channel: Channel, account: { id: string; accessToken: string }, externalId: string) {
+  /**
+   * Trata comentários públicos em posts (Facebook: field "feed", item
+   * "comment"; Instagram: field "comments"), criando/atualizando um
+   * lead/conversa no inbox "Instagram/Facebook" — decisão do Rogérius,
+   * 13/set/2026 ("Comentário vira lead/conversa privada").
+   */
+  private async processCommentChange(
+    channel: Channel,
+    account: { id: string; accessToken: string; pageId: string },
+    change: any,
+  ) {
+    const { field, value } = change || {};
+    if (!value) return;
+
+    let commentId: string | undefined;
+    let fromId: string | undefined;
+    let fromName: string | undefined;
+    let text: string | undefined;
+
+    if (channel === 'FACEBOOK' && field === 'feed') {
+      // O campo "feed" também dispara para posts, reações, etc. — só nos
+      // interessam comentários novos (não edições/remoções).
+      if (value.item !== 'comment') return;
+      if (value.verb && value.verb !== 'add') return;
+      commentId = value.comment_id;
+      fromId = value.from?.id;
+      fromName = value.from?.name;
+      text = value.message;
+    } else if (channel === 'INSTAGRAM' && field === 'comments') {
+      commentId = value.id;
+      fromId = value.from?.id;
+      fromName = value.from?.username;
+      text = value.text;
+    } else {
+      return;
+    }
+
+    if (!commentId || !fromId) return;
+
+    // Ignora comentários feitos pela própria Página (ex.: resposta pública
+    // do atendente, ou eco de algum outro fluxo) para não virar "lead" de nós mesmos.
+    if (fromId === account.pageId) return;
+
+    // Evita reprocessar o mesmo comentário em reentregas de webhook da Meta.
+    const already = await this.prisma.message.findFirst({
+      where: { waMessageId: commentId, channel },
+      select: { id: true },
+    });
+    if (already) return;
+
+    const contact = await this.findOrCreateContact(channel, account, fromId, fromName);
+    const { conversation, isNew } = await this.findOrCreateConversation(channel, account, contact);
+
+    const priorOutgoing = isNew
+      ? 0
+      : await this.prisma.message.count({ where: { conversationId: conversation.id, direction: 'OUT' } });
+    // Só marcamos o comentário como "pendente de resposta privada" se ainda
+    // não respondemos essa conversa - depois da primeira resposta privada a
+    // Meta abre a janela normal de mensagens e o envio volta a ser normal.
+    const shouldSetPending = priorOutgoing === 0;
+
+    const body = text || '(comentário sem texto)';
+
+    await this.prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: 'IN',
+        type: 'comment',
+        body,
+        json: JSON.stringify(value),
+        waMessageId: commentId,
+        status: 'UNREAD',
+        channel,
+      },
+    });
+
+    await this.prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        lastMessageAt: new Date(),
+        lastIncomingMessageAt: new Date(),
+        unreadCount: { increment: 1 },
+        ...(conversation.status === 'CLOSED' ? { status: 'OPEN' } : {}),
+        ...(shouldSetPending ? { pendingCommentId: commentId, pendingCommentAt: new Date() } : {}),
+      },
+    });
+
+    await this.prisma.contact.update({
+      where: { id: contact.id },
+      data: { lastMessageAt: new Date(), lastContactAt: new Date() },
+    });
+
+    this.logger.log(
+      `💬 Comentário ${channel} de ${contact.name} (${fromId}) → conversa ${conversation.id}${shouldSetPending ? ' (aguardando resposta privada)' : ''}`,
+    );
+
+    try {
+      this.sseService.emit({
+        type: 'new_message',
+        conversationId: conversation.id,
+        data: {
+          contactName: contact.name,
+          channel,
+          messagePreview: body.substring(0, 100),
+          messageType: 'comment',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (e) {
+      this.logger.warn(`SSE emit error: ${(e as Error).message}`);
+    }
+  }
+
+  private async findOrCreateContact(
+    channel: Channel,
+    account: { id: string; accessToken: string },
+    externalId: string,
+    preferredName?: string,
+  ) {
     let contact = await this.prisma.contact.findUnique({
       where: {
         channel_externalId_socialAccountId: {
@@ -154,7 +292,7 @@ export class SocialWebhookService {
     if (contact) return contact;
 
     const profile = await this.metaGraphService.getUserProfile(account.accessToken, externalId);
-    const fallbackName = channel === 'INSTAGRAM' ? 'Contato do Instagram' : 'Contato do Facebook';
+    const fallbackName = preferredName || (channel === 'INSTAGRAM' ? 'Contato do Instagram' : 'Contato do Facebook');
 
     // phoneE164 é obrigatório no schema atual (histórico do WhatsApp). Para
     // contatos vindos de Messenger/Instagram usamos um identificador
@@ -179,15 +317,19 @@ export class SocialWebhookService {
     });
   }
 
-  private async findOrCreateConversation(channel: Channel, account: { id: string }, contact: { id: string }) {
-    let conversation = await this.prisma.conversation.findFirst({
+  private async findOrCreateConversation(
+    channel: Channel,
+    account: { id: string },
+    contact: { id: string },
+  ): Promise<{ conversation: any; isNew: boolean }> {
+    const existing = await this.prisma.conversation.findFirst({
       where: { contactId: contact.id, channel },
       orderBy: { updatedAt: 'desc' },
     });
 
-    if (conversation) return conversation;
+    if (existing) return { conversation: existing, isNew: false };
 
-    return this.prisma.conversation.create({
+    const created = await this.prisma.conversation.create({
       data: {
         contactId: contact.id,
         channel,
@@ -195,5 +337,6 @@ export class SocialWebhookService {
         status: 'OPEN',
       },
     });
+    return { conversation: created, isNew: true };
   }
 }
