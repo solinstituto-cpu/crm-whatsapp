@@ -146,6 +146,14 @@ model Conversation {
   socialAccountId String?
   socialAccount   SocialAccount? @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
 
+  // "Comentário vira lead": ID do comentário do Facebook/Instagram que ainda
+  // não recebeu a primeira resposta do atendente. Enquanto preenchido, o
+  // envio deve usar a Send API de "resposta privada" (recipient.comment_id)
+  // em vez do envio normal. A Meta só permite essa resposta em até 7 dias
+  // após o comentário (pendingCommentAt).
+  pendingCommentId String?
+  pendingCommentAt DateTime?
+
   // Relations
   contactId String?
   contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
