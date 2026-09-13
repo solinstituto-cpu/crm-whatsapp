@@ -26,6 +26,13 @@
 const { Client } = require('pg');
 
 const GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v21.0';
+// NOTA (13/set/2026): "comments" NÃO é um campo válido em
+// POST /{page-id}/subscribed_apps - a Graph API rejeita a chamada INTEIRA
+// (nada fica inscrito, nem "messages") quando ele está presente. Comentários
+// do Facebook já vêm pelo campo "feed"; comentários do Instagram usam
+// "comments" mas só são aceitos no subscribed_apps da conta do Instagram
+// Business (instagram_business_account.id), não no da Página - ver a versão
+// atual dessa lógica em social-accounts.service.ts (subscribeInstagramComments).
 const SUBSCRIBED_FIELDS = [
   'messages',
   'messaging_postbacks',
@@ -33,7 +40,6 @@ const SUBSCRIBED_FIELDS = [
   'message_reads',
   'message_echoes',
   'feed',
-  'comments',
 ].join(',');
 
 async function main() {
