@@ -121,7 +121,7 @@ model Conversation {
   lastWAStatus          String?
   unreadCount           Int       @default(0) // Contador de mensagens não lidas pelo atendente
   lastMessageAt         DateTime? // Hora da última mensagem (para ordenação)
-  lastIncomingMessageAt DateTime? // Última msg recebida do cliente (janela 24h)
+     lastIncomingMessageAt DateTime? // Última msg recebida do cliente (janela 24h)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -130,6 +130,11 @@ model Conversation {
 
   // Atendente atribuído
   assignedToId String?
+
+  // Campo legado (nao usado por nenhuma tela/rota do sistema), existia direto no banco
+  // de producao sem nunca ter sido versionado. Restaurado aqui como opcional apenas para
+  // preservar o dado e impedir que um futuro `prisma db push` tente apagar de novo.
+  sourceType String?
   assignedTo   User?     @relation("AssignedConversations", fields: [assignedToId], references: [id], onDelete: SetNull)
   assignedAt   DateTime? // Quando foi atribuído
 
@@ -628,6 +633,11 @@ model WhatsAppAccount {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Campo legado (nao usado por nenhuma tela/rota do sistema), existia direto no banco
+  // de producao sem nunca ter sido versionado. Restaurado aqui como opcional apenas para
+  // preservar o dado e impedir que um futuro `prisma db push` tente apagar de novo.
+  channel String?
 
   // Relations
   conversations Conversation[]
