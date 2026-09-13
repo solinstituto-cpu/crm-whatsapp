@@ -102,6 +102,72 @@ export class SocialAccountsService {
   }
 
   /**
+   * Inscreve a Página (e a conta do Instagram ligada a ela) para o nosso
+   * app receber os webhooks dela.
+   *
+   * Isto é DIFERENTE de ativar os campos no painel do Meta for Developers
+   * (que diz quais TIPOS de evento o app sabe processar) - sem esta chamada
+   * (`POST /{page-id}/subscribed_apps`), a Meta nunca envia nenhum evento
+   * dessa Página específica pro nosso webhook, mesmo com os campos
+   * ativados. Ver social-webhook.service.ts para o que processamos.
+   */
+  async subscribeWebhook(id: string) {
+    const account = await this.findOne(id);
+    return this.callSubscribedApps(account.pageId, account.accessToken, account.pageName);
+  }
+
+  /**
+   * Mesma coisa, mas para todas as contas sociais ativas de uma vez
+   * (evita ter que descobrir o id de cada uma). Como Facebook e Instagram
+   * de uma mesma Página compartilham o mesmo pageId/token, cada Página só
+   * é inscrita uma vez.
+   */
+  async subscribeAllWebhooks() {
+    const accounts = await this.prisma.socialAccount.findMany({
+      where: { isActive: true },
+      orderBy: { pageId: 'asc' },
+    });
+
+    const seen = new Set<string>();
+    const results: any[] = [];
+    for (const account of accounts) {
+      if (!account.pageId || !account.accessToken || seen.has(account.pageId)) continue;
+      seen.add(account.pageId);
+      results.push(await this.callSubscribedApps(account.pageId, account.accessToken, account.pageName));
+    }
+    return results;
+  }
+
+  private async callSubscribedApps(pageId: string, accessToken: string, pageName?: string | null) {
+    const fields = [
+      'messages',
+      'messaging_postbacks',
+      'message_deliveries',
+      'message_reads',
+      'message_echoes',
+      'feed',
+      'comments',
+    ].join(',');
+
+    try {
+      const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(accessToken)}`;
+      const res = await fetch(url, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.error) {
+        this.logger.error(`❌ Erro ao inscrever webhook da Página ${pageId}: ${JSON.stringify(json.error || json)}`);
+        return { pageId, pageName, ok: false, error: json.error?.message || 'Falha ao inscrever a Página no webhook' };
+      }
+
+      this.logger.log(`✅ Página ${pageName || pageId} (${pageId}) inscrita no webhook: ${JSON.stringify(json)}`);
+      return { pageId, pageName, ok: true, subscribedFields: fields.split(',') };
+    } catch (e: any) {
+      this.logger.error(`❌ Erro ao inscrever webhook da Página ${pageId}: ${e.message}`);
+      return { pageId, pageName, ok: false, error: e.message };
+    }
+  }
+
+  /**
    * Testa se o token da Página ainda é válido, chamando a Graph API.
    */
   async testConnection(id: string) {

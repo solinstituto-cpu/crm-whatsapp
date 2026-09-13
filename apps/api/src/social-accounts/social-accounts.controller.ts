@@ -70,4 +70,27 @@ export class SocialAccountsController {
   async testConnection(@Param('id') id: string) {
     return this.socialAccountsService.testConnection(id);
   }
+
+  /**
+   * Inscreve a Página desta conta social para o app receber webhooks dela
+   * (POST /{page-id}/subscribed_apps na Graph API). Sem isso a Meta nunca
+   * entrega eventos (DM nem comentário), mesmo com os campos ativados no
+   * painel do Meta for Developers. Ver social-accounts.service.ts.
+   */
+  @Post(':id/subscribe-webhook')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
+  async subscribeWebhook(@Param('id') id: string) {
+    return this.socialAccountsService.subscribeWebhook(id);
+  }
+
+  /**
+   * Mesma coisa, mas para todas as contas sociais ativas de uma vez.
+   */
+  @Post('subscribe-all-webhooks')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
+  async subscribeAllWebhooks() {
+    return this.socialAccountsService.subscribeAllWebhooks();
+  }
 }
