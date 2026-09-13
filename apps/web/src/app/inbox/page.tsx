@@ -62,7 +62,7 @@ interface Message {
   content: string
   fromMe: boolean
   timestamp: string
-  type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template' | 'interactive' | 'button' | 'sticker' | 'contacts' | 'location'
+  type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template' | 'interactive' | 'button' | 'sticker' | 'contacts' | 'location' | 'comment' | 'system'
   status?: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED'
   mediaUrl?: string
   caption?: string
@@ -3517,7 +3517,13 @@ export default function InboxPage() {
                           🔘 Botão clicado
                         </span>
                       )}
-                      
+
+                      {message.type === 'comment' && !message.fromMe && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded mb-1 inline-block bg-pink-100 text-pink-700`}>
+                          💬 Comentário público no post
+                        </span>
+                      )}
+
                       {message.type === 'template' && (
                         <>
                           <span className={`text-xs px-1.5 py-0.5 rounded mb-1 inline-block ${message.fromMe ? 'bg-green-700 text-green-100' : 'bg-gray-100 text-gray-600'}`}>
