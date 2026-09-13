@@ -138,6 +138,21 @@ export class SocialAccountsService {
     return results;
   }
 
+  /**
+   * IMPORTANTE: "comments" NÃO é um campo válido em POST /{page-id}/subscribed_apps
+   * (confirmado na prática, 13/set/2026 - a Graph API rejeita a chamada inteira
+   * com "(#100) Param subscribed_fields[...] must be one of {...}" e "comments"
+   * não está nessa lista). Isso significa que, enquanto "comments" estava na
+   * lista, a chamada inteira falhava e NADA era inscrito - nem "messages" -
+   * o que explica por que nenhuma DM chegava no CRM.
+   *
+   * "feed" já cobre comentários públicos em posts do Facebook (o
+   * processCommentChange em social-webhook.service.ts trata field:"feed" e
+   * item:"comment"). Comentários do Instagram usam o campo "comments", mas
+   * ele só é aceito no subscribed_apps da conta do INSTAGRAM BUSINESS
+   * (instagram_business_account.id), não no da Página - por isso é uma
+   * chamada separada, feita em subscribeInstagramComments.
+   */
   private async callSubscribedApps(pageId: string, accessToken: string, pageName?: string | null) {
     const fields = [
       'messages',
@@ -146,7 +161,6 @@ export class SocialAccountsService {
       'message_reads',
       'message_echoes',
       'feed',
-      'comments',
     ].join(',');
 
     try {
@@ -160,10 +174,47 @@ export class SocialAccountsService {
       }
 
       this.logger.log(`✅ Página ${pageName || pageId} (${pageId}) inscrita no webhook: ${JSON.stringify(json)}`);
-      return { pageId, pageName, ok: true, subscribedFields: fields.split(',') };
+
+      const instagram = await this.subscribeInstagramComments(pageId, accessToken);
+
+      return { pageId, pageName, ok: true, subscribedFields: fields.split(','), instagram };
     } catch (e: any) {
       this.logger.error(`❌ Erro ao inscrever webhook da Página ${pageId}: ${e.message}`);
       return { pageId, pageName, ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * Descobre a conta do Instagram Business ligada à Página (instagram_business_account)
+   * e inscreve ELA (não a Página) para o campo "comments" - ver nota acima.
+   */
+  private async subscribeInstagramComments(pageId: string, accessToken: string) {
+    try {
+      const lookupUrl = `https://graph.facebook.com/v21.0/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(accessToken)}`;
+      const lookupRes = await fetch(lookupUrl);
+      const lookupJson = await lookupRes.json().catch(() => ({}));
+      const igId = lookupJson?.instagram_business_account?.id;
+
+      if (!igId) {
+        this.logger.warn(`⚠️ Página ${pageId} não tem conta do Instagram Business vinculada - comentários do Instagram não serão inscritos.`);
+        return { ok: false, error: 'Nenhuma conta do Instagram Business vinculada a essa Página' };
+      }
+
+      const fields = ['comments', 'messages', 'messaging_postbacks', 'message_reads'].join(',');
+      const url = `https://graph.facebook.com/v21.0/${igId}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(accessToken)}`;
+      const res = await fetch(url, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json.error) {
+        this.logger.error(`❌ Erro ao inscrever comentários do Instagram (igId=${igId}): ${JSON.stringify(json.error || json)}`);
+        return { ok: false, igId, error: json.error?.message || 'Falha ao inscrever comentários do Instagram' };
+      }
+
+      this.logger.log(`✅ Instagram Business ${igId} inscrito para comentários: ${JSON.stringify(json)}`);
+      return { ok: true, igId, subscribedFields: fields.split(',') };
+    } catch (e: any) {
+      this.logger.error(`❌ Erro ao inscrever comentários do Instagram (pageId=${pageId}): ${e.message}`);
+      return { ok: false, error: e.message };
     }
   }
 
