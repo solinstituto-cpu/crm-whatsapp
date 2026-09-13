@@ -200,7 +200,7 @@ export class SocialAccountsService {
         return { ok: false, error: 'Nenhuma conta do Instagram Business vinculada a essa Página' };
       }
 
-      const fields = ['comments', 'messages', 'messaging_postbacks', 'message_reads'].join(',');
+      const fields = ['comments', 'messages', 'messaging_postbacks'].join(',');
       const url = `https://graph.facebook.com/v21.0/${igId}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(accessToken)}`;
       const res = await fetch(url, { method: 'POST' });
       const json = await res.json().catch(() => ({}));
