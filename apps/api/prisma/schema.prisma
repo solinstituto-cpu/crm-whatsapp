@@ -121,7 +121,7 @@ model Conversation {
   lastWAStatus          String?
   unreadCount           Int       @default(0) // Contador de mensagens não lidas pelo atendente
   lastMessageAt         DateTime? // Hora da última mensagem (para ordenação)
-   // Última msg recebida do cliente (janela 24h)
+     lastIncomingMessageAt DateTime? // Última msg recebida do cliente (janela 24h)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
