@@ -26,7 +26,12 @@ export class ConversationsService {
         where.status = status;
       }
       // Filtrar por conta WhatsApp (se especificado)
-      if (accountId) {
+      // "SOCIAL" é um valor especial (não é um ID de conta de verdade) que
+      // representa a caixinha unificada de Instagram + Facebook Messenger,
+      // já que essas contas não são "números" como o WhatsApp.
+      if (accountId === 'SOCIAL') {
+        where.channel = { in: ['INSTAGRAM', 'FACEBOOK'] };
+      } else if (accountId) {
         where.whatsappAccountId = accountId;
       }
       
