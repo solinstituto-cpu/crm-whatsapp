@@ -22,7 +22,9 @@ import {
   Mail,
   UserCog,
   HelpCircle,
-  BookOpen
+  BookOpen,
+  Instagram,
+  ExternalLink
 } from 'lucide-react'
 import { canAccess } from '@/lib/permissions'
 import { getApiUrl } from '@/lib/api-config'
@@ -31,9 +33,25 @@ import { getApiUrl } from '@/lib/api-config'
 let cachedCompanyLogo: string | null = null
 let cachedCompanyName: string = 'Sol Instituto'
 
-const navigation = [
+type NavItem = {
+  name: string
+  href: string
+  icon: any
+  permission: string
+  // Item que aponta para fora do CRM: abre em outra aba em vez de navegar
+  // internamente pelo Next.js.
+  external?: boolean
+}
+
+// Caixa de entrada oficial do Instagram Direct + Messenger no Meta Business Suite.
+// O CRM não recebe essas mensagens por API (depende de aprovação da Meta que ainda
+// não foi feita), então o menu leva a equipe direto para onde elas realmente chegam.
+const META_INBOX_URL = 'https://business.facebook.com/latest/inbox/instagram_direct'
+
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, permission: 'dashboard' },
   { name: 'Conversas', href: '/inbox', icon: MessageSquare, permission: 'inbox' },
+  { name: 'Instagram / Facebook', href: META_INBOX_URL, icon: Instagram, permission: 'inbox', external: true },
   { name: 'Contatos', href: '/contacts', icon: Users, permission: 'contacts' },
   { name: 'Pipeline', href: '/pipeline', icon: TrendingUp, permission: 'pipeline' },
   { name: 'Templates', href: '/templates', icon: FileText, permission: 'templates' },
@@ -209,6 +227,27 @@ export default function Sidebar() {
               .filter((item) => canAccess(session?.user?.role as string, item.permission))
               .map((item) => {
               const isActive = pathname === item.href
+
+              // Link externo (ex.: caixa de entrada do Instagram/Facebook no
+              // Meta Business Suite): abre em nova aba, nunca fica "ativo".
+              if (item.external) {
+                return (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsOpen(false)}
+                    title="Abre a caixa de entrada do Instagram e do Facebook no Meta Business Suite"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors text-slate-200 hover:bg-[#394D43] hover:text-[#E8B868]"
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    <span className="flex-1 text-left">{item.name}</span>
+                    <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-60" />
+                  </a>
+                )
+              }
+
               return (
                 <Link
                   key={item.name}
