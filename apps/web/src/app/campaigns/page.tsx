@@ -1110,7 +1110,7 @@ export default function CampaignsPage() {
                           </span>
                           {campaign.maxMessagesPerDay && (
                             <span className="flex items-center text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full text-xs font-medium border border-orange-200">
-                              Limite Diário: {campaign.daySentCount ?? 0}/{campaign.maxMessagesPerDay} envios
+                              Lote atual: {campaign.daySentCount ?? 0}/{campaign.maxMessagesPerDay} envios
                             </span>
                           )}
                         </div>
@@ -1570,7 +1570,7 @@ export default function CampaignsPage() {
 
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Limite de envios por dia (opcional)
+                      Envios por lote (opcional)
                     </label>
                     <input
                       type="number"
@@ -1581,7 +1581,7 @@ export default function CampaignsPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      O sistema enviará esta quantidade de mensagens e aguardará 24 horas antes de continuar com o restante da lista.
+                      O sistema enviará esta quantidade de mensagens e pausará a campanha. Clique em "Retomar" quando quiser enviar o próximo lote — pode ser no mesmo dia.
                     </p>
                   </div>
 
