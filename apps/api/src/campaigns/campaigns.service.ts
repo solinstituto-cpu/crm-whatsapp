@@ -398,6 +398,9 @@ export class CampaignsService {
         status: 'RUNNING',
         startedAt: campaign.startedAt || new Date(),
         totalContacts: allContacts.length,
+        // Cada início/retomada libera um lote novo completo
+        daySentCount: 0,
+        lastDayResetAt: new Date(),
       },
     });
 
@@ -508,6 +511,8 @@ export class CampaignsService {
         readCount,
         failedCount: newFailedCount,
         completedAt: null,
+        daySentCount: 0,
+        lastDayResetAt: new Date(),
       },
     });
 
@@ -612,46 +617,23 @@ export class CampaignsService {
         }
       }
 
-      // --- LOGICA DE LIMITE DIARIO ---
+      // --- LOGICA DE LOTE POR ENVIO ---
+      // maxMessagesPerDay agora funciona como "tamanho do lote": envia N mensagens e PAUSA a campanha.
+      // Não existe trava de 24h: o usuário pode clicar em "Retomar" a qualquer momento
+      // (inclusive no mesmo dia) para enviar mais um lote de N.
       if (currentCampaign.maxMessagesPerDay && currentCampaign.maxMessagesPerDay > 0) {
-        const now = new Date();
-        let shouldReset = false;
-
-        if (!currentCampaign.lastDayResetAt) {
-          shouldReset = true;
-        } else {
-          const timeSinceResetMs = now.getTime() - new Date(currentCampaign.lastDayResetAt).getTime();
-          const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-          if (timeSinceResetMs >= twentyFourHoursMs) {
-            shouldReset = true;
-          }
-        }
-
-        if (shouldReset) {
-          this.logger.log(`🔄 Reiniciando ciclo de 24h para a campanha ${currentCampaign.name}.`);
+        if (currentCampaign.daySentCount >= currentCampaign.maxMessagesPerDay) {
           await this.prisma.campaign.update({
             where: { id: campaignId },
             data: {
+              status: 'PAUSED',
               daySentCount: 0,
-              lastDayResetAt: now,
+              lastDayResetAt: new Date(),
             },
           });
-          currentCampaign.daySentCount = 0;
-          currentCampaign.lastDayResetAt = now;
-        }
-
-        if (currentCampaign.daySentCount >= currentCampaign.maxMessagesPerDay) {
-          const timeSinceResetMs = now.getTime() - new Date(currentCampaign.lastDayResetAt!).getTime();
-          const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-          const timeRemainingMs = Math.max(0, twentyFourHoursMs - timeSinceResetMs);
-          const minutesRemaining = Math.ceil(timeRemainingMs / (60 * 1000));
-          const hoursRemaining = (timeRemainingMs / (3600 * 1000)).toFixed(1);
-
-          this.logger.log(`⏳ Limite diário (${currentCampaign.maxMessagesPerDay}) atingido para campanha ${currentCampaign.name}. Aguardando ${hoursRemaining}h (${minutesRemaining} min) até reiniciar o ciclo.`);
-          
-          // Entra em modo de sono leve de 15 minutos antes de re-checar, para não consumir CPU
-          await this.sleep(15 * 60 * 1000);
-          continue;
+          this.runningCampaigns.delete(campaignId);
+          this.logger.log(`⏸️ Lote de ${currentCampaign.maxMessagesPerDay} envios concluído para ${currentCampaign.name}. Campanha pausada — clique em "Retomar" para enviar o próximo lote.`);
+          break;
         }
       }
 
