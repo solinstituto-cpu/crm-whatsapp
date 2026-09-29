@@ -485,6 +485,10 @@ model Campaign {
   daySentCount      Int       @default(0) // Mensagens enviadas no ciclo diário atual
   lastDayResetAt    DateTime? // Timestamp do início do ciclo diário atual (24h)
 
+  // Trava de processamento (evita 2+ loops/instâncias enviando a mesma campanha em paralelo)
+  processingLockId String? // ID da execução que detém a trava
+  processingLockAt DateTime? // Último "batimento" da execução dona da trava
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
