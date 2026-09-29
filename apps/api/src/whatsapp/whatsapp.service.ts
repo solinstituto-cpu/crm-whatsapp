@@ -253,7 +253,14 @@ export class WhatsAppService {
       const elapsed = Date.now() - started;
 
       // Save to database
-      await this.saveOutboundTemplate(sendTemplateDto, response.data.messages[0].id, credentials.accountId);
+      // IMPORTANTE: neste ponto a Meta JÁ aceitou a mensagem. Se o salvamento no banco falhar,
+      // NÃO podemos lançar erro — quem chamou (ex.: campanhas) trataria como falha e reenviaria,
+      // gerando mensagens duplicadas para o mesmo contato.
+      try {
+        await this.saveOutboundTemplate(sendTemplateDto, response.data.messages[0].id, credentials.accountId);
+      } catch (saveError) {
+        this.logger.error(`outbound_template_save_fail to=${sendTemplateDto.to} template=${sendTemplateDto.templateName} waId=${response.data?.messages?.[0]?.id} err=${saveError?.message}`);
+      }
 
       this.logger.log(`outbound_template_ok to=${sendTemplateDto.to} template=${sendTemplateDto.templateName} waId=${response.data?.messages?.[0]?.id} ms=${elapsed}`);
       return response.data;
