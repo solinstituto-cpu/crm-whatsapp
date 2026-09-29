@@ -5,7 +5,17 @@ import { WhatsAppService } from '../whatsapp/whatsapp.service';
 @Injectable()
 export class CampaignsService {
   private readonly logger = new Logger(CampaignsService.name);
-  private runningCampaigns = new Map<string, boolean>(); // Para controlar campanhas em execução
+  // campaignId -> runId da execução ativa NESTE processo. Cada loop só continua enquanto
+  // o runId dele for o registrado aqui; pausar/cancelar/reenviar remove a entrada e
+  // qualquer loop antigo ("zumbi") para na próxima checagem, em vez de voltar a rodar.
+  private runningCampaigns = new Map<string, string>();
+
+  // Trava no banco: vale entre instâncias/deploys do servidor. Se a execução dona não der
+  // sinal de vida por esse tempo, outra pode assumir.
+  private static readonly LOCK_STALE_MS = 10 * 60 * 1000;
+
+  // Janela anti-duplicidade: não reenviar o MESMO template para o MESMO telefone nesse período
+  private static readonly DUPLICATE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
   constructor(
     private prisma: PrismaService,
@@ -375,8 +385,22 @@ export class CampaignsService {
       throw new BadRequestException('Nenhum contato com telefone válido encontrado');
     }
 
+    // Nunca criar mais de uma mensagem por contato ou por telefone na mesma campanha
+    const existingPhones = new Set(
+      (await this.prisma.campaignMessage.findMany({
+        where: { campaignId: id },
+        select: { contactPhone: true },
+      })).map(m => m.contactPhone),
+    );
+    const seenIds = new Set<string>();
     const newMessages = allContacts
-      .filter(c => !existingContactIds.has(c.id) && c.phoneE164)
+      .filter(c => {
+        if (!c.phoneE164 || existingContactIds.has(c.id) || existingPhones.has(c.phoneE164)) return false;
+        if (seenIds.has(c.id) || existingPhones.has(c.phoneE164)) return false;
+        seenIds.add(c.id);
+        existingPhones.add(c.phoneE164);
+        return true;
+      })
       .map(contact => ({
         campaignId: id,
         contactId: contact.id,
@@ -423,7 +447,7 @@ export class CampaignsService {
       throw new BadRequestException('Só é possível pausar campanha em execução');
     }
 
-    this.runningCampaigns.set(id, false);
+    this.runningCampaigns.delete(id);
 
     await this.prisma.campaign.update({
       where: { id },
@@ -437,7 +461,7 @@ export class CampaignsService {
   async cancel(id: string) {
     const campaign = await this.findOne(id);
     
-    this.runningCampaigns.set(id, false);
+    this.runningCampaigns.delete(id);
 
     await this.prisma.campaign.update({
       where: { id },
@@ -457,7 +481,7 @@ export class CampaignsService {
    */
   async retryFailed(id: string) {
     // 🛡️ Parar qualquer processamento anterior antes de iniciar novo retry
-    this.runningCampaigns.set(id, false);
+    this.runningCampaigns.delete(id);
     await this.sleep(2000); // Dar tempo pro loop anterior parar
 
     const campaign = await this.findOne(id);
@@ -553,13 +577,127 @@ export class CampaignsService {
     return brazilTime.getDay();
   }
 
+  private isActiveRun(campaignId: string, runId: string) {
+    return this.runningCampaigns.get(campaignId) === runId;
+  }
+
+  /** Tenta pegar a trava da campanha no banco (atômico). */
+  private async acquireLock(campaignId: string, runId: string): Promise<boolean> {
+    const staleBefore = new Date(Date.now() - CampaignsService.LOCK_STALE_MS);
+    const res = await this.prisma.campaign.updateMany({
+      where: {
+        id: campaignId,
+        status: 'RUNNING',
+        OR: [
+          { processingLockId: null },
+          { processingLockId: runId },
+          { processingLockAt: null },
+          { processingLockAt: { lt: staleBefore } },
+        ],
+      },
+      data: { processingLockId: runId, processingLockAt: new Date() },
+    });
+    return res.count === 1;
+  }
+
+  /** Renova a trava; retorna false se outra execução assumiu. */
+  private async heartbeat(campaignId: string, runId: string): Promise<boolean> {
+    const res = await this.prisma.campaign.updateMany({
+      where: { id: campaignId, processingLockId: runId },
+      data: { processingLockAt: new Date() },
+    });
+    return res.count === 1;
+  }
+
+  private async releaseLock(campaignId: string, runId: string) {
+    try {
+      await this.prisma.campaign.updateMany({
+        where: { id: campaignId, processingLockId: runId },
+        data: { processingLockId: null, processingLockAt: null },
+      });
+    } catch (e) {
+      this.logger.warn(`Não foi possível liberar trava da campanha ${campaignId}: ${e?.message}`);
+    }
+  }
+
+  /**
+   * Verifica se este telefone já recebeu (ou está recebendo) esta campanha / este template.
+   * Última barreira contra envio duplicado, qualquer que seja a causa.
+   */
+  private async isDuplicateSend(
+    message: { id: string; contactPhone: string; waMessageId: string | null },
+    campaignId: string,
+    templateName: string,
+    whatsappAccountId: string | null,
+  ): Promise<string | null> {
+    if (message.waMessageId) return 'mensagem já tinha waMessageId (já enviada)';
+
+    const sameCampaign = await this.prisma.campaignMessage.findFirst({
+      where: {
+        campaignId,
+        contactPhone: message.contactPhone,
+        id: { not: message.id },
+        OR: [
+          { status: { in: ['SENT', 'DELIVERED', 'READ', 'PROCESSING'] } },
+          { waMessageId: { not: null } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (sameCampaign) return 'telefone já recebeu esta campanha';
+
+    const since = new Date(Date.now() - CampaignsService.DUPLICATE_WINDOW_MS);
+    const recent = await this.prisma.message.findFirst({
+      where: {
+        direction: 'OUT',
+        type: 'template',
+        status: { not: 'FAILED' },
+        createdAt: { gte: since },
+        json: { contains: `"template":"${templateName}"` },
+        conversation: {
+          phoneE164: message.contactPhone,
+          ...(whatsappAccountId ? { whatsappAccountId } : {}),
+        },
+      },
+      select: { id: true },
+    });
+    if (recent) return `template ${templateName} já enviado a este telefone nos últimos 7 dias`;
+
+    return null;
+  }
+
   async processCampaign(campaignId: string) {
-    if (this.runningCampaigns.get(campaignId)) {
+    if (this.runningCampaigns.has(campaignId)) {
       this.logger.log(`Campanha ${campaignId} já está em execução. Ignorando chamada duplicada.`);
       return;
     }
-    this.runningCampaigns.set(campaignId, true);
+    const runId = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    this.runningCampaigns.set(campaignId, runId);
 
+    // Pegar a trava no banco (espera até ~30s caso uma execução anterior ainda esteja saindo)
+    let locked = false;
+    for (let i = 0; i < 15 && this.isActiveRun(campaignId, runId); i++) {
+      locked = await this.acquireLock(campaignId, runId);
+      if (locked) break;
+      await this.sleep(2000);
+    }
+    if (!locked) {
+      this.logger.warn(`🔒 Campanha ${campaignId}: outra execução já detém a trava. Esta não vai enviar.`);
+      if (this.isActiveRun(campaignId, runId)) this.runningCampaigns.delete(campaignId);
+      return;
+    }
+
+    try {
+      await this.runCampaignLoop(campaignId, runId);
+    } catch (error) {
+      this.logger.error(`Erro no processamento da campanha ${campaignId}: ${error?.message}`);
+    } finally {
+      await this.releaseLock(campaignId, runId);
+      if (this.isActiveRun(campaignId, runId)) this.runningCampaigns.delete(campaignId);
+    }
+  }
+
+  private async runCampaignLoop(campaignId: string, runId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {
@@ -568,7 +706,6 @@ export class CampaignsService {
     });
 
     if (!campaign) {
-      this.runningCampaigns.delete(campaignId);
       return;
     }
 
@@ -583,13 +720,18 @@ export class CampaignsService {
       this.logger.log(`Dias permitidos: ${campaign.sendDays} (0=Dom, 1=Seg...6=Sab)`);
     }
 
-    while (this.runningCampaigns.get(campaignId)) {
+    while (this.isActiveRun(campaignId, runId)) {
+      // Renovar trava; se outra execução assumiu, parar imediatamente
+      if (!(await this.heartbeat(campaignId, runId))) {
+        this.logger.warn(`🔒 Campanha ${campaignId}: trava perdida para outra execução. Parando este loop.`);
+        break;
+      }
+
       // Recarregar dados atualizados da campanha a cada iteração para checar limites
       const currentCampaign = await this.prisma.campaign.findUnique({
         where: { id: campaignId },
       });
       if (!currentCampaign || currentCampaign.status !== 'RUNNING') {
-        this.runningCampaigns.delete(campaignId);
         break;
       }
 
@@ -599,8 +741,8 @@ export class CampaignsService {
         const allowedDays = currentCampaign.sendDays.split(',').map(d => parseInt(d.trim()));
         if (!allowedDays.includes(brazilDay)) {
           this.logger.log(`Dia ${brazilDay} não permitido para envio. Aguardando próximo dia válido...`);
-          // Pausar e esperar 1 hora, depois verificar novamente
-          await this.sleep(60 * 60 * 1000);
+          // Esperar 5 minutos (interrompível) e verificar novamente
+          await this.sleep(5 * 60 * 1000, campaignId, runId);
           continue;
         }
       }
@@ -611,8 +753,8 @@ export class CampaignsService {
         
         if (currentHour < currentCampaign.sendStartHour || currentHour >= currentCampaign.sendEndHour) {
           this.logger.log(`Fora do horário de envio (${currentHour}h Brasília). Aguardando próximo horário válido...`);
-          // Pausar e esperar 5 minutos, depois verificar novamente
-          await this.sleep(5 * 60 * 1000);
+          // Esperar 5 minutos (interrompível) e verificar novamente
+          await this.sleep(5 * 60 * 1000, campaignId, runId);
           continue;
         }
       }
@@ -631,7 +773,6 @@ export class CampaignsService {
               lastDayResetAt: new Date(),
             },
           });
-          this.runningCampaigns.delete(campaignId);
           this.logger.log(`⏸️ Lote de ${currentCampaign.maxMessagesPerDay} envios concluído para ${currentCampaign.name}. Campanha pausada — clique em "Retomar" para enviar o próximo lote.`);
           break;
         }
@@ -652,7 +793,17 @@ export class CampaignsService {
           where: { campaignId, status: 'PROCESSING' },
         });
         if (processingCount > 0) {
-          await this.sleep(2000);
+          // Mensagens presas em PROCESSING (ex.: servidor reiniciou no meio do envio).
+          // Não voltam para PENDING porque podem ter sido enviadas — marcamos como falha.
+          await this.prisma.campaignMessage.updateMany({
+            where: {
+              campaignId,
+              status: 'PROCESSING',
+              updatedAt: { lt: new Date(Date.now() - CampaignsService.LOCK_STALE_MS) },
+            },
+            data: { status: 'FAILED', error: 'Envio interrompido (servidor reiniciou) — não reenviado automaticamente' },
+          });
+          await this.sleep(2000, campaignId, runId);
           continue;
         }
 
@@ -664,7 +815,6 @@ export class CampaignsService {
             completedAt: new Date(),
           },
         });
-        this.runningCampaigns.delete(campaignId);
         this.logger.log(`Campanha concluída: ${currentCampaign.name}`);
         break;
       }
@@ -685,12 +835,34 @@ export class CampaignsService {
         continue;
       }
 
+      // 🛡️ Barreira final anti-duplicidade
+      const duplicateReason = await this.isDuplicateSend(
+        message,
+        campaignId,
+        currentCampaign.templateName,
+        currentCampaign.whatsappAccountId,
+      );
+      if (duplicateReason) {
+        this.logger.warn(`⏭️ Pulando ${message.contactPhone}: ${duplicateReason}`);
+        await this.prisma.campaignMessage.update({
+          where: { id: message.id },
+          data: {
+            status: message.waMessageId ? 'SENT' : 'SKIPPED',
+            error: `Não enviado: ${duplicateReason}`,
+          },
+        });
+        continue;
+      }
+
       // Enviar mensagem com retry para erros temporários
       const maxRetries = 3;
       let lastError: any = null;
       let sent = false;
+      let attemptedSend = false;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        if (!this.isActiveRun(campaignId, runId)) break; // pausada/cancelada no meio
+        attemptedSend = true;
         try {
           const templateVariables = currentCampaign.templateVariables 
             ? JSON.parse(currentCampaign.templateVariables) 
@@ -751,27 +923,36 @@ export class CampaignsService {
         } catch (error) {
           lastError = error;
           
-          // Verificar se é erro permanente da Meta (não vale tentar de novo)
-          const metaErrorCode = error?.response?.data?.error?.code;
+          // Só tentar de novo quando temos CERTEZA de que a Meta não recebeu o pedido.
+          // Timeout, conexão caída no meio, erro 5xx etc. são ambíguos: a mensagem pode ter
+          // saído — reenviar nesses casos é o que gerava mensagens duplicadas.
           const statusCode = error?.response?.status;
-          const isPermanentError = (
-            (metaErrorCode && metaErrorCode >= 130000) || // Erros Meta (131xxx, 132xxx)
-            statusCode === 400 || // Bad request
-            statusCode === 401    // Unauthorized
-          );
+          const netCode = error?.code;
+          const safeToRetry =
+            statusCode === 429 || // rate limit: a Meta recusou explicitamente
+            (!error?.response && ['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'].includes(netCode));
 
-          if (isPermanentError) {
-            this.logger.error(`❌ Erro permanente para ${message.contactPhone}: ${error.message}`);
-            break; // Não vale retry
+          if (!safeToRetry) {
+            this.logger.error(`❌ Falha para ${message.contactPhone} (sem novo envio automático): ${error.message}`);
+            break;
           }
 
-          // Erro temporário (404, 500, timeout, rede) — tentar de novo
+          // Erro em que o pedido comprovadamente não chegou — tentar de novo
           if (attempt < maxRetries) {
             const retryDelay = attempt * 5000; // 5s, 10s, 15s
             this.logger.warn(`⚠️ Erro temporário (${statusCode || 'network'}) para ${message.contactPhone}, tentando de novo em ${retryDelay/1000}s...`);
             await this.sleep(retryDelay);
           }
         }
+      }
+
+      // Pausada antes de qualquer tentativa: devolver para a fila, sem marcar falha
+      if (!sent && !attemptedSend) {
+        await this.prisma.campaignMessage.update({
+          where: { id: message.id },
+          data: { status: 'PENDING' },
+        });
+        break;
       }
 
       // Se não conseguiu enviar após todas as tentativas
@@ -799,7 +980,7 @@ export class CampaignsService {
       }
 
       // Aguardar antes da próxima mensagem
-      await this.sleep(delayMs, campaignId);
+      await this.sleep(delayMs, campaignId, runId);
     }
   }
 
@@ -873,11 +1054,11 @@ export class CampaignsService {
     return allContacts;
   }
 
-  private sleep(ms: number, campaignId?: string) {
+  private sleep(ms: number, campaignId?: string, runId?: string) {
     return new Promise<void>((resolve) => {
       const startTime = Date.now();
       const interval = setInterval(() => {
-        if (campaignId && !this.runningCampaigns.get(campaignId)) {
+        if (campaignId && runId && !this.isActiveRun(campaignId, runId)) {
           clearInterval(interval);
           resolve();
           return;
@@ -920,7 +1101,7 @@ export class CampaignsService {
     return {
       campaigns: { total, draft, scheduled, running, completed, cancelled },
       messages: {
-        total: Object.values(messages).reduce((a, b) => a + b, 0),
+        total: (Object.values(messages) as number[]).reduce((a, b) => a + b, 0),
         ...messages,
       },
     };
